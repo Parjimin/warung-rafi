@@ -20,6 +20,14 @@ jobs:
         run: dotnet run --project tests/WarungRafi.RecoveryChecks -c Release
       - name: Build Windows touchscreen application
         run: dotnet build apps/desktop/WarungRafi.Desktop -c Release
+      - name: Verify WPF layout and cashier interactions
+        run: dotnet run --project tests/WarungRafi.UiChecks -c Release
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: WarungRafi-UI-review
+          path: artifacts/UI-review
+          retention-days: 14
       - name: Package unsigned Windows preview
         run: dotnet publish apps/desktop/WarungRafi.Desktop -c Release -r win-x64 --self-contained true -o artifacts/Windows-preview
       - uses: actions/upload-artifact@v4

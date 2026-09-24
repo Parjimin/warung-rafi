@@ -1,29 +1,42 @@
 <Window x:Class="WarungRafi.Desktop.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
- Title="Warung Rafi — Kasir" Width="1280" Height="860" MinWidth="960" MinHeight="680" Background="#F7F5EE" FontFamily="Segoe UI" Loaded="OnLoaded" Closing="OnClosing">
-  <Grid Margin="22">
-    <Grid.RowDefinitions><RowDefinition Height="120"/><RowDefinition Height="76"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-    <Grid Grid.Row="0">
-      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="340"/></Grid.ColumnDefinitions>
-      <StackPanel VerticalAlignment="Center">
-        <TextBlock Text="WARUNG RAFI" FontSize="32" FontWeight="Bold"/>
-        <TextBlock Text="Wedangan dan aneka nasi sayur" FontSize="18" Margin="0,5"/>
-        <TextBlock Text="VERSI UJI · MENU DAN HARGA DUMMY" FontSize="12" Foreground="#836541"/>
-      </StackPanel>
-      <Border x:Name="Toast" Grid.Column="1" Background="#194D3A" CornerRadius="18" Padding="16" Visibility="Hidden" IsHitTestVisible="False" Focusable="False">
-        <StackPanel>
-          <TextBlock Text="Pembayaran QRIS diterima" FontSize="19" Foreground="White"/>
-          <TextBlock x:Name="ToastAmount" FontSize="30" FontWeight="Bold" Foreground="White"/>
-          <TextBlock x:Name="ToastTime" FontSize="16" Foreground="#D4E9DA"/>
+ Title="Warung Rafi — Kasir" Width="1320" Height="850" MinWidth="900" MinHeight="620" Background="#F5F5EF" Foreground="#233E35"
+ FontFamily="Segoe UI" Loaded="OnLoaded" Closing="OnClosing" UseLayoutRounding="True" SnapsToDevicePixels="True" WindowStartupLocation="CenterScreen">
+  <Grid x:Name="RootLayout" Margin="20,12,20,10">
+    <Grid.RowDefinitions><RowDefinition Height="54"/><RowDefinition Height="56"/><RowDefinition Height="*"/><RowDefinition Height="30"/></Grid.RowDefinitions>
+    <Grid>
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <Border Background="#205C49" Width="42" Height="42" CornerRadius="13" Margin="0,0,12,0">
+          <TextBlock Text="wr" FontWeight="Bold" FontSize="23" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="Warung Rafi" FontWeight="Bold" FontSize="24"/>
+          <TextBlock Text="Wedangan &amp; aneka nasi sayur" FontSize="13" Foreground="#65766E"/>
         </StackPanel>
+      </StackPanel>
+      <Border Grid.Column="1" Background="#F2E9D9" CornerRadius="8" Padding="10,6" VerticalAlignment="Center">
+        <TextBlock Text="VERSI UJI · MENU DUMMY" Foreground="#805D30" FontSize="12" FontWeight="SemiBold"/>
       </Border>
     </Grid>
-    <StackPanel Grid.Row="1" Orientation="Horizontal">
-      <Button Content="Jualan" Click="ShowSelling"/>
-      <Button x:Name="HeldNav" Content="Pesanan Ditunda" Click="ShowHeld"/>
-      <Button Content="Riwayat" Click="ShowHistory"/>
-      <Button Content="Kas Hari Ini" Click="ShowCash"/>
-    </StackPanel>
-    <ContentControl x:Name="MainContent" Grid.Row="2" Margin="0,14,0,8"/>
-    <TextBlock x:Name="StatusText" Grid.Row="3" FontSize="15" Padding="6" Text="Menyiapkan penyimpanan lokal…"/>
+    <Grid Grid.Row="1" Margin="0,6,0,0">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel x:Name="Navigation" Orientation="Horizontal">
+        <Button x:Name="SellNav" Content="Jualan" Click="ShowSelling" Margin="0,0,8,0" MinWidth="100"/>
+        <Button x:Name="HeldNav" Content="Ditunda" Click="ShowHeld" Margin="0,0,8,0"/>
+        <Button x:Name="HistoryNav" Content="Riwayat" Click="ShowHistory" Margin="0,0,8,0"/>
+        <Button x:Name="CashNav" Content="Kas hari ini" Click="ShowCash"/>
+      </StackPanel>
+      <TextBlock x:Name="DateLabel" Grid.Column="1" FontSize="14" Foreground="#65766E" VerticalAlignment="Center"/>
+    </Grid>
+    <ContentControl x:Name="MainContent" Grid.Row="2" Margin="0,16,0,6" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+    <TextBlock x:Name="StatusText" Grid.Row="3" FontSize="13" VerticalAlignment="Center" Foreground="#65766E" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Text="Menyiapkan penyimpanan lokal…"/>
+    <Border x:Name="Toast" Grid.RowSpan="3" Panel.ZIndex="10" Width="340" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,0,0"
+            Background="#205C49" CornerRadius="16" Padding="20,16" Visibility="Collapsed" IsHitTestVisible="False" Focusable="False">
+      <StackPanel>
+        <TextBlock Text="Pembayaran QRIS diterima" FontSize="19" Foreground="White"/>
+        <TextBlock x:Name="ToastAmount" FontSize="30" FontWeight="Bold" Foreground="White" Margin="0,5"/>
+        <TextBlock x:Name="ToastTime" FontSize="16" Foreground="#DFEEE2"/>
+      </StackPanel>
+    </Border>
   </Grid>
 </Window>
