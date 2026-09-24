@@ -18,14 +18,14 @@
       <Setter Property="Background" Value="#EDF3ED"/><Setter Property="Foreground" Value="#205C49"/>
       <Setter Property="BorderBrush" Value="Transparent"/><Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Cursor" Value="Hand"/><Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
-      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
         <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
                 CornerRadius="12" RenderTransformOrigin="0.5,0.5">
           <Border.RenderTransform><ScaleTransform/></Border.RenderTransform>
           <Grid>
             <Border x:Name="Hover" Background="#18205C49" CornerRadius="11" Opacity="0"/>
-            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"
+            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                               TextElement.Foreground="{TemplateBinding Foreground}" RecognizesAccessKey="False"/>
           </Grid>
         </Border>

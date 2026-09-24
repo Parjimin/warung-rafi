@@ -57,7 +57,7 @@ public partial class MainWindow
         if(productCount is not null)productCount.Text=string.IsNullOrWhiteSpace(search)?$"{category} · {products.Length} pilihan tersedia":$"Hasil pencarian · {products.Length} menu";
         foreach(var product in products)
         {
-            var body=Rows(new GridLength(90),Star,Auto);
+            var body=Rows(new GridLength(76),Star,Auto);
             var art=new Grid { Background=Color(product.Category=="Minuman"?"#E9EFEC":"#F3F0E4"),ClipToBounds=true };
             art.Children.Add(Illustration(product.Category));
             if(product.ImageUrl is not null)
@@ -73,8 +73,8 @@ public partial class MainWindow
             Place(price,Text(product.Available?Money.Format(product.Price):"Sedang habis",18,true,product.Available?"#205C49":"#857467"));
             Place(price,Text(product.Available?"+":"—",25,false,"#205C49"),0,1);Place(body,price,2);
             var button=ActionButton("",async()=>{await Save(OrderRules.Add(current,product));RefreshCart(product.Id);RefreshBadges();},id:"Product-"+product.Id);
-            button.Content=body;button.Width=200;button.Height=204;button.Padding=new Thickness(0);button.Background=Brushes.White;button.Foreground=Color("#233E35");button.BorderBrush=Color("#DEE6DF");
-            button.HorizontalContentAlignment=HorizontalAlignment.Stretch;button.Margin=new Thickness(0,0,10,10);button.IsEnabled=product.Available;
+            button.Content=body;button.Width=200;button.Height=190;button.Padding=new Thickness(0);button.Background=Brushes.White;button.Foreground=Color("#233E35");button.BorderBrush=Color("#DEE6DF");
+            button.HorizontalContentAlignment=HorizontalAlignment.Stretch;button.VerticalContentAlignment=VerticalAlignment.Stretch;button.Margin=new Thickness(0,0,10,10);button.IsEnabled=product.Available;
             System.Windows.Automation.AutomationProperties.SetName(button,$"Tambah {product.Name}, {Money.Format(product.Price)}");productCards.Children.Add(button);
         }
         if(products.Length==0)productCards.Children.Add(Empty("Menu belum ditemukan","Coba nama lain atau kosongkan pencarian."));

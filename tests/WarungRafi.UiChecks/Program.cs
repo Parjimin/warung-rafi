@@ -43,7 +43,7 @@ internal static class Program
         Directory.CreateDirectory(artifacts);
         var store=new LocalStore(Path.Combine(directory,"test.db"));await store.InitializeAsync();
         window=new MainWindow(store,true) { Width=1320,Height=850,ShowInTaskbar=false };
-        window.Show();root=(FrameworkElement)window.Content;
+        window.Show();AttachReviewRoot();
         await Until(()=>Find<Button>("PayOrder") is not null);
         Layout();
         Check(!Get<Button>("PayOrder").IsEnabled,"Empty order cannot enter payment");Screenshot("01-empty");
@@ -97,7 +97,7 @@ internal static class Program
         window.CashNav.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Until(()=>MainWindow.Descendants<TextBlock>(root).Any(x=>x.Text=="Penjualan tercatat"));Layout();Screenshot("12-daily-summary");
         // Reopen a real persisted draft in a new WPF window.
         var draft=OrderRules.Add(Order.New(),DummyCatalog.Products[0]) with { CustomerLabel="Pak Joko" };await store.SaveAsync(draft);
-        window.Close();window=new MainWindow(store,true) { ShowInTaskbar=false };window.Show();root=(FrameworkElement)window.Content;
+        window.Close();window=new MainWindow(store,true) { ShowInTaskbar=false };window.Show();AttachReviewRoot();
         await Until(()=>Find<TextBox>("CustomerName") is not null);Layout();
         Check(Get<TextBox>("CustomerName").Text=="Pak Joko","New app instance restores draft and customer name");
         Check(Get<TextBlock>("CartTotal").Text=="Rp5.000","New app instance restores cart amount");
@@ -107,12 +107,20 @@ internal static class Program
         var restored=(await store.ListAsync(OrderStatus.Draft)).Single();
         foreach(var product in DummyCatalog.Products.Skip(1))restored=OrderRules.Add(restored,product);
         await store.SaveAsync(restored);
-        window=new MainWindow(store,true) { ShowInTaskbar=false };window.Show();root=(FrameworkElement)window.Content;
+        window=new MainWindow(store,true) { ShowInTaskbar=false };window.Show();AttachReviewRoot();
         await Until(()=>Find<ScrollViewer>("CartViewport") is not null);Layout();
         Check(Get<ScrollViewer>("CartViewport").ScrollableHeight>0,"Long order scrolls within its own viewport");
         Get<ScrollViewer>("CartViewport").ScrollToEnd();Layout();
         Check(Inside(Get<Button>("PayOrder"))&&Inside(Get<TextBlock>("CartTotal")),"Long order keeps total and payment action pinned");
         Screenshot("13-long-order");
+    }
+    private static void AttachReviewRoot()
+    {
+        root=(FrameworkElement)window.Content;
+        window.Content=null;
+        // The CI desktop may be only 1024px wide. An unbounded Canvas keeps that
+        // host from applying a layout clip to the independently sized review surface.
+        var host=new Canvas();host.Children.Add(root);window.Content=host;
     }
     private static void Layout()
     {
@@ -122,6 +130,9 @@ internal static class Program
         root.Measure(new Size(width,height));root.Arrange(new Rect(0,0,width,height));root.UpdateLayout();
         if(Math.Abs(root.ActualWidth-(width-40))>1||Math.Abs(root.ActualHeight-(height-22))>1)
             throw new Exception($"Host did not honor requested layout size: {root.ActualWidth}x{root.ActualHeight}");
+        var clip=VisualTreeHelper.GetClip(root);
+        if(clip is not null&&!clip.Bounds.Contains(new Rect(0,0,root.ActualWidth,root.ActualHeight)))
+            throw new Exception("Host clipped the review surface.");
     }
     private static bool Inside(FrameworkElement element)
     {
@@ -144,7 +155,8 @@ internal static class Program
     { if(!condition)throw new Exception(label);checks++;Console.WriteLine("PASS "+label); }
     private static void Screenshot(string name)
     {
-        Layout();var bitmap=new RenderTargetBitmap((int)width,(int)height,96,96,PixelFormats.Pbgra32);
+        Layout();foreach(var element in MainWindow.Descendants<UIElement>(root))element.BeginAnimation(UIElement.OpacityProperty,null);
+        var bitmap=new RenderTargetBitmap((int)width,(int)height,96,96,PixelFormats.Pbgra32);
         var background=new DrawingVisual();using(var drawing=background.RenderOpen())drawing.DrawRectangle(window.Background,null,new Rect(0,0,width,height));
         bitmap.Render(background);bitmap.Render(root);
         var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using var file=File.Create(Path.Combine(artifacts,name+".png"));encoder.Save(file);
