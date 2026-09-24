@@ -11,6 +11,7 @@
 
 ```powershell
 dotnet run --project tests/WarungRafi.Checks
+dotnet run --project tests/WarungRafi.RecoveryChecks
 dotnet run --project apps/desktop/WarungRafi.Desktop
 ```
 
@@ -84,3 +85,7 @@ Katalog tersimpan lokal dan baru dipasang ke UI ketika layar Jualan tidak berisi
 `Sync project tracking` membuat tujuh milestone dan backlog dari `.github/planning.json`. Workflow dipicu perubahan planning pada `main` atau manual lewat Actions. Ia tidak menimpa checklist issue yang sudah diperbarui orang dan tidak menutup issue otomatis.
 
 Saat registry tidak dapat diakses lokal, jangan menyatakan build lulus. Pakai log CI sebagai bukti dan gunakan lockfile yang dikomit untuk resolusi dependency. Tinjau dependency dan advisory lagi sebelum rilis; baseline ini bukan janji bebas kerentanan di masa depan.
+
+## Bukti pemulihan M1
+
+Lihat [M1-VALIDATION.md](M1-VALIDATION.md) untuk skenario process-kill, simulasi SQLITE_FULL, konkurensi, dan antrean besar. Suite memakai database sementara; tidak menghapus atau mengubah database kasir.

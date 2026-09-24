@@ -5,12 +5,16 @@
 | Bagian | Implementasi tersedia | Verifikasi / batas saat checkpoint |
 | --- | --- | --- |
 | M0 | Blueprint, keputusan arsitektur, M0–M6, backlog, workflow CI dan pelacakan | 7 milestone dan 12 issue berhasil dibuat; workflow tracking lulus |
-| M1 | Aturan pesanan, harga snapshot, tunai, ditunda, SQLite, optimistic concurrency, outbox atomik | 23 pemeriksaan lokal lulus; tes .NET pada CI Windows juga lulus. Process-kill/disk-full belum diuji |
+| M1 | Aturan pesanan, harga snapshot, tunai, ditunda, SQLite, optimistic concurrency, outbox atomik | 23 pemeriksaan baseline pernah lulus. Suite process-kill, SQLITE_FULL, konkurensi dan antrean >1.000 baru ditambahkan; menunggu verifikasi CI sebelum M1 ditutup |
 | M2 | WPF navbar atas, tombol besar, empat kategori, keranjang, uang/kembalian, riwayat, cetak terpisah dari UI | Build WPF lokal dan CI Windows lulus; publish preview berhasil; prioritas perapian UI/UX dengan mouse/touchpad; uji sentuh dan OKAY 58D dijadwalkan M6 |
 | M3 | Login Supabase Auth, tambah/edit menu, URL foto, draf/publikasi, API device, cache katalog/foto | Tes kontrak, typecheck dan build Next.js lulus di CI; akun cloud, unggah foto, observabilitas konflik belum tersedia |
 | M4 | SHA512 + Status API, persistensi provider, inbox/cursor, popup pasif + suara | Tes unit webhook lulus; pengujian logika/simulasi dapat lanjut; aktivasi dan uji merchant end-to-end dijadwalkan M6 |
 | M5 | Ringkasan penjualan tunai/QRIS lokal per tanggal WIB | Ledger, sesi kas, refund, MDR, payout, rekonsiliasi, Sheets belum diimplementasikan |
 | M6 | Panduan setup dan paket preview melalui CI | Finalisasi touchscreen, printer, merchant, installer, backup/restore, perlindungan token, dan UAT masih terbuka |
+
+## Pengerjaan per milestone
+
+M0 selesai. M1 sedang dituntaskan melalui [pengujian integritas dan pemulihan](M1-VALIDATION.md). Sebagian kode M2–M4 sudah tersedia, tetapi bukan berarti milestone tersebut selesai. Setelah kriteria M1 terverifikasi, fokus beralih ke perapian UI/UX M2. Touchscreen, printer, dan merchant asli tetap pada M6.
 
 ## Umpan balik pengguna dan prioritas berikutnya
 

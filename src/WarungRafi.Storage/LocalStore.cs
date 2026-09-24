@@ -7,20 +7,37 @@ namespace WarungRafi.Storage;
 public sealed class LocalStore
 {
     private readonly string connectionString;
+    private readonly Action<SqliteConnection>? configureConnection;
     private readonly SemaphoreSlim gate = new(1, 1);
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-    public LocalStore(string path)
+    public LocalStore(string path) : this(path, null) { }
+
+    // Internal seam for deterministic SQLite failure tests. Never configured by the cashier.
+    internal LocalStore(string path, Action<SqliteConnection>? configureConnection)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
-        connectionString = new SqliteConnectionStringBuilder { DataSource = path, DefaultTimeout = 10 }.ToString();
+        this.configureConnection = configureConnection;
+        // Test pragmas/functions must not leak into the production connection pool.
+        connectionString = new SqliteConnectionStringBuilder { DataSource = path, DefaultTimeout = 10, Pooling = configureConnection is null }.ToString();
     }
     public async Task InitializeAsync() => await Locked(() =>
     {
         using var connection = Open();
+        using(var version = connection.CreateCommand())
+        {
+            version.CommandText = "PRAGMA user_version";
+            if(Convert.ToInt32(version.ExecuteScalar()) > 1)
+                throw new InvalidDataException("Database dibuat oleh versi aplikasi yang lebih baru. Gunakan aplikasi terbaru; jangan hapus database.");
+        }
+        using(var mode = connection.CreateCommand())
+        {
+            mode.CommandText = "PRAGMA journal_mode=WAL";
+            mode.ExecuteNonQuery();
+        }
+        using var tx = connection.BeginTransaction();
         using var command = connection.CreateCommand();
+        command.Transaction = tx;
         command.CommandText = """
-            PRAGMA journal_mode=WAL;
-            PRAGMA synchronous=FULL;
             CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY, version INTEGER NOT NULL,
                 status INTEGER NOT NULL, updated_at TEXT NOT NULL, payload TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS payments(order_id TEXT PRIMARY KEY REFERENCES orders(id), payload TEXT NOT NULL);
@@ -32,15 +49,18 @@ public sealed class LocalStore
             CREATE TABLE IF NOT EXISTS print_attempts(id TEXT PRIMARY KEY, order_id TEXT NOT NULL,
                 created_at TEXT NOT NULL, is_copy INTEGER NOT NULL, status TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS ix_orders_status_updated ON orders(status, updated_at);
+            CREATE INDEX IF NOT EXISTS ix_outbox_pending ON outbox(acknowledged);
             PRAGMA user_version=1;
             """;
         command.ExecuteNonQuery();
+        tx.Commit();
         return true;
     });
 
     public Task<Order> SaveAsync(Order order) => Locked(() =>
     {
         if (order.Status == OrderStatus.Completed) throw new InvalidOperationException("Gunakan penyelesaian pembayaran.");
+        OrderRules.Validate(order);
         using var connection = Open(); using var tx = connection.BeginTransaction();
         var existing = Load(connection, tx, order.Id);
         CheckVersion(order, existing);
@@ -49,6 +69,20 @@ public sealed class LocalStore
         var stored = Write(connection, tx, order, null);
         tx.Commit();
         return stored;
+    });
+
+    public Task<Order?> OrderAsync(string id) => Locked(() =>
+    {
+        using var connection = Open();
+        return Load(connection, null, id);
+    });
+
+    public Task<long> CountAsync(params OrderStatus[] statuses) => Locked(() =>
+    {
+        using var connection = Open(); using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM orders";
+        FilterStatuses(command, statuses);
+        return Convert.ToInt64(command.ExecuteScalar());
     });
 
     public Task<CompletedSale> CompleteAsync(string id, long expectedVersion, PaymentMethod method, long tendered) => Locked(() =>
@@ -73,12 +107,8 @@ public sealed class LocalStore
     {
         using var connection = Open(); using var command = connection.CreateCommand();
         command.CommandText = "SELECT payload FROM orders";
-        if(statuses.Length>0)
-        {
-            command.CommandText+=" WHERE status IN ("+string.Join(",",statuses.Select((_,i)=>"$s"+i))+")";
-            for(var i=0;i<statuses.Length;i++) command.Parameters.AddWithValue("$s"+i,(int)statuses[i]);
-        }
-        command.CommandText+=" ORDER BY updated_at DESC LIMIT 1000";
+        FilterStatuses(command, statuses);
+        command.CommandText+=" ORDER BY updated_at DESC, id DESC LIMIT 1000";
         using var reader = command.ExecuteReader(); var result = new List<Order>();
         while (reader.Read())
         {
@@ -198,9 +228,21 @@ public sealed class LocalStore
     }
     private SqliteConnection Open()
     {
-        var connection=new SqliteConnection(connectionString); connection.Open();
-        using var command=connection.CreateCommand(); command.CommandText="PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL;"; command.ExecuteNonQuery();
-        return connection;
+        var connection=new SqliteConnection(connectionString);
+        try
+        {
+            connection.Open();
+            using var command=connection.CreateCommand(); command.CommandText="PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL;"; command.ExecuteNonQuery();
+            configureConnection?.Invoke(connection);
+            return connection;
+        }
+        catch { connection.Dispose(); throw; }
+    }
+    private static void FilterStatuses(SqliteCommand command, OrderStatus[] statuses)
+    {
+        if(statuses.Length==0)return;
+        command.CommandText+=" WHERE status IN ("+string.Join(",",statuses.Select((_,i)=>"$s"+i))+")";
+        for(var i=0;i<statuses.Length;i++)command.Parameters.AddWithValue("$s"+i,(int)statuses[i]);
     }
     private static SqliteCommand Command(SqliteConnection connection,SqliteTransaction? tx,string sql,params (string Key,object Value)[] values)
     {

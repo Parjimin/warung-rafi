@@ -70,7 +70,7 @@ public partial class MainWindow : Window
     {
         var count=await store.PendingCountAsync();
         StatusText.Text=$"Tersimpan di laptop · {count} perubahan menunggu dikirim";
-        HeldNav.Content=$"Pesanan Ditunda ({(await store.ListAsync(OrderStatus.Held)).Length})";
+        HeldNav.Content=$"Pesanan Ditunda ({await store.CountAsync(OrderStatus.Held)})";
     }
 
     private static TextBlock Text(string value,double size=20,bool bold=false) => new() { Text=value,TextWrapping=TextWrapping.Wrap,FontSize=size,FontWeight=bold?FontWeights.Bold:FontWeights.Normal,Margin=new Thickness(0,4,0,4) };

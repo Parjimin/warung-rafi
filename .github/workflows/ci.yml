@@ -16,6 +16,8 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Check domain and durable local transactions
         run: dotnet run --project tests/WarungRafi.Checks -c Release
+      - name: Verify crash recovery, full storage and backlog
+        run: dotnet run --project tests/WarungRafi.RecoveryChecks -c Release
       - name: Build Windows touchscreen application
         run: dotnet build apps/desktop/WarungRafi.Desktop -c Release
       - name: Package unsigned Windows preview

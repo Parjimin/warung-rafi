@@ -2,6 +2,27 @@ namespace WarungRafi.Core;
 
 public static class OrderRules
 {
+    public static void Validate(Order order)
+    {
+        ArgumentNullException.ThrowIfNull(order);
+        if(!Enum.IsDefined(order.Status) || order.Version<0 || !Guid.TryParseExact(order.Id,"N",out _) ||
+            string.IsNullOrWhiteSpace(order.Number) || order.Number.Length>80 || order.CustomerLabel is null || order.CustomerLabel.Length>60 ||
+            order.Lines is null || order.Lines.Length>300)
+            throw new ArgumentException("Data pesanan tidak valid.");
+        var ids=new HashSet<string>();
+        foreach(var line in order.Lines)
+        {
+            if(line is null || string.IsNullOrWhiteSpace(line.ProductId) || line.ProductId.Length>80 || !ids.Add(line.ProductId) ||
+                string.IsNullOrWhiteSpace(line.Name) || line.Name.Length>60 || string.IsNullOrWhiteSpace(line.Category) ||
+                line.UnitPrice is <1 or >1_000_000_000 || line.Quantity is <1 or >9999)
+                throw new ArgumentException("Rincian pesanan tidak valid.");
+        }
+        if(order.Status is OrderStatus.Held or OrderStatus.Completed && order.Lines.Length==0)
+            throw new ArgumentException("Pesanan ini harus memiliki rincian.");
+        if(order.Status==OrderStatus.Cancelled && string.IsNullOrWhiteSpace(order.CancellationReason))
+            throw new ArgumentException("Alasan pembatalan wajib diisi.");
+        _=order.Total;
+    }
     public static Order Add(Order order, Product product)
     {
         Editable(order);
@@ -48,7 +69,9 @@ public static class OrderRules
 
     public static CompletedSale Complete(Order order, PaymentMethod method, long tendered)
     {
+        Validate(order);
         Editable(order);
+        if(!Enum.IsDefined(method))throw new ArgumentException("Metode pembayaran tidak valid.");
         if (order.Lines.Length == 0 || order.Total <= 0) throw new InvalidOperationException("Pesanan masih kosong.");
         if (method == PaymentMethod.Cash && tendered < order.Total) throw new InvalidOperationException("Uang diterima masih kurang.");
         var now = DateTimeOffset.UtcNow;
