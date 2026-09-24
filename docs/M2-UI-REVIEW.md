@@ -1,5 +1,13 @@
 # M2 — perapian UI/UX kasir
 
+## Tampilan aktual
+
+Render WPF pada area kerja 1280×720 DIP, memakai data uji.
+
+![Halaman jualan: empat item, total dan tombol bayar terlihat](images/m2-selling.png)
+
+![Pembayaran tunai dengan nominal, keypad dan kembalian](images/m2-payment.png)
+
 ## Masalah dari screenshot pengguna
 
 Daftar pesanan hanya memperoleh sisa tinggi setelah header besar, kolom nama dan dua tombol vertikal. Akibatnya beberapa item saja sudah terpotong. Warna teks global juga menimpa warna teks tombol primer, sehingga tulisan gelap berada di atas hijau gelap. Re-render seluruh halaman setiap klik menghilangkan posisi interaksi dan input nama yang belum disimpan.
@@ -30,6 +38,12 @@ dotnet run --project tests/WarungRafi.UiChecks -c Release
 ```
 
 Screenshot tersimpan pada artifact **WarungRafi-UI-review**. Paket aplikasi berada pada **WarungRafi-Windows-preview** dari run CI yang sama setelah semua pemeriksaan desktop lulus. Bukti run final dicatat di `STATUS.md`.
+
+## Bukti checkpoint
+
+[CI commit `68ada9d`](https://github.com/Parjimin/warung-rafi/actions/runs/36059310516) lulus **66 pemeriksaan WPF**, ditambah 23 pemeriksaan dasar dan 60 recovery/integritas. Build/publish Windows, admin dan database lulus. Delapan belas screenshot aktual tersedia pada artifact **WarungRafi-UI-review**; tampilan jualan, pembayaran, ditunda, sukses, ringkasan kas dan toast telah ditinjau secara visual.
+
+Viewport pesanan terukur 294 DIP pada area kerja 1280×720: empat item biasa muat tanpa scroll. Pada area 900×620 viewport masih 194 DIP, dengan total dan tombol tetap terlihat; daftar panjang tetap digulir. Host render memakai ukuran eksplisit agar ukuran desktop runner tidak menimpa atau memotong review. Ini bukan uji sentuh fisik atau benchmark kecepatan klik.
 
 ## Batas dan sisa M2
 

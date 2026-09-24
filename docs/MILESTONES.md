@@ -14,7 +14,7 @@ Progres dinilai berdasarkan hasil yang dapat diperiksa. **Kode ditulis tidak sam
 
 ## Checkpoint — 24 September 2026
 
-**M0 dan M1 selesai; M2 menjadi tahap berikutnya.** M1 lulus 23 pemeriksaan dasar dan 60 pemeriksaan recovery/integritas di CI Windows. [Bukti dan batas pengujian](M1-VALIDATION.md) tersedia. Kode awal M2–M4 tidak berarti seluruh kriteria milestone tersebut sudah selesai.
+**M0 dan M1 selesai; M2 aktif dengan preview UI baru.** M1 lulus 23 pemeriksaan dasar dan 60 pemeriksaan recovery/integritas di CI Windows. [Bukti dan batas pengujian](M1-VALIDATION.md) tersedia. [Perapian UI M2](M2-UI-REVIEW.md) sudah diimplementasikan; review kenyamanan klik pada laptop pengguna masih terbuka. Kode awal M3–M4 tidak berarti seluruh kriteria milestone tersebut sudah selesai.
 
 ## Penyesuaian urutan — 24 September 2026
 

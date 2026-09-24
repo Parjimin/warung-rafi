@@ -12,12 +12,13 @@
 ```powershell
 dotnet run --project tests/WarungRafi.Checks
 dotnet run --project tests/WarungRafi.RecoveryChecks
+dotnet run --project tests/WarungRafi.UiChecks
 dotnet run --project apps/desktop/WarungRafi.Desktop
 ```
 
 Tanpa konfigurasi cloud kasir tetap berjalan dengan menu dummy. Setiap perubahan pesanan disimpan lokal. Satu transaksi SQLite menulis pesanan, pembayaran, dan outbox pada saat selesai. Letak database: `%LOCALAPPDATA%\WarungRafi\warung-rafi.db`. Cache foto berada dalam subfolder `images`.
 
-Alur uji: pilih Nasi → tambah minuman → Simpan Dulu → buka dari Pesanan Ditunda → Lanjut Bayar → isi uang → Selesaikan Pesanan → lihat kembalian → Pesanan Baru. Tutup/buka aplikasi lalu periksa riwayat. Pakai data uji, bukan transaksi pelanggan.
+Alur uji: pilih Nasi → tambah minuman → Simpan dulu → buka dari Ditunda → Bayar → isi uang → Selesaikan Pesanan → lihat kembalian → Pesanan Baru. Tutup/buka aplikasi lalu periksa riwayat. Pakai data uji, bukan transaksi pelanggan.
 
 ## Printer OKAY 58D
 
@@ -80,7 +81,7 @@ Katalog tersimpan lokal dan baru dipasang ke UI ketika layar Jualan tidak berisi
 
 ## CI dan progres
 
-`Verify application` menjalankan tes .NET, build/publish WPF pada Windows, tes/typecheck/build Next.js, serta tes SQL pada PostgreSQL sementara. Jika sukses tersedia artifact **WarungRafi-Windows-preview** di run tersebut. Artifact adalah preview tanpa installer/tanda tangan.
+`Verify application` menjalankan tes .NET, pemeriksaan layout/interaksi WPF dan screenshot **WarungRafi-UI-review**, build/publish WPF pada Windows, tes/typecheck/build Next.js, serta tes SQL pada PostgreSQL sementara. Jika sukses tersedia artifact **WarungRafi-Windows-preview** di run tersebut. Artifact adalah preview tanpa installer/tanda tangan.
 
 `Sync project tracking` membuat tujuh milestone dan backlog dari `.github/planning.json`. Workflow dipicu perubahan planning pada `main` atau manual lewat Actions. Ia tidak menimpa checklist issue yang sudah diperbarui orang dan tidak menutup issue otomatis.
 
@@ -89,3 +90,7 @@ Saat registry tidak dapat diakses lokal, jangan menyatakan build lulus. Pakai lo
 ## Bukti pemulihan M1
 
 Lihat [M1-VALIDATION.md](M1-VALIDATION.md) untuk skenario process-kill, simulasi SQLITE_FULL, konkurensi, dan antrean besar. Suite memakai database sementara; tidak menghapus atau mengubah database kasir.
+
+## Review UI M2
+
+Lihat [M2-UI-REVIEW.md](M2-UI-REVIEW.md). Coba empat item tanpa scroll pada area kerja setara 1280×720 DIP, pesanan panjang, tombol Perbesar/Kembali ke menu, nama pelanggan, ditunda/resume, tunai dan kembalian. Area lebih pendek tetap mengizinkan scroll daftar dengan total/tombol tetap terlihat. Laporkan resolusi dan skala Windows ketika meninjau preview. Tidak perlu touchscreen, printer, atau akun merchant untuk review ini.
