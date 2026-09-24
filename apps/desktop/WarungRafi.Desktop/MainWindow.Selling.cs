@@ -36,6 +36,7 @@ public partial class MainWindow
         Place(left,tabs,1);
         productCards=new WrapPanel();productScroll=Scroll(productCards,"MenuViewport");Place(left,productScroll,2);
         productScroll.SizeChanged+=(_,_)=>SizeCards();
+        productScroll.ScrollChanged+=(_,e)=>{if(e.ViewportWidthChange!=0)SizeCards();};
         Place(grid,left);
         cartHost=new ContentControl { HorizontalContentAlignment=HorizontalAlignment.Stretch,VerticalContentAlignment=VerticalAlignment.Stretch };
         Place(grid,cartHost,0,2);
