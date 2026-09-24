@@ -4,10 +4,10 @@
 
 | Bagian | Implementasi tersedia | Verifikasi / batas saat checkpoint |
 | --- | --- | --- |
-| M0 | Blueprint, keputusan arsitektur, M0–M6, backlog, workflow CI dan pelacakan | Workflow disiapkan; hasil run pertama diperiksa setelah push |
-| M1 | Aturan pesanan, harga snapshot, tunai, ditunda, SQLite, optimistic concurrency, outbox atomik | Harness tes disiapkan: retry, rollback gagal tulis, recovery instance, katalog, summary WIB; hasil build penuh belum dinyatakan lulus |
-| M2 | WPF navbar atas, tombol besar, empat kategori, keranjang, uang/kembalian, riwayat, cetak terpisah dari UI | WPF perlu build CI Windows; visual layar sentuh dan OKAY 58D belum diuji |
-| M3 | Login Supabase Auth, tambah/edit menu, URL foto, draf/publikasi, API device, cache katalog/foto | Kontrak katalog/sync diuji; akun Supabase, deploy Vercel, unggah foto, observabilitas konflik belum tersedia |
+| M0 | Blueprint, keputusan arsitektur, M0–M6, backlog, workflow CI dan pelacakan | 7 milestone dan 12 issue berhasil dibuat; workflow tracking lulus |
+| M1 | Aturan pesanan, harga snapshot, tunai, ditunda, SQLite, optimistic concurrency, outbox atomik | 23 pemeriksaan lokal lulus; tes .NET pada CI Windows juga lulus. Process-kill/disk-full belum diuji |
+| M2 | WPF navbar atas, tombol besar, empat kategori, keranjang, uang/kembalian, riwayat, cetak terpisah dari UI | Build WPF lokal dan CI Windows lulus; publish preview berhasil; layar sentuh dan OKAY 58D belum diuji |
+| M3 | Login Supabase Auth, tambah/edit menu, URL foto, draf/publikasi, API device, cache katalog/foto | Tes kontrak, typecheck dan build Next.js lulus di CI; akun cloud, unggah foto, observabilitas konflik belum tersedia |
 | M4 | SHA512 + Status API, persistensi provider, inbox/cursor, popup pasif + suara | Tes unit webhook lulus; QRIS statis merchant dan suara laptop belum diuji end-to-end |
 | M5 | Ringkasan penjualan tunai/QRIS lokal per tanggal WIB | Ledger, sesi kas, refund, MDR, payout, rekonsiliasi, Sheets belum diimplementasikan |
 | M6 | Panduan setup dan paket preview melalui CI | Installer bertanda tangan, backup/restore, perlindungan token, UAT belum selesai |
@@ -15,9 +15,11 @@
 ## Bukti uji lokal
 
 - `node --test apps/admin/tests/*.test.ts`: **9 tes lulus**. Mencakup signature salah, merchant/identitas berbeda, status provider otoritatif, provider down, nominal pecahan, total/kembalian, katalog, dan batas body streaming.
-- Build domain C# tanpa dependency eksternal berhasil. Build penuh .NET sedang diverifikasi; jangan menyamakan ini dengan build desktop berhasil.
-- Tes PostgreSQL tersedia di `database/tests/assertions.sql`; dijalankan terhadap database sementara di CI, bukan database produksi.
-- Registry npm tidak dapat diakses dari lingkungan penyusunan. Build Next.js/typecheck dan resolusi dependency akan diperiksa melalui CI. Lockfile perlu diambil dari hasil CI dan dikomit sebelum rilis.
+- `dotnet run --project tests/WarungRafi.Checks`: **23 pemeriksaan lulus**, juga lulus di CI Windows. Build WPF dan publish self-contained Windows x64 berhasil. Build tidak membuktikan kompatibilitas printer/touchscreen.
+- Migrasi dan assertions PostgreSQL **lulus di CI**: retry dedupe, rollback batch, konflik versi, refund tidak mundur, serta role permissions. Database uji sementara, bukan produksi.
+- Registry npm tidak dapat diakses dari lingkungan penyusunan. **Build Next.js dan typecheck lulus pada CI GitHub**. Lockfile hasil run diambil dan dikomit; instalasi berikutnya memakai `npm ci`.
+
+Bukti run: [Verify application #1](https://github.com/Parjimin/warung-rafi/actions/runs/35978994018), [Sync project tracking #1](https://github.com/Parjimin/warung-rafi/actions/runs/35978993935).
 
 ## Batas perilaku versi ini
 

@@ -27,6 +27,10 @@ Workflow **Sync project tracking** membuat/memperbarui GitHub Milestones dan Iss
 | `database` | Migrasi PostgreSQL untuk katalog, sinkronisasi, dan pembayaran |
 | `docs` | Blueprint, milestone, status, petunjuk |
 
+## Coba paket preview Windows
+
+Buka [Actions](https://github.com/Parjimin/warung-rafi/actions/workflows/ci.yml), pilih run **Verify application** yang berhasil, lalu unduh artifact **WarungRafi-Windows-preview**. Ekstrak ZIP dan jalankan `WarungRafi.exe`. Paket ini untuk mencoba menu dummy dan alur kasir; belum untuk transaksi usaha nyata. Printer dan layanan online perlu dikonfigurasi mengikuti panduan.
+
 ## Mulai di Windows
 
 Pasang .NET 10 SDK, lalu dari folder repo:
@@ -42,7 +46,7 @@ Data lokal disimpan di `%LOCALAPPDATA%\WarungRafi\warung-rafi.db`. Tidak ada dat
 
 ```bash
 cd apps/admin
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
 ```

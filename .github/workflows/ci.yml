@@ -35,7 +35,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: npm install --no-fund
+      - run: npm ci --no-fund
       - run: npm test
       - run: npm run typecheck
       - run: npm run build

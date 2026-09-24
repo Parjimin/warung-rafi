@@ -40,7 +40,7 @@ Jangan memakai PDF printer sebagai printer kasir. Preview menggunakan driver/spo
 
 ```bash
 cd apps/admin
-npm install
+npm ci
 cp .env.example .env.local
 npm test
 npm run typecheck
@@ -83,4 +83,4 @@ Katalog tersimpan lokal dan baru dipasang ke UI ketika layar Jualan tidak berisi
 
 `Sync project tracking` membuat tujuh milestone dan backlog dari `.github/planning.json`. Workflow dipicu perubahan planning pada `main` atau manual lewat Actions. Ia tidak menimpa checklist issue yang sudah diperbarui orang dan tidak menutup issue otomatis.
 
-Saat registry tidak dapat diakses lokal, jangan menyatakan build lulus. Pakai log CI sebagai bukti dan komit lockfile hasil resolusi dependency. Tinjau dependency dan advisory lagi sebelum rilis; baseline ini bukan janji bebas kerentanan di masa depan.
+Saat registry tidak dapat diakses lokal, jangan menyatakan build lulus. Pakai log CI sebagai bukti dan gunakan lockfile yang dikomit untuk resolusi dependency. Tinjau dependency dan advisory lagi sebelum rilis; baseline ini bukan janji bebas kerentanan di masa depan.
