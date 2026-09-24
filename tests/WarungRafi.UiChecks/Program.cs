@@ -116,7 +116,12 @@ internal static class Program
     }
     private static void Layout()
     {
+        // Explicit constraints keep the hosted window's display size from overriding
+        // a test arrange during SizeChanged/UpdateLayout callbacks.
+        root.Width=width-40;root.Height=height-22;
         root.Measure(new Size(width,height));root.Arrange(new Rect(0,0,width,height));root.UpdateLayout();
+        if(Math.Abs(root.ActualWidth-(width-40))>1||Math.Abs(root.ActualHeight-(height-22))>1)
+            throw new Exception($"Host did not honor requested layout size: {root.ActualWidth}x{root.ActualHeight}");
     }
     private static bool Inside(FrameworkElement element)
     {
@@ -139,7 +144,9 @@ internal static class Program
     { if(!condition)throw new Exception(label);checks++;Console.WriteLine("PASS "+label); }
     private static void Screenshot(string name)
     {
-        Layout();var bitmap=new RenderTargetBitmap((int)Math.Ceiling(root.ActualWidth),(int)Math.Ceiling(root.ActualHeight),96,96,PixelFormats.Pbgra32);bitmap.Render(root);
+        Layout();var bitmap=new RenderTargetBitmap((int)width,(int)height,96,96,PixelFormats.Pbgra32);
+        var background=new DrawingVisual();using(var drawing=background.RenderOpen())drawing.DrawRectangle(window.Background,null,new Rect(0,0,width,height));
+        bitmap.Render(background);bitmap.Render(root);
         var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using var file=File.Create(Path.Combine(artifacts,name+".png"));encoder.Save(file);
     }
 }
