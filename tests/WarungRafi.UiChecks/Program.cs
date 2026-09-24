@@ -23,6 +23,8 @@ internal static class Program
     {
         var app=new Application { ShutdownMode=ShutdownMode.OnExplicitShutdown };
         app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source=new Uri("/WarungRafi;component/Theme.xaml",UriKind.Relative) });
+        app.DispatcherUnhandledException+=(_,e)=>{Console.Error.WriteLine(e.Exception);e.Handled=true;app.Shutdown(1);};
+        _=Task.Run(async()=>{await Task.Delay(TimeSpan.FromSeconds(60));Console.Error.WriteLine("WPF review exceeded 60 second watchdog.");Environment.Exit(1);});
         app.Startup+=async(_,_)=>
         {
             var result=1;
@@ -118,6 +120,7 @@ internal static class Program
     {
         root=(FrameworkElement)window.Content;
         window.Content=null;
+        root.Width=width-40;root.Height=height-22;
         // The CI desktop may be only 1024px wide. An unbounded Canvas keeps that
         // host from applying a layout clip to the independently sized review surface.
         var host=new Canvas();host.Children.Add(root);window.Content=host;

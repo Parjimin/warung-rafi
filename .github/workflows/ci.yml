@@ -21,6 +21,7 @@ jobs:
       - name: Build Windows touchscreen application
         run: dotnet build apps/desktop/WarungRafi.Desktop -c Release
       - name: Verify WPF layout and cashier interactions
+        timeout-minutes: 2
         run: dotnet run --project tests/WarungRafi.UiChecks -c Release
       - uses: actions/upload-artifact@v4
         if: always()
