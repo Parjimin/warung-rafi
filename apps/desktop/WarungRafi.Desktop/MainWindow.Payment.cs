@@ -17,21 +17,23 @@ public partial class MainWindow
         var panel=Rows(Auto,Star,Auto);
         var header=new StackPanel();var heading=Columns(Star,Auto);
         Place(heading,Text("Pembayaran",26,true));
-        var back=ActionButton("← Ubah pesanan",()=>{RenderSelling();return Task.CompletedTask;},id:"EditOrder");back.FontSize=15;Place(heading,back,0,1);header.Children.Add(heading);
+        var back=ActionButton("← Ubah pesanan",()=>{RenderSelling();return Task.CompletedTask;},id:"EditOrder");back.FontSize=15;back.Background=System.Windows.Media.Brushes.White;back.BorderBrush=Color("#DBE3D7");Place(heading,back,0,1);header.Children.Add(heading);
         var methods=Columns(Star,new GridLength(10),Star);methods.Margin=new Thickness(0,12,0,14);
-        Place(methods,ActionButton("Tunai",()=>{method=PaymentMethod.Cash;RenderPayment();return Task.CompletedTask;},method==PaymentMethod.Cash,"MethodCash"));
-        Place(methods,ActionButton("QRIS",()=>{method=PaymentMethod.QrisManual;RenderPayment();return Task.CompletedTask;},method==PaymentMethod.QrisManual,"MethodQris"),0,2);header.Children.Add(methods);Place(panel,header);
+        var cashTab=ActionButton("Tunai",()=>{method=PaymentMethod.Cash;RenderPayment();return Task.CompletedTask;},id:"MethodCash");SelectTab(cashTab,method==PaymentMethod.Cash);Place(methods,cashTab);
+        var qrisTab=ActionButton("QRIS",()=>{method=PaymentMethod.QrisManual;RenderPayment();return Task.CompletedTask;},id:"MethodQris");SelectTab(qrisTab,method==PaymentMethod.QrisManual);Place(methods,qrisTab,0,2);header.Children.Add(methods);Place(panel,header);
         if(method==PaymentMethod.Cash)
         {
             var body=Columns(Star,new GridLength(14),Star);
             var entry=new StackPanel();entry.Children.Add(Text("Uang diterima",17,false,"#65766E"));
-            tenderedInput=Identify(new TextBox { Text=tendered,FontSize=26,FontWeight=FontWeights.SemiBold,MaxLength=10,Margin=new Thickness(0,8,0,12),InputScope=new InputScope { Names={new InputScopeName(InputScopeNameValue.Number)} } },"Tendered","Uang tunai diterima");
-            tenderedInput.TextChanged+=(_,_)=>{tendered=tenderedInput.Text;UpdateChange();};entry.Children.Add(tenderedInput);
+            tenderedInput=Identify(new TextBox { Text=tendered,FontSize=30,FontWeight=FontWeights.SemiBold,MaxLength=10,BorderThickness=new Thickness(0),Background=System.Windows.Media.Brushes.Transparent,InputScope=new InputScope { Names={new InputScopeName(InputScopeNameValue.Number)} } },"Tendered","Uang tunai diterima");
+            tenderedInput.TextChanged+=(_,_)=>{tendered=tenderedInput.Text;UpdateChange();};
+            var amountEntry=Columns(Auto,Star);var prefix=Text("Rp",20,false,"#748170");prefix.Margin=new Thickness(14,0,0,0);Place(amountEntry,prefix);Place(amountEntry,InputWithHint(tenderedInput,"0"),0,1);
+            entry.Children.Add(new Border { Child=amountEntry,CornerRadius=new CornerRadius(12),Background=Color("#F7F9F4"),BorderBrush=Color("#DDE5D7"),BorderThickness=new Thickness(1),Margin=new Thickness(0,8,0,12) });
             var quick=new System.Windows.Controls.Primitives.UniformGrid { Columns=2 };
             foreach(var value in new[]{current.Total,20000L,50000L,100000L}.Where(x=>x>=current.Total).Distinct())
             {
                 var chosen=value;var button=ActionButton(value==current.Total?"Uang pas":Money.Format(value),()=>{tenderedInput.Text=chosen.ToString(CultureInfo.InvariantCulture);return Task.CompletedTask;},id:"Cash-"+value);
-                button.FontSize=15;button.Padding=new Thickness(5,8,5,8);button.Margin=new Thickness(0,0,6,6);quick.Children.Add(button);
+                button.FontSize=15;button.Background=System.Windows.Media.Brushes.White;button.BorderBrush=Color("#DBE3D7");button.Padding=new Thickness(5,8,5,8);button.Margin=new Thickness(0,0,6,6);quick.Children.Add(button);
             }
             entry.Children.Add(quick);Place(body,entry);
             var keys=new System.Windows.Controls.Primitives.UniformGrid { Columns=3,Rows=4,VerticalAlignment=VerticalAlignment.Top };
@@ -42,7 +44,7 @@ public partial class MainWindow
                     tenderedInput.Text=chosen=="C"?"":chosen=="⌫"?(tendered.Length>0?tendered[..^1]:""):tendered.Length<10?tendered+chosen:tendered;
                     return Task.CompletedTask;
                 },id:"Key-"+key);
-                button.MinHeight=48;button.Height=48;button.Padding=new Thickness(6);button.FontSize=22;button.Margin=new Thickness(0,0,6,6);keys.Children.Add(button);
+                button.MinHeight=48;button.Height=48;button.Padding=new Thickness(6);button.FontSize=22;button.Background=Color("#F7F9F4");button.BorderBrush=Color("#E2E7DE");button.Margin=new Thickness(0,0,6,6);keys.Children.Add(button);
             }
             Place(body,keys,0,2);Place(panel,Scroll(body,"PaymentBody"),1);
         }

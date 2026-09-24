@@ -26,7 +26,28 @@ public partial class MainWindow
     }
     private static void Select(Button button,bool active)
     {
-        button.Background=Color(active?"#205C49":"#EDF3ED");button.Foreground=Color(active?"#FFFFFF":"#205C49");
+        button.Background=Color(active?"#234F3F":"#F0F3EC");button.Foreground=Color(active?"#FFFFFF":"#234F3F");
+    }
+    private static void SelectNavigation(Button button,bool active)
+    {
+        button.Background=active?Brushes.White:Brushes.Transparent;
+        button.Foreground=Color(active?"#234F3F":"#627066");
+        button.BorderBrush=active?Color("#DBE3D8"):Brushes.Transparent;
+    }
+    private static void SelectTab(Button button,bool active)
+    {
+        button.Background=Color(active?"#E7EFE7":"#FAFBF8");
+        button.Foreground=Color(active?"#234F3F":"#627066");
+        button.BorderBrush=Color(active?"#AFC5B1":"#E2E7DF");
+    }
+    private static Grid InputWithHint(TextBox input,string hint)
+    {
+        var grid=new Grid();grid.Children.Add(input);
+        var watermark=Text(hint,input.FontSize,false,"#849083");watermark.IsHitTestVisible=false;
+        watermark.Margin=new Thickness(13,0,10,0);watermark.TextWrapping=TextWrapping.NoWrap;
+        grid.Children.Add(watermark);
+        void Update()=>watermark.Visibility=string.IsNullOrEmpty(input.Text)?Visibility.Visible:Visibility.Collapsed;
+        input.TextChanged+=(_,_)=>Update();Update();return grid;
     }
     private static ScrollViewer Scroll(UIElement child,string? id=null)
     {
@@ -34,7 +55,7 @@ public partial class MainWindow
         if(id is not null)Identify(scroll,id);return scroll;
     }
     private static Border Surface(UIElement child,int padding=18)=>new()
-    { Child=child,Background=Brushes.White,BorderBrush=Color("#DEE6DF"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(18),Padding=new Thickness(padding) };
+    { Child=child,Background=Brushes.White,BorderBrush=Color("#DFE5DC"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(18),Padding=new Thickness(padding) };
     private static Grid Rows(params GridLength[] heights)
     {
         var grid=new Grid();foreach(var height in heights)grid.RowDefinitions.Add(new RowDefinition{Height=height});return grid;
@@ -55,19 +76,19 @@ public partial class MainWindow
     private void Present(string next,FrameworkElement view)
     {
         var changed=page!=next||MainContent.Content is null;page=next;MainContent.Content=view;
-        Select(SellNav,next is "sell" or "payment" or "success");Select(HeldNav,next=="held");Select(HistoryNav,next=="history");Select(CashNav,next=="cash");
+        SelectNavigation(SellNav,next is "sell" or "payment" or "success");SelectNavigation(HeldNav,next=="held");SelectNavigation(HistoryNav,next=="history");SelectNavigation(CashNav,next=="cash");
         if(changed)Reveal(view);
     }
     private static FrameworkElement Empty(string title,string description)
     {
         var stack=new StackPanel { VerticalAlignment=VerticalAlignment.Center,HorizontalAlignment=HorizontalAlignment.Center,MaxWidth=300,Margin=new Thickness(16) };
-        var mark=Text("+",32,true,"#205C49");mark.HorizontalAlignment=HorizontalAlignment.Center;
-        stack.Children.Add(new Border { Child=mark,Background=Color("#EDF3ED"),CornerRadius=new CornerRadius(22),Width=56,Height=56,HorizontalAlignment=HorizontalAlignment.Center,Margin=new Thickness(0,0,0,12) });
+        var mark=Text("+",32,true,"#234F3F");mark.HorizontalAlignment=HorizontalAlignment.Center;
+        stack.Children.Add(new Border { Child=mark,Background=Color("#F0F3EC"),CornerRadius=new CornerRadius(22),Width=56,Height=56,HorizontalAlignment=HorizontalAlignment.Center,Margin=new Thickness(0,0,0,12) });
         var heading=Text(title,21,true);heading.TextAlignment=TextAlignment.Center;stack.Children.Add(heading);
         var subtitle=Text(description,16,false,"#65766E");subtitle.TextAlignment=TextAlignment.Center;subtitle.Margin=new Thickness(0,8,0,0);stack.Children.Add(subtitle);return stack;
     }
     // Repo-native illustrations: no image downloads in the critical click/render path.
-    private static FrameworkElement Illustration(string category)
+    private static FrameworkElement Illustration(string category,string? productId=null)
     {
         var canvas=new Canvas { Width=130,Height=76 };
         var cream=Color("#FFFDF7");var dark=Color("#47765D");var gold=Color("#C28C50");
@@ -94,9 +115,22 @@ public partial class MainWindow
             Ellipse(20,54,90,14,Color("#CFDCCD"));Ellipse(13,13,104,53,cream);Ellipse(22,20,86,38,Color("#E4EADD"));
             if(category=="Nasi")
             {
-                Path("M35,43 C35,14 78,12 82,43 Q59,55 35,43 Z",cream);
-                Path("M49,29 l5,-4 2,3 -5,4 Z M66,28 l4,-2 2,3 -4,2 Z M53,39 l4,-3 2,3 -4,3 Z",gold);
-                Ellipse(82,29,18,13,dark);Ellipse(78,40,20,9,gold);
+                Path("M30,43 C30,12 72,10 76,43 Q53,56 30,43 Z",cream);
+                Path("M40,30 l5,-4 2,3 -5,4 Z M57,27 l4,-2 2,3 -4,2 Z M48,41 l4,-3 2,3 -4,3 Z",Color("#D7C6A4"));
+                if(productId=="NAS-002")
+                {
+                    Path("M69,32 Q86,12 105,34 Q85,51 69,32 Z M70,32 L59,21 L60,42 Z",Color("#9A603D"));
+                    Path("M82,25 L77,38 M89,24 L83,41 M95,26 L90,39",gold);
+                    Ellipse(97,29,3,3,dark);
+                }
+                else if(productId=="NAS-003")
+                { Ellipse(68,22,34,29,Brushes.White);Ellipse(77,29,16,15,Color("#E5AE45")); }
+                else if(productId=="NAS-004")
+                {
+                    Ellipse(72,23,30,26,Color("#AD6A35"));Path("M78,39 L66,54 L61,50 L70,35 Z",gold);
+                    Ellipse(59,47,10,8,cream);Ellipse(76,27,8,4,Color("#D5A45C"));
+                }
+                if(productId!="NAS-001"){Ellipse(77,48,22,5,dark);Ellipse(85,49,12,5,Color("#698B59"));}
             }
             else {Ellipse(33,29,28,20,gold);Ellipse(63,27,30,22,dark);Ellipse(54,40,24,13,gold);}
         }

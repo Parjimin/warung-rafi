@@ -54,7 +54,7 @@ internal static class Program
         {
             width=size.Item1;height=size.Item2;Layout();
             var cart=Get<ScrollViewer>("CartViewport");
-            Check(cart.ActualHeight>=180,$"Cart keeps useful height at {width}x{height}: {cart.ActualHeight:F0} DIP");
+            Check(cart.ActualHeight>=210,$"Cart keeps useful height at {width}x{height}: {cart.ActualHeight:F0} DIP");
             if(height>=720)Check(cart.ScrollableHeight<1,$"Four items fit without scrolling at {width}x{height}");
             Check(Inside(Get<Button>("PayOrder"))&&Inside(Get<Button>("HoldOrder")),"Cart actions stay within viewport");
             Check(Inside(Get<TextBlock>("CartTotal")),"Total remains visible");
@@ -63,6 +63,12 @@ internal static class Program
             Screenshot($"02-cart-{width}x{height}");
         }
         width=1280;height=720;Layout();
+        Check(Inside(window.SellNav)&&Inside(window.CashNav),"Top navigation remains inside the working area");
+        var first=Get<Button>("Product-NAS-001").TransformToAncestor(root).Transform(new Point());
+        var second=Get<Button>("Product-NAS-002").TransformToAncestor(root).Transform(new Point());
+        var third=Get<Button>("Product-NAS-003").TransformToAncestor(root).Transform(new Point());
+        Check(Math.Abs(first.Y-second.Y)<1&&third.Y>first.Y,"Four-menu category forms balanced two by two layout");
+        Check(Get<ScrollViewer>("MenuViewport").ScrollableHeight<1,"Four menu cards fit the catalog at 1280x720");
         var name=Get<TextBox>("CustomerName");name.Text="Bu Rini";
         // Clicking while a name edit is pending must save the label before replacing the cart.
         await Click("Qty-Plus-NAS-001",()=>Get<TextBlock>("CartTotal").Text=="Rp46.000");

@@ -33,6 +33,7 @@ public partial class MainWindow : Window
     {
         store=storage;this.isolatedPreview=isolatedPreview;
         InitializeComponent();
+        RootLayout.SizeChanged+=(_,_)=>HeaderDate.Visibility=RootLayout.ActualWidth<1080?Visibility.Collapsed:Visibility.Visible;
         DateLabel.Text=DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7)).ToString("ddd, d MMM yyyy",CultureInfo.GetCultureInfo("id-ID"));
         toastTimer.Tick+=(_,_)=> { Toast.Visibility=Visibility.Collapsed;toastTimer.Stop();ShowNextToast(); };
         nameTimer.Tick+=async(_,_)=> { nameTimer.Stop();if(busy)nameTimer.Start();else await Run(()=>Task.CompletedTask); };
