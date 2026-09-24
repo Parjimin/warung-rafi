@@ -1,0 +1,68 @@
+name: Verify application
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  desktop:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Check domain and durable local transactions
+        run: dotnet run --project tests/WarungRafi.Checks -c Release
+      - name: Build Windows touchscreen application
+        run: dotnet build apps/desktop/WarungRafi.Desktop -c Release
+      - name: Package unsigned Windows preview
+        run: dotnet publish apps/desktop/WarungRafi.Desktop -c Release -r win-x64 --self-contained true -o artifacts/Windows-preview
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WarungRafi-Windows-preview
+          path: artifacts/Windows-preview
+          retention-days: 14
+  admin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --no-fund
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: admin-dependency-lock
+          path: apps/admin/package-lock.json
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: local-test-password
+          POSTGRES_DB: warung_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      PGPASSWORD: local-test-password
+    steps:
+      - uses: actions/checkout@v4
+      - name: Simulate managed database roles
+        run: psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -c "CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;"
+      - name: Apply schema and test retry, rollback, permissions
+        run: |
+          psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/001_foundation.sql
+          psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/assertions.sql

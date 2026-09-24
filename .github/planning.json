@@ -1,0 +1,178 @@
+{
+  "milestones": [
+    {
+      "title": "M0 — Fondasi dan pelacakan",
+      "description": "Blueprint, repositori, backlog, CI.",
+      "issues": [
+        {
+          "id": "foundation",
+          "title": "M0: Fondasi proyek dan pengujian otomatis",
+          "body": "Struktur desktop .NET dan admin web, blueprint lengkap, pelacakan di GitHub.",
+          "acceptance": [
+            "Blueprint dan keputusan arsitektur tersedia",
+            "Milestone dan issue berhasil dibuat",
+            "CI desktop, admin, dan PostgreSQL lulus"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M1 — Domain dan data lokal",
+      "description": "Pesanan, snapshot harga, tunai, ditunda, SQLite, outbox.",
+      "issues": [
+        {
+          "id": "local-sales",
+          "title": "M1: Integritas pesanan dan pembayaran lokal",
+          "body": "Implementasi awal tersedia di Core dan Storage.",
+          "acceptance": [
+            "Harga historis tidak berubah saat katalog diperbarui",
+            "Klik ulang penyelesaian tidak menggandakan pembayaran",
+            "Kegagalan outbox membatalkan seluruh transaksi SQLite",
+            "Data dapat dibuka ulang setelah proses berhenti"
+          ]
+        },
+        {
+          "id": "recovery",
+          "title": "M1: Recovery kegagalan dan kapasitas data",
+          "body": "Perlu simulasi process-kill, ruang disk penuh, dan backlog besar.",
+          "acceptance": [
+            "Uji process-kill selama penulisan",
+            "Uji ruang disk penuh tanpa kehilangan transaksi sebelumnya",
+            "Draf lama tetap ditemukan di antara lebih dari 1000 penjualan"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M2 — Kasir Windows",
+      "description": "UI sentuh besar, pembayaran, riwayat, printer 58 mm.",
+      "issues": [
+        {
+          "id": "cashier",
+          "title": "M2: Kasir sentuh dan pesanan ditunda",
+          "body": "Navbar atas, kartu menu, pembayaran tunai/QRIS manual, pesanan ditunda, riwayat.",
+          "acceptance": [
+            "Build WPF lulus pada Windows",
+            "UAT layar sentuh 1366×768 dan skala 125–150%",
+            "Penjual awam dapat bertransaksi tanpa bantuan",
+            "Nama pelanggan dan draf pulih dengan benar"
+          ]
+        },
+        {
+          "id": "printer",
+          "title": "M2: Uji OKAY 58D melalui USB",
+          "body": "Jalur cetak melalui driver Windows; belum diuji di perangkat asli.",
+          "acceptance": [
+            "Driver dan nama printer dikonfigurasi",
+            "Struk 58 mm terbaca dan tidak terpotong",
+            "Printer putus atau kertas habis tidak membatalkan penjualan",
+            "Cetak ulang memiliki penanda SALINAN"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M3 — Admin dan sinkronisasi",
+      "description": "Admin web, katalog, unggah foto, kirim data lokal.",
+      "issues": [
+        {
+          "id": "admin-catalog",
+          "title": "M3: Admin katalog dan publikasi",
+          "body": "Login Supabase Auth, tambah/edit menu, URL foto, draf dan publikasi.",
+          "acceptance": [
+            "Hanya ADMIN_USER_ID yang dapat mengubah katalog",
+            "Konflik versi menolak penimpaan draf",
+            "Publikasi tersimpan dan diterima laptop",
+            "Unggah foto ke storage dengan validasi ukuran/jenis"
+          ]
+        },
+        {
+          "id": "sync",
+          "title": "M3: Sinkronisasi idempoten dan observabilitas",
+          "body": "Outbox lokal dengan acknowledgement setelah commit cloud.",
+          "acceptance": [
+            "Retry dan batch gagal tidak menggandakan penjualan",
+            "Pemutusan koneksi tidak menghambat transaksi lokal",
+            "Katalog/foto terakhir tersedia offline",
+            "Pengelola dapat melihat konflik dan backlog per perangkat"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M4 — QRIS statis",
+      "description": "Notifikasi Midtrans terverifikasi dan popup pasif.",
+      "issues": [
+        {
+          "id": "qris-proof",
+          "title": "M4: Verifikasi webhook dan deduplikasi pembayaran",
+          "body": "Tanda tangan diverifikasi lalu konfirmasi Status API.",
+          "acceptance": [
+            "Signature palsu dan merchant berbeda ditolak",
+            "Notifikasi diakui hanya setelah penyimpanan berhasil",
+            "Webhook ulang tidak membuat popup kedua",
+            "Status refund tidak mundur menjadi settlement"
+          ]
+        },
+        {
+          "id": "qris-uat",
+          "title": "M4: Uji QRIS statis merchant dan popup laptop",
+          "body": "Memerlukan akun Midtrans dengan QRIS statis aktif dan transaksi uji yang disepakati.",
+          "acceptance": [
+            "Popup berisi judul nominal dan jam tanpa tombol",
+            "Tidak mengambil fokus atau memblokir kasir",
+            "Pembayaran nominal sama tidak otomatis melunasi pesanan",
+            "Uji suara dan jaringan putus-sambung",
+            "Verifikasi rekening pencairan SeaBank dan jadwal settlement"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M5 — Keuangan dan laporan",
+      "description": "Sesi kas, refund, MDR aktual, payout, Sheets.",
+      "issues": [
+        {
+          "id": "finance",
+          "title": "M5: Buku kas, refund, dan rekonsiliasi",
+          "body": "Direncanakan. Penjualan selesai tidak boleh dihapus.",
+          "acceptance": [
+            "Modal, pemasukan/pengeluaran, tutup sesi dan selisih kas",
+            "Refund beralasan dan berizin mempertahankan jejak audit",
+            "Biaya estimasi dipisahkan dari biaya aktual provider",
+            "Pencairan dan bukti provider direkonsiliasi terpisah dari pesanan"
+          ]
+        },
+        {
+          "id": "sheets",
+          "title": "M5: Proyeksi Google Sheets dan laporan lengkap",
+          "body": "Direncanakan. Sheets bukan jalur penentu keberhasilan pembayaran.",
+          "acceptance": [
+            "Kolom transaksi, item, pembayaran, biaya, refund, payout terdokumentasi",
+            "Ekspor idempoten memiliki retry serta status",
+            "Total laporan cocok dengan ledger dan sampel manual"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "M6 — Rilis dan pemulihan",
+      "description": "Installer, backup/restore, hardening, dan serah terima.",
+      "issues": [
+        {
+          "id": "release",
+          "title": "M6: UAT, backup/restore, dan distribusi",
+          "body": "Paket CI adalah preview tanpa tanda tangan, bukan rilis produksi.",
+          "acceptance": [
+            "Installer dan pembaruan menjaga database lokal",
+            "Backup dan restore diuji end-to-end",
+            "Kredensial perangkat disimpan aman dan dapat dirotasi",
+            "Audit dependency dan pembatasan login selesai",
+            "Paket hosting mengizinkan penggunaan komersial",
+            "Panduan operasional dan UAT penjual disetujui"
+          ]
+        }
+      ]
+    }
+  ]
+}

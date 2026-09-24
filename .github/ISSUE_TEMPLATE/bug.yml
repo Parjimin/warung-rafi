@@ -1,0 +1,24 @@
+name: Laporan masalah
+description: Catat masalah aplikasi beserta langkah mengulangnya
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: Langkah kejadian
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Hasil yang diharapkan dan hasil sebenarnya
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versi aplikasi, Windows, dan jenis printer
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Bukti tanpa data rahasia
+      description: Jangan unggah token, Server Key, nomor rekening lengkap, atau data pelanggan.
