@@ -144,10 +144,10 @@ public partial class MainWindow
         var lines=new StackPanel();
         foreach(var line in current.Lines)
         {
-            var row=Columns(Star,Auto);row.MinHeight=74;row.Margin=new Thickness(0,0,0,2);
+            var row=Columns(Star,Auto);row.MinHeight=68;row.Margin=new Thickness(0,0,0,2);
             var info=new StackPanel { VerticalAlignment=VerticalAlignment.Center,Margin=new Thickness(0,8,8,8) };
             info.Children.Add(Text(line.Name,18,true));
-            var detail=Text($"{line.Quantity} × {line.PriceLabel}   ·   {line.SubtotalLabel}",14,false,"#65766E");detail.Margin=new Thickness(0,5,0,0);info.Children.Add(detail);Place(row,info);
+            var detail=Text(editable?line.SubtotalLabel:$"{line.Quantity} × {line.PriceLabel}   ·   {line.SubtotalLabel}",15,false,"#65766E");detail.ToolTip=$"{line.Quantity} × {line.PriceLabel}";detail.Margin=new Thickness(0,5,0,0);info.Children.Add(detail);Place(row,info);
             if(editable)
             {
                 var controls=new StackPanel { Orientation=Orientation.Horizontal,VerticalAlignment=VerticalAlignment.Center };
@@ -168,8 +168,8 @@ public partial class MainWindow
         }
         var viewport=Scroll(current.Lines.Length==0?Empty("Belum ada pesanan","Klik makanan atau minuman untuk menambahkannya di sini."):lines,editable?"CartViewport":"ReviewViewport");
         if(editable)cartScroll=viewport;Place(grid,viewport,1);
-        var bottom=new StackPanel { Margin=new Thickness(0,12,0,0) };
-        var total=Columns(Star,Auto);total.Margin=new Thickness(0,0,0,12);Place(total,Text("Total",17,false,"#65766E"));Place(total,Identify(Text(current.TotalLabel,28,true),"CartTotal"),0,1);bottom.Children.Add(total);
+        var bottom=new StackPanel { Margin=new Thickness(0,8,0,0) };
+        var total=Columns(Star,Auto);total.Margin=new Thickness(0,0,0,8);Place(total,Text("Total",17,false,"#65766E"));Place(total,Identify(Text(current.TotalLabel,28,true),"CartTotal"),0,1);bottom.Children.Add(total);
         if(editable)
         {
             var buttons=Columns(Star,new GridLength(10),new GridLength(1.2,GridUnitType.Star));

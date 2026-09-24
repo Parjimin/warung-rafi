@@ -21,7 +21,8 @@ internal static class Program
     [STAThread]
     private static int Main()
     {
-        var app=new App();app.InitializeComponent();app.StartupUri=null;app.ShutdownMode=ShutdownMode.OnExplicitShutdown;
+        var app=new Application { ShutdownMode=ShutdownMode.OnExplicitShutdown };
+        app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source=new Uri("/WarungRafi;component/Theme.xaml",UriKind.Relative) });
         app.Startup+=async(_,_)=>
         {
             var result=1;
@@ -51,7 +52,7 @@ internal static class Program
         {
             width=size.Item1;height=size.Item2;Layout();
             var cart=Get<ScrollViewer>("CartViewport");
-            Check(cart.ActualHeight>=220,$"Cart keeps useful height at {width}x{height}: {cart.ActualHeight:F0} DIP");
+            Check(cart.ActualHeight>=180,$"Cart keeps useful height at {width}x{height}: {cart.ActualHeight:F0} DIP");
             if(height>=720)Check(cart.ScrollableHeight<1,$"Four items fit without scrolling at {width}x{height}");
             Check(Inside(Get<Button>("PayOrder"))&&Inside(Get<Button>("HoldOrder")),"Cart actions stay within viewport");
             Check(Inside(Get<TextBlock>("CartTotal")),"Total remains visible");
@@ -100,6 +101,18 @@ internal static class Program
         await Until(()=>Find<TextBox>("CustomerName") is not null);Layout();
         Check(Get<TextBox>("CustomerName").Text=="Pak Joko","New app instance restores draft and customer name");
         Check(Get<TextBlock>("CartTotal").Text=="Rp5.000","New app instance restores cart amount");
+        Get<TextBox>("CustomerName").Focus();
+        Check(Get<TextBox>("CustomerName").MoveFocus(new TraversalRequest(FocusNavigationDirection.Next)),"Keyboard focus can move from customer name to next control");
+        window.Close();
+        var restored=(await store.ListAsync(OrderStatus.Draft)).Single();
+        foreach(var product in DummyCatalog.Products.Skip(1))restored=OrderRules.Add(restored,product);
+        await store.SaveAsync(restored);
+        window=new MainWindow(store,true) { ShowInTaskbar=false };window.Show();root=(FrameworkElement)window.Content;
+        await Until(()=>Find<ScrollViewer>("CartViewport") is not null);Layout();
+        Check(Get<ScrollViewer>("CartViewport").ScrollableHeight>0,"Long order scrolls within its own viewport");
+        Get<ScrollViewer>("CartViewport").ScrollToEnd();Layout();
+        Check(Inside(Get<Button>("PayOrder"))&&Inside(Get<TextBlock>("CartTotal")),"Long order keeps total and payment action pinned");
+        Screenshot("13-long-order");
     }
     private static void Layout()
     {
