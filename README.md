@@ -4,7 +4,7 @@ Aplikasi kasir Windows untuk satu kedai: menu besar, pesanan ditunda, tunai, QRI
 
 > **Status: implementasi awal, belum siap dipakai menerima transaksi produksi.** Baca [STATUS.md](docs/STATUS.md) untuk bukti pengujian dan keterbatasan.
 
-**Prioritas berikutnya: perapian UI/UX kasir.** Kecepatan preview sudah dinilai memuaskan oleh pengguna pada laptop non-touchscreen. Uji touchscreen, printer fisik, dan akun merchant asli dijadwalkan pada M6; pengembangan fungsi lain tetap berjalan.
+**M0 dan M1 selesai. Berikutnya M2: perapian UI/UX kasir.** [Validasi M1](docs/M1-VALIDATION.md): 23 pemeriksaan dasar + 60 pemeriksaan recovery/integritas lulus di CI Windows. Kecepatan preview sudah dinilai memuaskan oleh pengguna pada laptop non-touchscreen. Uji touchscreen, printer fisik, dan akun merchant asli dijadwalkan pada M6; pengembangan fungsi lain tetap berjalan.
 
 ## Pantau progres
 
@@ -25,6 +25,7 @@ Workflow **Sync project tracking** membuat/memperbarui GitHub Milestones dan Iss
 | `src/WarungRafi.Core` | Aturan pesanan dan perhitungan uang |
 | `src/WarungRafi.Storage` | SQLite, pembayaran, outbox, inbox notifikasi |
 | `tests/WarungRafi.Checks` | Pengujian domain dan integritas penyimpanan |
+| `tests/WarungRafi.RecoveryChecks` | Penghentian proses, kapasitas SQLite, konkurensi, dan antrean besar |
 | `apps/admin` | Next.js admin/API serta pengujian kontrak webhook |
 | `database` | Migrasi PostgreSQL untuk katalog, sinkronisasi, dan pembayaran |
 | `docs` | Blueprint, milestone, status, petunjuk |

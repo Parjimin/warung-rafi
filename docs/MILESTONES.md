@@ -12,6 +12,10 @@ Progres dinilai berdasarkan hasil yang dapat diperiksa. **Kode ditulis tidak sam
 | M5 — Keuangan dan laporan | Sesi kas, refund, biaya aktual, pencairan, Sheets | Rekonsiliasi dan total laporan lulus | M1, M3, M4 |
 | M6 — Rilis dan pemulihan | Finalisasi touchscreen, printer, merchant; installer, backup/restore, hardening, panduan | Uji perangkat dan akun asli, UAT penjual, restore, hosting dan kredensial produksi selesai | Milestone inti; perangkat dan pemilik tersedia pada tahap finalisasi |
 
+## Checkpoint — 24 September 2026
+
+**M0 dan M1 selesai; M2 menjadi tahap berikutnya.** M1 lulus 23 pemeriksaan dasar dan 60 pemeriksaan recovery/integritas di CI Windows. [Bukti dan batas pengujian](M1-VALIDATION.md) tersedia. Kode awal M2–M4 tidak berarti seluruh kriteria milestone tersebut sudah selesai.
+
 ## Penyesuaian urutan — 24 September 2026
 
 Pengguna menguji preview pada laptop **non-touchscreen** dan menyatakan kecepatannya sudah memuaskan. Ini merupakan umpan balik penggunaan, belum pengukuran latensi. UI/UX masih versi awal; prioritas berikutnya adalah kenyamanan klik, area dan jarak tombol, keterbacaan, posisi aksi utama, serta konsistensi alur. Kecepatan tersebut dipertahankan saat tampilan dirapikan.

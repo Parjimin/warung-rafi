@@ -2,6 +2,12 @@
 
 Suite `tests/WarungRafi.RecoveryChecks` melengkapi pemeriksaan domain yang sudah ada. Seluruh database dibuat dalam direktori sementara `WarungRafiRecovery-<GUID>` dan dihapus setelah tes. Suite tidak membuka database kasir pengguna dan tidak menghubungi layanan pembayaran.
 
+## Hasil — 24 September 2026
+
+**M1 selesai.** [CI Windows pada commit `6fe719b`](https://github.com/Parjimin/warung-rafi/actions/runs/36013056985) menghasilkan **23 pemeriksaan dasar dan 60 pemeriksaan recovery/integritas lulus**. Build WPF, publish preview, tes/build admin, dan pemeriksaan PostgreSQL juga lulus. Issue [#2](https://github.com/Parjimin/warung-rafi/issues/2) dan [#3](https://github.com/Parjimin/warung-rafi/issues/3) menyimpan checklist penerimaan.
+
+Verifikasi suite baru dilakukan di runner Windows GitHub; restore dependency lokal terhambat akses NuGet. Hasil ini tidak mencakup perangkat fisik atau merchant asli, yang tetap dijadwalkan M6.
+
 ## Cakupan verifikasi
 
 | Skenario | Cara pengujian | Hasil yang diwajibkan |
@@ -37,6 +43,6 @@ dotnet run --project tests/WarungRafi.Checks -c Release
 dotnet run --project tests/WarungRafi.RecoveryChecks -c Release
 ```
 
-CI Windows menjalankan keduanya sebelum build dan publish preview. Hasil tercatat pada langkah **Verify crash recovery, full storage and backlog**. Jangan menyatakan M1 selesai sebelum hasil suite dan CI diperiksa.
+CI Windows menjalankan keduanya sebelum build dan publish preview. Hasil tercatat pada langkah **Verify crash recovery, full storage and backlog**. Hasil suite telah diperiksa sebelum penutupan M1; perubahan berikutnya harus tetap melewati gate ini.
 
 Referensi mekanisme: [SQLite maximum database pages](https://www.sqlite.org/limits.html), [max_page_count](https://www.sqlite.org/pragma.html#pragma_max_page_count), [cache_spill](https://www.sqlite.org/pragma.html#pragma_cache_spill).

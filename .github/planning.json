@@ -2,7 +2,7 @@
   "milestones": [
     {
       "title": "M0 — Fondasi dan pelacakan",
-      "description": "Blueprint, repositori, backlog, CI.",
+      "description": "Selesai: blueprint, repositori, backlog, dan CI terverifikasi. Bukti di docs/STATUS.md.",
       "issues": [
         {
           "id": "foundation",
@@ -14,11 +14,12 @@
             "CI desktop, admin, dan PostgreSQL lulus"
           ]
         }
-      ]
+      ],
+      "state": "closed"
     },
     {
       "title": "M1 — Domain dan data lokal",
-      "description": "Pesanan, snapshot harga, tunai, ditunda, SQLite, outbox.",
+      "description": "Selesai: pesanan, snapshot harga, tunai, ditunda, SQLite, outbox. 23 + 60 pemeriksaan lulus di CI Windows commit 6fe719b. Bukti di docs/M1-VALIDATION.md.",
       "issues": [
         {
           "id": "local-sales",
@@ -34,14 +35,15 @@
         {
           "id": "recovery",
           "title": "M1: Recovery kegagalan dan kapasitas data",
-          "body": "Perlu simulasi process-kill, ruang disk penuh, dan backlog besar.",
+          "body": "Simulasi process-kill, kapasitas penyimpanan, dan backlog besar. Ruang penuh diuji memakai max_page_count untuk memicu SQLITE_FULL asli; tidak memenuhi SSD fisik. Bukti dan batas pengujian: docs/M1-VALIDATION.md.",
           "acceptance": [
             "Uji process-kill selama penulisan",
             "Uji ruang disk penuh tanpa kehilangan transaksi sebelumnya",
             "Draf lama tetap ditemukan di antara lebih dari 1000 penjualan"
           ]
         }
-      ]
+      ],
+      "state": "closed"
     },
     {
       "title": "M2 — Kasir Windows",

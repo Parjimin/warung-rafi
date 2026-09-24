@@ -7,8 +7,13 @@ module.exports = async ({ github, context, core }) => {
   for (const item of plan.milestones) {
     let milestone = milestones.find(value => value.title === item.title);
     if (!milestone) milestone = (await github.rest.issues.createMilestone({...repo,title:item.title,description:item.description})).data;
-    if (milestone.description !== item.description) {
-      await github.rest.issues.updateMilestone({...repo,milestone_number:milestone.number,description:item.description});
+    if (item.state && !['open', 'closed'].includes(item.state)) throw new Error(`Invalid milestone state: ${item.title}`);
+    // State is an explicit, reviewed decision after verification; omitted state preserves GitHub.
+    if (milestone.description !== item.description || (item.state && milestone.state !== item.state)) {
+      await github.rest.issues.updateMilestone({
+        ...repo, milestone_number:milestone.number, description:item.description,
+        ...(item.state ? {state:item.state} : {})
+      });
     }
     for (const work of item.issues) {
       const marker = `<!-- warung-plan:${work.id} -->`;
