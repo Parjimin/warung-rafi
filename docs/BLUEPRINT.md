@@ -1,6 +1,6 @@
 # Blueprint Fungsional Aplikasi Kasir Wedangan
 
-**Versi:** 1.0 — fondasi perencanaan  
+**Versi:** 1.1 — fondasi perencanaan dan penyesuaian urutan validasi\
 **Tanggal penyusunan:** 24 September 2026  
 **Bahasa antarmuka:** Bahasa Indonesia  
 **Target:** satu kedai, satu penjual merangkap kasir, satu laptop Windows touchscreen  
@@ -8,6 +8,12 @@
 **Nama usaha sementara:** Wedangan dan Aneka Nasi Sayur
 
 Dokumen ini menggabungkan seluruh kebutuhan yang dibahas, termasuk perubahan terakhir tentang QRIS statis, notifikasi pasif, web admin di Vercel, dan printer OKAY 58D. Isinya menjadi acuan bersama untuk desain, pembangunan, dan pengujian berikutnya. Angka dummy, target kinerja, dan keputusan yang belum diverifikasi tidak dinyatakan sebagai fakta operasional klien.
+
+## Pembaruan keputusan — 24 September 2026
+
+Laptop pengguna untuk mencoba preview saat ini **non-touchscreen**. Pengguna sudah puas dengan kecepatan aplikasi dan meminta kenyamanan UI/UX ditingkatkan. Target antarmuka besar, navbar atas, dan dukungan sentuh tetap menjadi rancangan; penilaian awal dilakukan dengan mouse/touchpad serta keyboard pada perangkat yang tersedia.
+
+Printer belum tersedia dan akun merchant belum dibuat karena pemilik belum tersedia. Sesuai keputusan pengguna, uji touchscreen nyata, printer fisik, serta onboarding dan uji akun merchant asli dipindahkan ke **milestone penutup M6**. Pengembangan fungsi, laporan, dan UI/UX tetap berjalan; simulasi perangkat lunak diberi label uji. Ketiga pengujian asli tetap wajib diselesaikan sebelum operasional produksi. Rencana pelaksanaan aktif ada di [MILESTONES.md](MILESTONES.md).
 
 ## Daftar isi
 
@@ -1287,12 +1293,12 @@ Tahapan di bawah adalah rencana lanjutan, bukan pekerjaan implementasi yang dila
 | --- | --- | --- |
 | 1. Tinjau fondasi | Versi blueprint dengan keputusan penting yang disepakati | Tidak ada konflik alur QRIS, pembayaran, dan laporan |
 | 2. Rancang layar | Mockup/prototipe alur Jualan, Pembayaran, Ditunda, Riwayat, Kas, dan admin | Dapat dicoba pengguna sasaran, popup terbukti tidak mengganggu |
-| 3. Uji kelayakan perangkat dan layanan | Bukti instalasi Windows, cetak OKAY 58D, simpan lokal, webhook produk merchant | Kendala driver/akun teridentifikasi sebelum pembangunan besar |
+| 3. Uji perangkat lunak pada laptop tersedia | Build/instalasi Windows, alur mouse/touchpad, simpan lokal, dan kontrak webhook dengan mock/fixture | Fondasi dapat dikembangkan tanpa menunggu touchscreen, printer, atau akun merchant |
 | 4. Bangun inti lokal | Katalog dummy, pesanan, tunai, ditunda, riwayat, cetak | Kasir inti berjalan offline dan dapat dipulihkan |
 | 5. Bangun admin/sinkronisasi | Produk, foto, harga, publikasi, identitas perangkat, pengiriman data | Perubahan katalog dan penjualan konsisten |
 | 6. Integrasikan QRIS statis | Penerimaan webhook, riwayat, suara, popup pasif, status pencatatan | Skenario duplikat, terlambat, offline, dan nominal sama lulus |
 | 7. Lengkapi keuangan | Rekonsiliasi, biaya, kas, refund, pencairan, Sheets | Total dan jejak sumber dapat diperiksa |
-| 8. Uji end-to-end | Skenario bab 25 dan uji pengguna | Kasus utama serta gangguan kritis dapat ditangani |
+| 8. Finalisasi perangkat, merchant, dan end-to-end (M6) | Touchscreen nyata, cetak OKAY 58D, onboarding/aktivasi merchant, notifikasi transaksi uji yang disepakati, serta uji penjual | Skenario perangkat/akun asli dan gangguan kritis lulus setelah perangkat dan pemilik tersedia |
 | 9. Persiapan operasional | Data final, akun produksi, QR cetak, installer, panduan singkat, cadangan | Perangkat dan pemilik siap menggunakan serta memulihkan |
 | 10. Pendampingan awal | Perbaikan dari penggunaan nyata dan pemantauan | Masalah operasional dicatat dan diprioritaskan |
 
@@ -1308,12 +1314,12 @@ Blueprint dapat dipakai sekarang. Daftar ini bukan permintaan agar pengguna menj
 | O02 | Daftar menu, harga, foto, isi paket final | Data dummy bab 6 | Sebelum digunakan berjualan |
 | O03 | Apakah makanan boleh diserahkan sebelum pembayaran | Pesanan ditunda tetap belum selesai, tanpa asumsi kredit | Sebelum menetapkan SOP penjual |
 | O04 | Pesanan ditunda boleh melewati hari atau tidak | Tetap tersimpan dan ditinjau, tidak auto-batal | Sebelum operasional |
-| O05 | Akun merchant sudah ada atau belum, dan produk aktif | Target GoPay Static QRIS Midtrans | Sebelum integrasi produksi |
+| O05 | Akun merchant belum dibuat; produk aktif perlu diverifikasi | Target GoPay Static QRIS Midtrans; onboarding menunggu pemilik | Finalisasi M6 sebelum integrasi produksi |
 | O06 | Dukungan rekening SeaBank dan identitas pemilik rekening | Rekening tujuan yang diinginkan, belum dijamin | Saat onboarding/pengaturan pencairan |
 | O07 | Kategori merchant, tarif, pembulatan, biaya lain | Konfigurasi bertanggal, pisahkan estimasi/aktual | Sebelum laporan produksi |
 | O08 | Cara mengambil laporan transaksi, biaya, dan pencairan | API resmi bila tersedia; impor laporan resmi sebagai baseline | Saat integrasi akun |
 | O09 | Kanal pengecekan penerima saat laptop offline | Pemeriksaan merchant yang sah; tidak mengandalkan screenshot pelanggan | Sebelum QRIS dipakai sehari-hari |
-| O10 | Driver, protokol, dan status fisik printer OKAY 58D | USB 58 mm; kemampuan cetak wajib diuji | Saat perangkat tersedia |
+| O10 | Printer belum tersedia; driver, protokol, dan status fisik perlu diuji | OKAY 58D USB 58 mm; kemampuan cetak wajib diuji | Finalisasi M6 saat perangkat tersedia |
 | O11 | Versi Windows, arsitektur, skala, dan ruang layar | Desktop Windows, UI adaptif; tidak meminta spesifikasi detail sekarang | Saat prototipe/instalasi |
 | O12 | Anggaran Vercel/database/storage/backup | Layanan terkelola tanpa VPS; jangan menganggap produksi gratis | Sebelum memilih paket produksi |
 | O13 | Refund penuh/sebagian, batas waktu dan pelakunya | Refund penuh oleh pemilik sebagai usulan | Sebelum mengaktifkan refund |

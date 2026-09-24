@@ -7,6 +7,9 @@ module.exports = async ({ github, context, core }) => {
   for (const item of plan.milestones) {
     let milestone = milestones.find(value => value.title === item.title);
     if (!milestone) milestone = (await github.rest.issues.createMilestone({...repo,title:item.title,description:item.description})).data;
+    if (milestone.description !== item.description) {
+      await github.rest.issues.updateMilestone({...repo,milestone_number:milestone.number,description:item.description});
+    }
     for (const work of item.issues) {
       const marker = `<!-- warung-plan:${work.id} -->`;
       const existing = issues.find(issue => !issue.pull_request && issue.body?.includes(marker));

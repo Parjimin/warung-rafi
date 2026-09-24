@@ -45,28 +45,19 @@
     },
     {
       "title": "M2 — Kasir Windows",
-      "description": "UI sentuh besar, pembayaran, riwayat, printer 58 mm.",
+      "description": "Perapian UI/UX kasir dengan mouse/touchpad, tombol besar, pembayaran, pesanan ditunda, dan riwayat. Uji touchscreen dan printer fisik di M6.",
       "issues": [
         {
           "id": "cashier",
-          "title": "M2: Kasir sentuh dan pesanan ditunda",
-          "body": "Navbar atas, kartu menu, pembayaran tunai/QRIS manual, pesanan ditunda, riwayat.",
+          "title": "M2: Perapian UI/UX kasir dan pesanan ditunda",
+          "body": "Versi awal berfokus pada alur fungsional. Pengguna puas dengan kecepatan pada laptop non-touchscreen, tetapi beberapa kontrol belum nyaman diklik. Prioritas: navbar atas, ukuran/jarak tombol, kartu menu, keranjang, pembayaran dan feedback klik. Pertahankan respons cepat; uji touchscreen dan UAT penjual di M6.",
           "acceptance": [
             "Build WPF lulus pada Windows",
-            "UAT layar sentuh 1366×768 dan skala 125–150%",
-            "Penjual awam dapat bertransaksi tanpa bantuan",
-            "Nama pelanggan dan draf pulih dengan benar"
-          ]
-        },
-        {
-          "id": "printer",
-          "title": "M2: Uji OKAY 58D melalui USB",
-          "body": "Jalur cetak melalui driver Windows; belum diuji di perangkat asli.",
-          "acceptance": [
-            "Driver dan nama printer dikonfigurasi",
-            "Struk 58 mm terbaca dan tidak terpotong",
-            "Printer putus atau kertas habis tidak membatalkan penjualan",
-            "Cetak ulang memiliki penanda SALINAN"
+            "Alur Jualan, Ditunda, Pembayaran, dan Riwayat nyaman dengan mouse/touchpad serta navigasi keyboard dasar",
+            "Ukuran dan jarak tombol, area klik kartu, serta hierarki aksi utama konsisten",
+            "Teks dan kontrol tetap terbaca serta dapat dijangkau pada resolusi/skala layar yang tersedia",
+            "Nama pelanggan dan draf pulih dengan benar",
+            "Perapian visual mempertahankan respons cepat yang sudah dirasakan pengguna"
           ]
         }
       ]
@@ -101,29 +92,19 @@
     },
     {
       "title": "M4 — QRIS statis",
-      "description": "Notifikasi Midtrans terverifikasi dan popup pasif.",
+      "description": "Pengembangan dan pengujian logika webhook, inbox, suara, popup pasif dengan data uji berlabel; aktivasi merchant dan uji akun asli di M6.",
       "issues": [
         {
           "id": "qris-proof",
           "title": "M4: Verifikasi webhook dan deduplikasi pembayaran",
-          "body": "Tanda tangan diverifikasi lalu konfirmasi Status API.",
+          "body": "Verifikasi signature dan Status API memakai mock/fixture terkontrol untuk pengembangan. Implementasi jalur produksi tetap fail closed. Akun merchant belum dibuat; onboarding dan uji dana nyata dijadwalkan M6.",
           "acceptance": [
             "Signature palsu dan merchant berbeda ditolak",
             "Notifikasi diakui hanya setelah penyimpanan berhasil",
             "Webhook ulang tidak membuat popup kedua",
-            "Status refund tidak mundur menjadi settlement"
-          ]
-        },
-        {
-          "id": "qris-uat",
-          "title": "M4: Uji QRIS statis merchant dan popup laptop",
-          "body": "Memerlukan akun Midtrans dengan QRIS statis aktif dan transaksi uji yang disepakati.",
-          "acceptance": [
-            "Popup berisi judul nominal dan jam tanpa tombol",
-            "Tidak mengambil fokus atau memblokir kasir",
-            "Pembayaran nominal sama tidak otomatis melunasi pesanan",
-            "Uji suara dan jaringan putus-sambung",
-            "Verifikasi rekening pencairan SeaBank dan jadwal settlement"
+            "Status refund tidak mundur menjadi settlement",
+            "Popup simulasi berlabel uji, tanpa tombol, tidak mengambil fokus atau mengubah status pesanan",
+            "Bukti duplikat, terlambat, offline, dan nominal sama diuji tanpa memerlukan akun merchant asli"
           ]
         }
       ]
@@ -157,13 +138,39 @@
     },
     {
       "title": "M6 — Rilis dan pemulihan",
-      "description": "Installer, backup/restore, hardening, dan serah terima.",
+      "description": "Finalisasi: uji touchscreen, OKAY 58D USB, onboarding dan uji merchant Midtrans, installer, backup/restore, hardening, dan serah terima.",
       "issues": [
+        {
+          "id": "printer",
+          "title": "M6: Finalisasi dan uji OKAY 58D melalui USB",
+          "body": "Ditunda ke milestone penutup atas keputusan pengguna 24 September 2026: printer belum tersedia. Pengembangan layout struk dan penanganan kegagalan tetap boleh berjalan memakai pengujian perangkat lunak; kecocokan fisik diuji setelah unit tersedia.",
+          "acceptance": [
+            "Driver dan nama printer dikonfigurasi",
+            "Struk 58 mm terbaca dan tidak terpotong",
+            "Printer putus atau kertas habis tidak membatalkan penjualan",
+            "Cetak ulang memiliki penanda SALINAN"
+          ]
+        },
+        {
+          "id": "qris-uat",
+          "title": "M6: Aktivasi merchant dan uji QRIS statis end-to-end",
+          "body": "Ditunda ke milestone penutup atas keputusan pengguna 24 September 2026: akun merchant belum dibuat karena pemilik belum tersedia. M4 melanjutkan pengujian logika dengan mock/fixture; onboarding, QR merchant, notifikasi transaksi nyata, dan rekening pencairan diuji di sini.",
+          "acceptance": [
+            "Akun merchant dibuat dan static QRIS diaktifkan bersama pemilik ketika tersedia",
+            "Popup berisi judul nominal dan jam tanpa tombol",
+            "Tidak mengambil fokus atau memblokir kasir",
+            "Pembayaran nominal sama tidak otomatis melunasi pesanan",
+            "Uji suara dan jaringan putus-sambung",
+            "Verifikasi rekening pencairan SeaBank dan jadwal settlement"
+          ]
+        },
         {
           "id": "release",
           "title": "M6: UAT, backup/restore, dan distribusi",
-          "body": "Paket CI adalah preview tanpa tanda tangan, bukan rilis produksi.",
+          "body": "Milestone penutup mencakup kesiapan operasional serta validasi perangkat dan akun asli. Laptop penguji saat ini non-touchscreen; uji sentuh dan UAT penjual menunggu perangkat yang sesuai. Paket CI tetap preview sampai finalisasi selesai.",
           "acceptance": [
+            "Uji sentuhan pada perangkat touchscreen nyata: ukuran/jarak target, scroll, keypad, dan tidak salah tekan",
+            "UI terverifikasi pada resolusi/skala laptop kasir dan penjual awam dapat menyelesaikan alur utama",
             "Installer dan pembaruan menjaga database lokal",
             "Backup dan restore diuji end-to-end",
             "Kredensial perangkat disimpan aman dan dapat dirotasi",

@@ -6,11 +6,20 @@ Progres dinilai berdasarkan hasil yang dapat diperiksa. **Kode ditulis tidak sam
 | --- | --- | --- | --- |
 | M0 — Fondasi dan pelacakan | Blueprint, struktur repo, backlog, CI | Dokumen konsisten, workflow berjalan di repo | Akses GitHub |
 | M1 — Domain dan data lokal | Pesanan, snapshot harga, tunai, ditunda, SQLite, outbox | Uji integritas dan recovery lulus | .NET SDK |
-| M2 — Kasir Windows | UI sentuh, keranjang, pembayaran, riwayat, cetak 58 mm | Build Windows lulus; kasir dan printer fisik diuji | M1, laptop/printer |
+| M2 — Kasir Windows | Perapian UI/UX, keranjang, pembayaran, riwayat, layout struk | Build lulus; alur nyaman dengan mouse/touchpad; tombol dan teks jelas; respons cepat terjaga | M1, laptop Windows yang tersedia |
 | M3 — Admin dan sinkronisasi | Login, CRUD katalog, publikasi, penerimaan penjualan | Hak akses, idempotensi, konflik, offline diuji | Database dan hosting |
-| M4 — QRIS statis | Webhook terverifikasi, inbox, suara, popup pasif | Tidak ada salah pelunasan/duplikasi; akun merchant diuji | M3, Midtrans aktif |
+| M4 — QRIS statis | Webhook terverifikasi, inbox, suara, popup pasif | Verifikasi, deduplikasi, kegagalan, dan popup lulus dengan mock/fixture berlabel uji; jalur produksi tetap fail closed | M3, lingkungan uji perangkat lunak |
 | M5 — Keuangan dan laporan | Sesi kas, refund, biaya aktual, pencairan, Sheets | Rekonsiliasi dan total laporan lulus | M1, M3, M4 |
-| M6 — Rilis dan pemulihan | Installer, backup/restore, hardening, panduan | UAT penjual, restore, paket hosting, kredensial produksi selesai | Seluruh milestone inti |
+| M6 — Rilis dan pemulihan | Finalisasi touchscreen, printer, merchant; installer, backup/restore, hardening, panduan | Uji perangkat dan akun asli, UAT penjual, restore, hosting dan kredensial produksi selesai | Milestone inti; perangkat dan pemilik tersedia pada tahap finalisasi |
+
+## Penyesuaian urutan — 24 September 2026
+
+Pengguna menguji preview pada laptop **non-touchscreen** dan menyatakan kecepatannya sudah memuaskan. Ini merupakan umpan balik penggunaan, belum pengukuran latensi. UI/UX masih versi awal; prioritas berikutnya adalah kenyamanan klik, area dan jarak tombol, keterbacaan, posisi aksi utama, serta konsistensi alur. Kecepatan tersebut dipertahankan saat tampilan dirapikan.
+
+- Pengujian touchscreen nyata dipindahkan ke M6 dan checklist finalisasi #12. Pengujian mouse/touchpad dan keyboard dasar tetap berjalan pada M2.
+- Printer belum tersedia. Issue #5 dipindahkan dari M2 ke M6. Desain struk dan pengujian kegagalan pada tingkat perangkat lunak tetap dapat dikerjakan.
+- Akun merchant belum dibuat karena pemilik belum tersedia. Issue #9 dipindahkan dari M4 ke M6 untuk onboarding, aktivasi, dan pengujian akun asli. Logika pembayaran, inbox, dan popup tetap dikembangkan menggunakan mock/fixture berlabel uji pada M4.
+- Ketiga kebutuhan itu **ditunda terencana sampai finalisasi**, sehingga tidak menjadi penghalang pengerjaan fitur lain. Pengujian aslinya belum dinyatakan lulus dan tetap diselesaikan sebelum pemakaian produksi.
 
 ## Aturan status
 

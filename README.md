@@ -4,6 +4,8 @@ Aplikasi kasir Windows untuk satu kedai: menu besar, pesanan ditunda, tunai, QRI
 
 > **Status: implementasi awal, belum siap dipakai menerima transaksi produksi.** Baca [STATUS.md](docs/STATUS.md) untuk bukti pengujian dan keterbatasan.
 
+**Prioritas berikutnya: perapian UI/UX kasir.** Kecepatan preview sudah dinilai memuaskan oleh pengguna pada laptop non-touchscreen. Uji touchscreen, printer fisik, dan akun merchant asli dijadwalkan pada M6; pengembangan fungsi lain tetap berjalan.
+
 ## Pantau progres
 
 - [Milestone dan kriteria selesai](docs/MILESTONES.md)

@@ -6,11 +6,19 @@
 | --- | --- | --- |
 | M0 | Blueprint, keputusan arsitektur, M0–M6, backlog, workflow CI dan pelacakan | 7 milestone dan 12 issue berhasil dibuat; workflow tracking lulus |
 | M1 | Aturan pesanan, harga snapshot, tunai, ditunda, SQLite, optimistic concurrency, outbox atomik | 23 pemeriksaan lokal lulus; tes .NET pada CI Windows juga lulus. Process-kill/disk-full belum diuji |
-| M2 | WPF navbar atas, tombol besar, empat kategori, keranjang, uang/kembalian, riwayat, cetak terpisah dari UI | Build WPF lokal dan CI Windows lulus; publish preview berhasil; layar sentuh dan OKAY 58D belum diuji |
+| M2 | WPF navbar atas, tombol besar, empat kategori, keranjang, uang/kembalian, riwayat, cetak terpisah dari UI | Build WPF lokal dan CI Windows lulus; publish preview berhasil; prioritas perapian UI/UX dengan mouse/touchpad; uji sentuh dan OKAY 58D dijadwalkan M6 |
 | M3 | Login Supabase Auth, tambah/edit menu, URL foto, draf/publikasi, API device, cache katalog/foto | Tes kontrak, typecheck dan build Next.js lulus di CI; akun cloud, unggah foto, observabilitas konflik belum tersedia |
-| M4 | SHA512 + Status API, persistensi provider, inbox/cursor, popup pasif + suara | Tes unit webhook lulus; QRIS statis merchant dan suara laptop belum diuji end-to-end |
+| M4 | SHA512 + Status API, persistensi provider, inbox/cursor, popup pasif + suara | Tes unit webhook lulus; pengujian logika/simulasi dapat lanjut; aktivasi dan uji merchant end-to-end dijadwalkan M6 |
 | M5 | Ringkasan penjualan tunai/QRIS lokal per tanggal WIB | Ledger, sesi kas, refund, MDR, payout, rekonsiliasi, Sheets belum diimplementasikan |
-| M6 | Panduan setup dan paket preview melalui CI | Installer bertanda tangan, backup/restore, perlindungan token, UAT belum selesai |
+| M6 | Panduan setup dan paket preview melalui CI | Finalisasi touchscreen, printer, merchant, installer, backup/restore, perlindungan token, dan UAT masih terbuka |
+
+## Umpan balik pengguna dan prioritas berikutnya
+
+Pada 24 September 2026 pengguna melaporkan aplikasi terasa cepat dan responsif di laptop non-touchscreen. Beberapa kontrol masih kurang nyaman diklik. UI saat ini adalah prototipe fungsional; perapian visual dan interaksi belum selesai. Tidak ada perubahan UI yang diklaim sudah diterapkan hanya dari pembaruan rencana ini.
+
+Prioritas M2: ukuran dan jarak tombol, area klik, hierarki aksi utama, tata letak keranjang/pembayaran, keterbacaan, serta konsistensi feedback interaksi. Validasi awal memakai mouse/touchpad dan keyboard pada laptop yang tersedia sambil mempertahankan respons cepat.
+
+Uji touchscreen, printer OKAY 58D, serta pembuatan/aktivasi dan uji akun merchant asli **dijadwalkan pada M6**. Printer belum tersedia; pemilik belum sempat menyiapkan merchant. Pengembangan fitur lain tetap lanjut. M4 dapat menggunakan mock/fixture berlabel uji, tanpa menganggap transaksi simulasi sebagai pembayaran nyata.
 
 ## Bukti uji lokal
 
