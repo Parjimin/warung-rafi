@@ -94,7 +94,7 @@
     },
     {
       "title": "M4 — QRIS statis",
-      "description": "Pengembangan dan pengujian logika webhook, inbox, suara, popup pasif dengan data uji berlabel; aktivasi merchant dan uji akun asli di M6.",
+      "description": "Aktif: polling terpisah, inbox atomik, simulasi popup/suara dengan database terisolasi. Unit dan API lulus lokal; publikasi serta CI Windows/PostgreSQL belum selesai. Merchant asli tetap M6.",
       "issues": [
         {
           "id": "qris-proof",

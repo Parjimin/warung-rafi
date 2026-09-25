@@ -12,6 +12,8 @@ public partial class MainWindow : Window
 {
     private readonly LocalStore store;
     private readonly bool isolatedPreview;
+    private readonly bool simulatePayments;
+    private readonly Action playPaymentSound;
     private readonly SemaphoreSlim actions = new(1,1);
     private readonly CancellationTokenSource closing = new();
     private Order current=Order.New();
@@ -29,11 +31,20 @@ public partial class MainWindow : Window
     private CompletedSale? lastSale;
     private Task? imagePrefetch;
 
-    public MainWindow() : this(new LocalStore(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"WarungRafi","warung-rafi.db")),false) { }
-    internal MainWindow(LocalStore storage, bool isolatedPreview)
+    public MainWindow() : this(new LocalStore(App.DataPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),false)),false) { }
+    internal MainWindow(LocalStore storage, bool isolatedPreview, bool simulatePayments=false, Action? paymentSound=null)
     {
-        store=storage;this.isolatedPreview=isolatedPreview;
+        if(simulatePayments&&!isolatedPreview)throw new ArgumentException("Simulasi harus terisolasi.");
+        store=storage;this.isolatedPreview=isolatedPreview;this.simulatePayments=simulatePayments;
+        playPaymentSound=paymentSound??(()=> { if(!isolatedPreview||simulatePayments)System.Media.SystemSounds.Asterisk.Play(); });
         InitializeComponent();
+        if(simulatePayments)
+        {
+            Title="Warung Rafi — SIMULASI QRIS";
+            PreviewBadge.Text="SIMULASI · BUKAN PEMBAYARAN NYATA";
+            DemoQris.Visibility=Visibility.Visible;
+            ToastTitle.Text="SIMULASI · QRIS diterima";
+        }
         RootLayout.SizeChanged+=(_,_)=>HeaderDate.Visibility=RootLayout.ActualWidth<1080?Visibility.Collapsed:Visibility.Visible;
         DateLabel.Text=DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7)).ToString("ddd, d MMM yyyy",CultureInfo.GetCultureInfo("id-ID"));
         toastTimer.Tick+=(_,_)=> { Toast.Visibility=Visibility.Collapsed;toastTimer.Stop();ShowNextToast(); };
@@ -114,17 +125,22 @@ public partial class MainWindow : Window
     private async Task ConnectAsync(CancellationToken token)
     {
         var sync=RemoteSync.FromEnvironment(store);if(sync is null)return;
+        await Task.WhenAll(PollPaymentsAsync(sync,token),SyncDataAsync(sync,token));
+    }
+    private async Task PollPaymentsAsync(RemoteSync sync,CancellationToken token)
+    {
         while(!token.IsCancellationRequested)
         {
-            try
-            {
-                var incoming=await sync.FetchPaymentsAsync(token);
-                foreach(var proof in incoming)
-                    if(DateTimeOffset.UtcNow-proof.PaidAt is var age && age>=TimeSpan.Zero && age<=TimeSpan.FromSeconds(60))notifications.Enqueue(proof);
-                ShowNextToast();
-            }
+            try { QueuePaymentAlerts(await sync.FetchPaymentsAsync(token)); }
             catch(OperationCanceledException) when(token.IsCancellationRequested){break;}
-            catch(Exception) { if(!busy)StatusText.Text="Data lokal aman · Layanan online belum dapat diperiksa"; }
+            catch(Exception) { if(!busy)StatusText.Text="Data lokal aman · QRIS online belum dapat diperiksa"; }
+            try { await Task.Delay(page=="payment"?3000:12000,token); } catch(OperationCanceledException){break;}
+        }
+    }
+    private async Task SyncDataAsync(RemoteSync sync,CancellationToken token)
+    {
+        while(!token.IsCancellationRequested)
+        {
             try
             {
                 await sync.SendOutboxAsync(token);
@@ -152,16 +168,39 @@ public partial class MainWindow : Window
             try { await sync.ReportStatusAsync(token); }
             catch(OperationCanceledException) when(token.IsCancellationRequested){break;}
             catch(Exception) { /* Monitoring failure must not interrupt local transactions. */ }
-            try { await Task.Delay(page=="payment"?3000:12000,token); } catch(OperationCanceledException){break;}
+            try { await Task.Delay(12000,token); } catch(OperationCanceledException){break;}
         }
+    }
+    internal async Task ReceivePaymentAlertsAsync(ProviderPayment[] incoming)
+    {
+        QueuePaymentAlerts(await store.ReceivePaymentsAsync(incoming));
+    }
+    private void QueuePaymentAlerts(ProviderPayment[] incoming)
+    {
+        if(closing.IsCancellationRequested)return;
+        foreach(var proof in incoming)
+            if(PaymentAlertPolicy.IsFresh(proof,DateTimeOffset.UtcNow))notifications.Enqueue(proof);
+        ShowNextToast();
+    }
+    private async void SimulateQris(object sender,RoutedEventArgs e)
+    {
+        if(!simulatePayments)return;
+        await Run(async()=>
+        {
+            var amount=current.Lines.Length==0?22500:current.Total;
+            await ReceivePaymentAlertsAsync([new(await store.CursorAsync()+1,"demo-"+Guid.NewGuid().ToString("N"),amount,DateTimeOffset.UtcNow)]);
+        });
     }
     private void ShowNextToast()
     {
-        if(toastTimer.IsEnabled||notifications.Count==0)return;
-        var proof=notifications.Dequeue();
-        if(DateTimeOffset.UtcNow-proof.PaidAt>TimeSpan.FromSeconds(60)){ShowNextToast();return;}
-        ToastAmount.Text=Money.Format(proof.Amount);ToastTime.Text=$"Pukul {proof.PaidAt.ToOffset(TimeSpan.FromHours(7)):HH.mm}";
-        Toast.Visibility=Visibility.Visible;Reveal(Toast);
-        if(!isolatedPreview)System.Media.SystemSounds.Asterisk.Play();toastTimer.Start();
+        if(toastTimer.IsEnabled)return;
+        while(notifications.TryDequeue(out var proof))
+        {
+            if(!PaymentAlertPolicy.IsFresh(proof,DateTimeOffset.UtcNow))continue;
+            ToastAmount.Text=Money.Format(proof.Amount);ToastTime.Text=$"Pukul {proof.PaidAt.ToOffset(TimeSpan.FromHours(7)):HH.mm}";
+            Toast.Visibility=Visibility.Visible;Reveal(Toast);toastTimer.Start();
+            try { playPaymentSound(); } catch { /* Audio failure must not interrupt the cashier or toast expiry. */ }
+            break;
+        }
     }
 }

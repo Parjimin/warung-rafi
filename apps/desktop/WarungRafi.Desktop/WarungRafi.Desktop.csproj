@@ -5,4 +5,5 @@
     <AssemblyName>WarungRafi</AssemblyName>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../../../src/WarungRafi.Storage/WarungRafi.Storage.csproj" /></ItemGroup>
+  <ItemGroup><None Update="Coba-QRIS.cmd" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
 </Project>

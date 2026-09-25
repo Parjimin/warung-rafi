@@ -14,7 +14,7 @@ Progres dinilai berdasarkan hasil yang dapat diperiksa. **Kode ditulis tidak sam
 
 ## Checkpoint — 25 September 2026
 
-**M0 dan M1 selesai; M2 dalam review laptop; M3 aktif.** M1 lulus 23 pemeriksaan dasar dan 60 pemeriksaan recovery/integritas di CI Windows. [Bukti dan batas pengujian](M1-VALIDATION.md) tersedia. [Perapian UI M2](M2-UI-REVIEW.md) sudah diimplementasikan; review kenyamanan klik pada laptop pengguna masih terbuka. [M3](M3-ADMIN-SYNC.md) melengkapi unggah foto, konflik draf, laporan perangkat dan verifikasi sinkronisasi/cache offline. Konfigurasi dan uji cloud nyata masih terbuka. M4 belum selesai.
+**M0 dan M1 selesai; M2 dalam review laptop; M3 menunggu integrasi cloud; M4 sedang diverifikasi.** M1 lulus 23 pemeriksaan dasar dan 60 pemeriksaan recovery/integritas di CI Windows. [Bukti dan batas pengujian](M1-VALIDATION.md) tersedia. [Perapian UI M2](M2-UI-REVIEW.md) sudah diimplementasikan; review kenyamanan klik pada laptop pengguna masih terbuka. [M3](M3-ADMIN-SYNC.md) melengkapi unggah foto, konflik draf, laporan perangkat dan verifikasi sinkronisasi/cache offline. Konfigurasi dan uji cloud nyata masih terbuka. [M4](M4-QRIS.md) sudah memiliki implementasi lokal dan bukti API, tetapi belum selesai: publikasi GitHub serta CI Windows/PostgreSQL masih tertahan.
 
 ## Penyesuaian urutan — 24 September 2026
 

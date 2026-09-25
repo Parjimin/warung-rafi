@@ -42,6 +42,23 @@ try
     await sync.SendOutboxAsync(default);Check(await store.PendingCountAsync()==0,"successful retry acknowledges remainder");
     handler.Reply=_=>throw new HttpRequestException("offline");await Fails(()=>sync.FetchCatalogAsync(default));
     Check((await new LocalStore(path).CatalogAsync()).Products[0].Price==7000,"cached catalog survives offline restart");
+    var proof=new ProviderPayment(1,"payment-offline",22500,DateTimeOffset.UtcNow);
+    handler.Reply=_=>throw new HttpRequestException("offline");
+    await Fails(()=>sync.FetchPaymentsAsync(default));Check(await store.CursorAsync()==0,"offline payment poll preserves cursor");
+    handler.Reply=_=>Task.FromResult(JsonContentResponse(new { payments=(ProviderPayment[]?)null }));
+    await Fails(()=>sync.FetchPaymentsAsync(default));Check(await store.CursorAsync()==0,"malformed inbox preserves cursor");
+    handler.Reply=request=>
+    {
+        Check(request.RequestUri!.Query=="?after=0","reconnection starts at last durable cursor");
+        return Task.FromResult(JsonContentResponse(new { payments=new[]{proof} }));
+    };
+    Check((await sync.FetchPaymentsAsync(default)).Length==1,"reconnection delivers one proof");
+    handler.Reply=request=>
+    {
+        Check(request.RequestUri!.Query=="?after=1","next poll resumes after durable proof");
+        return Task.FromResult(JsonContentResponse(new { payments=new[]{proof} }));
+    };
+    Check((await sync.FetchPaymentsAsync(default)).Length==0,"replayed HTTP response creates no second alert");
     // Real WPF image decoder: fixture is a tiny PNG generated as test data, no external image request.
     var png=Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGNU8LFjYGBgYmBgYGBgAAAIBACuE8zpaAAAAABJRU5ErkJggg==");
     handler.Reply=_=>Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new ByteArrayContent(png)});

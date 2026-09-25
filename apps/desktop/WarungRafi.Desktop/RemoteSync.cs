@@ -37,7 +37,7 @@ internal sealed class RemoteSync(LocalStore store,HttpClient http)
     {
         var cursor=await store.CursorAsync();
         var inbox=await http.GetFromJsonAsync<PaymentBatch>($"api/device/payments?after={cursor}",token);
-        if(inbox is null)throw new InvalidDataException("Data pembayaran kosong.");
+        if(inbox?.Payments is null)throw new InvalidDataException("Data pembayaran kosong.");
         return await store.ReceivePaymentsAsync(inbox.Payments);
     }
     public async Task FetchCatalogAsync(CancellationToken token)

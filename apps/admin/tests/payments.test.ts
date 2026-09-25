@@ -27,3 +27,9 @@ test("a forged settlement field cannot bypass authoritative pending status", asy
 test("provider outage fails rather than acknowledging the webhook", async () => {
   await assert.rejects(verifiedNotification(notice,{key,merchantId:"merchant-1",environment:"sandbox"},async () => new Response("",{status:503})));
 });
+
+test("provider time rejects normalized invalid calendar dates and preserves WIB", () => {
+  for (const time of ["2026-02-30 18:44:00", "2026-09-22 24:00:00", "2026-13-22 18:44:00", "invalid"])
+    assert.throws(() => authoritativePayment(notice, {...status, settlement_time: time}, "merchant-1"));
+  assert.equal(authoritativePayment(notice, {...status, settlement_time: "2024-02-29 00:00:00"}, "merchant-1").paidAt, "2024-02-28T17:00:00.000Z");
+});

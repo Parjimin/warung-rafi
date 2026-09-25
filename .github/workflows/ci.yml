@@ -18,6 +18,8 @@ jobs:
         run: dotnet run --project tests/WarungRafi.Checks -c Release
       - name: Verify crash recovery, full storage and backlog
         run: dotnet run --project tests/WarungRafi.RecoveryChecks -c Release
+      - name: Verify QRIS durable inbox and replay rules
+        run: dotnet run --project tests/WarungRafi.PaymentChecks -c Release
       - name: Build Windows touchscreen application
         run: dotnet build apps/desktop/WarungRafi.Desktop -c Release
       - name: Verify sync transport and offline photo cache
@@ -53,7 +55,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - name: Verify built admin APIs with isolated service fixtures
-        run: node --test integration/api.test.ts
+        run: node --test integration/*.test.ts
       - name: Install review browser
         run: npx playwright install --with-deps chromium --only-shell
       - name: Review admin browser flows and capture screenshots
@@ -94,3 +96,4 @@ jobs:
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/002_sync_monitor.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/assertions.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/sync_monitor.sql
+          psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/payments.sql

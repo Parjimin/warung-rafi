@@ -4,9 +4,11 @@ Aplikasi kasir Windows untuk satu kedai: menu besar, pesanan ditunda, tunai, QRI
 
 > **Status: implementasi awal, belum siap dipakai menerima transaksi produksi.** Baca [STATUS.md](docs/STATUS.md) untuk bukti pengujian dan keterbatasan.
 
-**M0 dan M1 selesai. M2 dalam review; M3 aktif: admin dan sinkronisasi.** [Validasi M1](docs/M1-VALIDATION.md): 23 pemeriksaan dasar + 60 pemeriksaan recovery/integritas lulus di CI Windows. Navigasi menyatu di atas, kartu menu 2×2, panel pesanan lebih lega, total/tombol tetap terlihat, nama pelanggan tersimpan otomatis, serta halaman pembayaran dan riwayat lebih rapi. Lihat [perubahan UI M2](docs/M2-UI-REVIEW.md). Kenyamanan dan respons preview baru perlu dicoba pada laptop pengguna. Uji touchscreen, printer fisik, dan akun merchant asli dijadwalkan pada M6; pengembangan fungsi lain tetap berjalan.
+**M0 dan M1 selesai. M2 dalam review; M3 menunggu integrasi cloud; M4 sedang diverifikasi.** [Validasi M1](docs/M1-VALIDATION.md): 23 pemeriksaan dasar + 60 pemeriksaan recovery/integritas lulus di CI Windows. Navigasi menyatu di atas, kartu menu 2×2, panel pesanan lebih lega, total/tombol tetap terlihat, nama pelanggan tersimpan otomatis, serta halaman pembayaran dan riwayat lebih rapi. Lihat [perubahan UI M2](docs/M2-UI-REVIEW.md). Kenyamanan dan respons preview baru perlu dicoba pada laptop pengguna. Uji touchscreen, printer fisik, dan akun merchant asli dijadwalkan pada M6; pengembangan fungsi lain tetap berjalan.
 
 M3 menambahkan unggah foto menu, pemantauan antrean/versi katalog laptop, serta penanganan konflik draf. Lihat [alur, setup dan batas M3](docs/M3-ADMIN-SYNC.md). Deployment Supabase/Vercel dan uji cloud nyata belum dilakukan.
+
+M4 memperkuat inbox QRIS, memisahkan polling pembayaran, dan menambahkan mode simulasi berlabel dengan database terpisah. [Panduan M4](docs/M4-QRIS.md). Perubahan checkpoint ini belum terkirim ke GitHub dan belum lolos CI Windows/PostgreSQL; preview terverifikasi masih M3.
 
 ## Pantau progres
 
@@ -28,6 +30,7 @@ Workflow **Sync project tracking** membuat/memperbarui GitHub Milestones dan Iss
 | `src/WarungRafi.Storage` | SQLite, pembayaran, outbox, inbox notifikasi |
 | `tests/WarungRafi.Checks` | Pengujian domain dan integritas penyimpanan |
 | `tests/WarungRafi.RecoveryChecks` | Penghentian proses, kapasitas SQLite, konkurensi, dan antrean besar |
+| `tests/WarungRafi.PaymentChecks` | Inbox QRIS, cursor atomik, deduplikasi dan kesegaran notifikasi |
 | `tests/WarungRafi.SyncChecks` | Transport HTTP, acknowledgement dan cache foto offline Windows |
 | `tests/WarungRafi.UiChecks` | Layout WPF, alur kasir, dan screenshot review di Windows |
 | `apps/admin` | Next.js admin/API serta pengujian kontrak webhook |

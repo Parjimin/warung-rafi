@@ -21,7 +21,7 @@ export function verifySignature(input: unknown, key: string): Record<string, unk
 function providerTime(value: unknown): string {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)) throw new HttpError(502, "Waktu provider tidak valid.");
   const parsed = new Date(value.replace(" ", "T") + "+07:00");
-  if (!Number.isFinite(parsed.getTime())) throw new HttpError(502, "Waktu provider tidak valid.");
+  if (!Number.isFinite(parsed.getTime()) || new Date(parsed.getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ") !== value) throw new HttpError(502, "Waktu provider tidak valid.");
   return parsed.toISOString();
 }
 export function authoritativePayment(notification: Record<string, unknown>, input: unknown, merchantId: string): VerifiedPayment {

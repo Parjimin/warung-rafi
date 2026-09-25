@@ -196,22 +196,41 @@ public sealed class LocalStore
 
     public Task<ProviderPayment[]> ReceivePaymentsAsync(ProviderPayment[] payments) => Locked(() =>
     {
-        using var connection = Open(); using var tx=connection.BeginTransaction();
+        if(payments is null || payments.Length>100)throw new InvalidDataException("Batch pembayaran tidak valid.");
+        using var connection=Open();using var tx=connection.BeginTransaction();
+        using var readCursor=Command(connection,tx,"SELECT value FROM settings WHERE key='payment_cursor'");
+        var cursor=long.TryParse(readCursor.ExecuteScalar()?.ToString(),out var saved)?saved:0;
         var added=new List<ProviderPayment>();
-        foreach(var payment in payments.OrderBy(x=>x.Sequence))
+        foreach(var payment in payments.OrderBy(x=>x?.Sequence))
         {
-            if(payment.Amount<=0 || string.IsNullOrWhiteSpace(payment.TransactionId)) throw new InvalidDataException("Bukti pembayaran tidak valid.");
-            using var insert=Command(connection,tx,"INSERT OR IGNORE INTO provider_payments VALUES($id,$sequence,$amount,$paid)",
+            if(payment is null || payment.Sequence<=0 || payment.Sequence>999_999_999_999_999 ||
+                payment.Amount<=0 || payment.Amount>999_999_999_999 || string.IsNullOrWhiteSpace(payment.TransactionId) ||
+                payment.TransactionId.Length>256 || payment.PaidAt==default)
+                throw new InvalidDataException("Bukti pembayaran tidak valid.");
+            using var existing=Command(connection,tx,"SELECT transaction_id,sequence,amount,paid_at FROM provider_payments WHERE transaction_id=$id OR sequence=$sequence",
+                ("$id",payment.TransactionId),("$sequence",payment.Sequence));
+            using(var reader=existing.ExecuteReader())
+            {
+                if(reader.Read())
+                {
+                    if(reader.GetString(0)!=payment.TransactionId || reader.GetInt64(1)!=payment.Sequence || reader.GetInt64(2)!=payment.Amount ||
+                        DateTimeOffset.Parse(reader.GetString(3))!=payment.PaidAt || reader.Read())
+                        throw new InvalidDataException("Identitas bukti pembayaran berubah.");
+                    continue;
+                }
+            }
+            // Sequence gaps are valid after a rolled-back server transaction. Unknown old rows are not.
+            if(payment.Sequence<=cursor)throw new InvalidDataException("Urutan bukti pembayaran tidak valid.");
+            using var insert=Command(connection,tx,"INSERT INTO provider_payments VALUES($id,$sequence,$amount,$paid)",
                 ("$id",payment.TransactionId),("$sequence",payment.Sequence),("$amount",payment.Amount),("$paid",payment.PaidAt.ToString("O")));
-            if(insert.ExecuteNonQuery()==1) added.Add(payment);
+            insert.ExecuteNonQuery();added.Add(payment);cursor=payment.Sequence;
         }
         if(payments.Length>0)
         {
-            using var cursor=Command(connection,tx,"INSERT INTO settings(key,value) VALUES('payment_cursor',$cursor) ON CONFLICT(key) DO UPDATE SET value=CAST(MAX(CAST(settings.value AS INTEGER), CAST(excluded.value AS INTEGER)) AS TEXT)",
-                ("$cursor",payments.Max(x=>x.Sequence).ToString()));
-            cursor.ExecuteNonQuery();
+            using var update=Command(connection,tx,"INSERT INTO settings(key,value) VALUES('payment_cursor',$cursor) ON CONFLICT(key) DO UPDATE SET value=excluded.value",("$cursor",cursor.ToString()));
+            update.ExecuteNonQuery();
         }
-        tx.Commit(); return added.ToArray();
+        tx.Commit();return added.ToArray();
     });
 
     public Task RecordPrintAsync(string orderId,bool copy,string status) => Locked(() =>

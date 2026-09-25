@@ -31,16 +31,17 @@
     </Border>
     <ContentControl x:Name="MainContent" Grid.Row="1" Margin="0,18,0,8" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <Grid Grid.Row="2">
-      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
       <TextBlock x:Name="StatusText" FontSize="12" VerticalAlignment="Center" Foreground="#647268" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Text="Menyiapkan penyimpanan lokal…"/>
-      <Border Grid.Column="1" Background="#EEE7D9" CornerRadius="6" Padding="8,3" VerticalAlignment="Center" Margin="12,0,0,0">
-        <TextBlock Text="VERSI UJI · MENU DUMMY" Foreground="#806443" FontSize="10" FontWeight="SemiBold"/>
+      <Button x:Name="DemoQris" Grid.Column="1" Content="Coba QRIS" Click="SimulateQris" Visibility="Collapsed" FontSize="12" MinHeight="28" Padding="10,2"/>
+      <Border Grid.Column="2" Background="#EEE7D9" CornerRadius="6" Padding="8,3" VerticalAlignment="Center" Margin="12,0,0,0">
+        <TextBlock x:Name="PreviewBadge" Text="VERSI UJI · MENU DUMMY" Foreground="#806443" FontSize="10" FontWeight="SemiBold"/>
       </Border>
     </Grid>
     <Border x:Name="Toast" Grid.RowSpan="2" Panel.ZIndex="10" Width="340" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,0,0"
             Background="#234F3F" CornerRadius="16" Padding="20,16" Visibility="Collapsed" IsHitTestVisible="False" Focusable="False">
       <StackPanel>
-        <TextBlock Text="Pembayaran QRIS diterima" FontSize="19" Foreground="White"/>
+        <TextBlock x:Name="ToastTitle" Text="Pembayaran QRIS diterima" FontSize="19" Foreground="White"/>
         <TextBlock x:Name="ToastAmount" FontSize="30" FontWeight="Bold" Foreground="White" Margin="0,5"/>
         <TextBlock x:Name="ToastTime" FontSize="16" Foreground="#DFEEE2"/>
       </StackPanel>

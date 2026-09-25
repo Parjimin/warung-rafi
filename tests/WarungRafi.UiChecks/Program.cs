@@ -121,6 +121,40 @@ internal static class Program
         Get<ScrollViewer>("CartViewport").ScrollToEnd();Layout();
         Check(Inside(Get<Button>("PayOrder"))&&Inside(Get<TextBlock>("CartTotal")),"Long order keeps total and payment action pinned");
         Screenshot("13-long-order");
+        window.Close();
+        var demoPath=App.DataPath(directory,true);
+        Check(demoPath!=App.DataPath(directory,false)&&demoPath.Contains("DemoQris"),"demo database is separate from normal cashier database");
+        var demoStore=new LocalStore(demoPath);await demoStore.InitializeAsync();
+        var sounds=0;
+        window=new MainWindow(demoStore,true,true,()=>sounds++) { ShowInTaskbar=false };
+        window.Show();AttachReviewRoot();await Until(()=>Find<TextBox>("CustomerName") is not null);Layout();
+        Check(window.DemoQris.Visibility==Visibility.Visible&&window.PreviewBadge.Text.Contains("BUKAN PEMBAYARAN NYATA"),"demo is visibly labeled");
+        await Click("Product-NAS-001",()=>Get<TextBlock>("CartTotal").Text=="Rp5.000");
+        var input=Get<TextBox>("CustomerName");input.Text="Bu Rini";window.Activate();input.Focus();
+        var beforeFocus=Keyboard.FocusedElement;
+        Check(ReferenceEquals(beforeFocus,input),"customer input has keyboard focus before payment arrival");
+        var proof=new ProviderPayment(1,"fixture-qris",22500,DateTimeOffset.UtcNow);
+        await window.ReceivePaymentAlertsAsync([proof]);Layout();
+        Check(window.Toast.Visibility==Visibility.Visible&&window.ToastTitle.Text.StartsWith("SIMULASI"),"durable proof displays labeled passive popup");
+        Check(window.ToastAmount.Text=="Rp22.500"&&sounds==1,"new proof shows amount and requests sound once");
+        Check(Keyboard.FocusedElement==beforeFocus&&input.Text=="Bu Rini","payment arrival preserves typing and keyboard focus");
+        Check(!window.Toast.IsHitTestVisible&&!window.Toast.Focusable&&!MainWindow.Descendants<Button>(window.Toast).Any(),"popup contains no buttons and never intercepts input");
+        await window.ReceivePaymentAlertsAsync([proof]);Check(sounds==1,"duplicate proof never requests another sound");
+        Check(await demoStore.CountAsync(OrderStatus.Completed)==0&&Get<TextBlock>("CartTotal").Text=="Rp5.000","proof neither completes nor changes active order");
+        Screenshot("14-qris-simulation");
+        await Until(()=>window.Toast.Visibility==Visibility.Collapsed);
+        await window.ReceivePaymentAlertsAsync([proof with { Sequence=2,TransactionId="late",PaidAt=DateTimeOffset.UtcNow.AddMinutes(-5) }]);
+        Check(sounds==1&&window.Toast.Visibility==Visibility.Collapsed,"late proof is silent and does not reopen popup");
+        window.DemoQris.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Until(()=>sounds==2);
+        Check(window.ToastAmount.Text=="Rp5.000"&&await demoStore.CursorAsync()==3,"demo button uses durable inbox and active order amount");
+        window.Close();
+        window=new MainWindow(demoStore,true,true,()=>throw new InvalidOperationException("fixture audio unavailable")) { ShowInTaskbar=false };
+        window.Show();AttachReviewRoot();await Until(()=>Find<TextBox>("CustomerName") is not null);
+        await window.ReceivePaymentAlertsAsync([proof with { Sequence=4,TransactionId="audio-failure",PaidAt=DateTimeOffset.UtcNow }]);
+        Check(window.Toast.Visibility==Visibility.Visible,"audio failure does not suppress popup");
+        await Until(()=>window.Toast.Visibility==Visibility.Collapsed);
+        Check(window.Toast.Visibility==Visibility.Collapsed,"audio failure does not prevent popup expiry");
     }
     private static void AttachReviewRoot()
     {
