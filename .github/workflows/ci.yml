@@ -54,6 +54,17 @@ jobs:
       - run: npm run build
       - name: Verify built admin APIs with isolated service fixtures
         run: node --test integration/api.test.ts
+      - name: Install review browser
+        run: npx playwright install --with-deps chromium --only-shell
+      - name: Review admin browser flows and capture screenshots
+        timeout-minutes: 2
+        run: node integration/browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: WarungRafi-M3-admin-review
+          path: artifacts/M3-review
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:
