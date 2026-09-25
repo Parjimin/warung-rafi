@@ -47,12 +47,12 @@
     },
     {
       "title": "M2 — Kasir Windows",
-      "description": "Aktif: UI/UX kasir ditata ulang, 66 pemeriksaan WPF dan screenshot aktual lulus. Review kenyamanan klik pada laptop pengguna masih terbuka. Touchscreen dan printer fisik di M6.",
+      "description": "Aktif: revisi kedua UI/UX dengan navigasi satu bar, katalog seimbang dan pesanan lebih lega. 69 pemeriksaan WPF lulus dan screenshot aktual ditinjau. Review laptop pengguna masih terbuka; touchscreen/printer di M6.",
       "issues": [
         {
           "id": "cashier",
           "title": "M2: Perapian UI/UX kasir dan pesanan ditunda",
-          "body": "Preview M2 memperbaiki daftar pesanan terjepit, kontras, kartu menu, nama pelanggan otomatis tersimpan, pembayaran, ditunda, riwayat dan ringkasan kas. Animasi singkat tanpa menunda transaksi. Bukti screenshot dan pengujian: docs/M2-UI-REVIEW.md. Menunggu review kenyamanan dan respons preview baru pada laptop pengguna; touchscreen/printer/merchant tetap M6.",
+          "body": "Revisi kedua M2: navigasi satu bar, kartu mendatar 2×2, ilustrasi hidangan berbeda, subtotal/kontrol jumlah sejajar, serta pembayaran lebih jelas. Daftar pesanan tetap fleksibel dan dapat diperbesar. Nama pelanggan otomatis tersimpan, animasi singkat tanpa menunda transaksi. Bukti 69 pemeriksaan WPF dan screenshot: docs/M2-UI-REVIEW.md. Menunggu review laptop pengguna; touchscreen/printer/merchant tetap M6.",
           "acceptance": [
             "Build WPF lulus pada Windows",
             "Alur Jualan, Ditunda, Pembayaran, dan Riwayat nyaman dengan mouse/touchpad serta navigasi keyboard dasar",
