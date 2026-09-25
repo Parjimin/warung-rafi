@@ -141,6 +141,7 @@ internal static class Program
         Check(!window.Toast.IsHitTestVisible&&!window.Toast.Focusable&&!MainWindow.Descendants<Button>(window.Toast).Any(),"popup contains no buttons and never intercepts input");
         await window.ReceivePaymentAlertsAsync([proof]);Check(sounds==1,"duplicate proof never requests another sound");
         Check(await demoStore.CountAsync(OrderStatus.Completed)==0&&Get<TextBlock>("CartTotal").Text=="Rp5.000","proof neither completes nor changes active order");
+        Check(window.Toast.TransformToAncestor(root).Transform(new Point(0,window.Toast.ActualHeight)).Y<=window.MainContent.TransformToAncestor(root).Transform(new Point()).Y,"popup stays above order panel and cashier workspace");
         Screenshot("14-qris-simulation");
         await Until(()=>window.Toast.Visibility==Visibility.Collapsed);
         await window.ReceivePaymentAlertsAsync([proof with { Sequence=2,TransactionId="late",PaidAt=DateTimeOffset.UtcNow.AddMinutes(-5) }]);

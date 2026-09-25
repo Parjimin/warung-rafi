@@ -39,11 +39,11 @@
       </Border>
     </Grid>
     <Border x:Name="Toast" Grid.RowSpan="2" Panel.ZIndex="10" Width="340" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,0,0"
-            Background="#234F3F" CornerRadius="16" Padding="20,16" Visibility="Collapsed" IsHitTestVisible="False" Focusable="False">
+            Background="#234F3F" CornerRadius="14" Padding="18,4" Visibility="Collapsed" IsHitTestVisible="False" Focusable="False">
       <StackPanel>
-        <TextBlock x:Name="ToastTitle" Text="Pembayaran QRIS diterima" FontSize="19" Foreground="White"/>
-        <TextBlock x:Name="ToastAmount" FontSize="30" FontWeight="Bold" Foreground="White" Margin="0,5"/>
-        <TextBlock x:Name="ToastTime" FontSize="16" Foreground="#DFEEE2"/>
+        <TextBlock x:Name="ToastTitle" Text="Pembayaran QRIS diterima" FontSize="18" Foreground="White"/>
+        <TextBlock x:Name="ToastAmount" FontSize="26" FontWeight="Bold" Foreground="White"/>
+        <TextBlock x:Name="ToastTime" FontSize="13" Foreground="#DFEEE2"/>
       </StackPanel>
     </Border>
   </Grid>
