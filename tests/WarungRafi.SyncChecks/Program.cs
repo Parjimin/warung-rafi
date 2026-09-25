@@ -1,4 +1,5 @@
 using System.Net;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -42,7 +43,7 @@ try
     handler.Reply=_=>throw new HttpRequestException("offline");await Fails(()=>sync.FetchCatalogAsync(default));
     Check((await new LocalStore(path).CatalogAsync()).Products[0].Price==7000,"cached catalog survives offline restart");
     // Real WPF image decoder: fixture is a tiny PNG generated as test data, no external image request.
-    var png=Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a8ioAAAAASUVORK5CYII=");
+    var png=Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGNU8LFjYGBgYmBgYGBgAAAIBACuE8zpaAAAAABJRU5ErkJggg==");
     handler.Reply=_=>Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new ByteArrayContent(png)});
     var image=await ProductImages.LoadAsync("https://fixture.invalid/menu.png",folder,http);
     Check(image is not null,"photo decodes and caches locally");

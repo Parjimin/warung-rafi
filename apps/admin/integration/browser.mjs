@@ -18,7 +18,7 @@ try {
  await page.screenshot({path:'../../artifacts/M3-review/photo-editor.png',fullPage:true});
  await page.getByRole('button',{name:'Batal',exact:true}).click();
  await page.getByRole('button',{name:'+ Tambah menu'}).click();
- await page.getByLabel('Nama menu').fill('Sate Telur Uji');await page.getByLabel('Harga (rupiah)').fill('4000');await page.getByLabel('Kategori',{exact:true}).selectOption('Sundukan');
+ await page.getByLabel('Nama menu').fill('Sate Telur Uji');await page.getByLabel('Harga (rupiah)').fill('4000');await page.getByRole('combobox').selectOption('Sundukan');
  await page.getByRole('button',{name:'Terapkan ke draf'}).click();
  await page.getByRole('button',{name:'Simpan draf',exact:true}).click();await page.getByText('Draf tersimpan.',{exact:false}).waitFor();
  await page.getByRole('button',{name:'Terbitkan ke kasir',exact:true}).click();await page.getByText('Menu diterbitkan.',{exact:false}).waitFor();
