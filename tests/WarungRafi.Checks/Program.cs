@@ -17,7 +17,7 @@ Reject(()=>OrderRules.Add(sale.Order,product),"pesanan selesai tidak dapat diedi
 Check(OrderRules.Complete(order,PaymentMethod.QrisManual,0).Payment.Change==0,"QRIS manual bukan uang tunai");
 Check(OrderRules.Hold(order,"Budi").Id==order.Id,"menunda mempertahankan identitas");
 var path=Path.Combine(Path.GetTempPath(),$"warung-rafi-{Guid.NewGuid():N}.db");
-var store=new LocalStore(path); await store.InitializeAsync();
+var store=new LocalStore(path); await store.InitializeAsync();await store.OpenCashAsync(Guid.NewGuid().ToString("N"),0);
 try
 {
     order=await store.SaveAsync(order);

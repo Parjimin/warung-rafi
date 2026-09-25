@@ -12,6 +12,7 @@
 ```powershell
 dotnet run --project tests/WarungRafi.Checks
 dotnet run --project tests/WarungRafi.RecoveryChecks
+dotnet run --project tests/WarungRafi.FinanceChecks
 dotnet run --project tests/WarungRafi.PaymentChecks
 dotnet run --project tests/WarungRafi.SyncChecks
 dotnet run --project tests/WarungRafi.UiChecks
@@ -45,7 +46,7 @@ Jangan memakai PDF printer sebagai printer kasir. Preview menggunakan driver/spo
 
 ## Database cloud
 
-1. Buat proyek Supabase khusus uji. Jalankan `database/001_foundation.sql`, lalu `database/002_sync_monitor.sql` satu kali lewat SQL Editor. Buat bucket foto dengan `database/storage/menu_photos.sql`. Jangan menjalankan migration awal berulang pada database yang sudah terisi; migration selanjutnya harus berupa file baru.
+1. Buat proyek Supabase khusus uji. Jalankan `database/001_foundation.sql`, lalu `database/002_sync_monitor.sql` dan `database/003_finance.sql` satu kali lewat SQL Editor. Buat bucket foto dengan `database/storage/menu_photos.sql`. Jangan menjalankan migration awal berulang pada database yang sudah terisi; migration selanjutnya harus berupa file baru.
 2. Buat satu user melalui Supabase Auth. Nonaktifkan public signup bila tidak digunakan. Catat user UUID untuk `ADMIN_USER_ID`.
 3. RLS aktif; anon dan authenticated tidak punya akses tabel langsung. Server saja memakai service role. Jangan masukkan service role ke environment desktop atau variabel `NEXT_PUBLIC_*`.
 4. Tes SQL otomatis menggunakan PostgreSQL sementara dengan role tiruan. Tes ini memverifikasi dedupe, atomic batch, konflik, regresi refund, dan hak akses. Uji layanan Supabase aktual tetap diperlukan.
@@ -106,3 +107,7 @@ Lihat [M1-VALIDATION.md](M1-VALIDATION.md) untuk skenario process-kill, simulasi
 ## Review UI M2
 
 Lihat [M2-UI-REVIEW.md](M2-UI-REVIEW.md). Coba empat item tanpa scroll pada area kerja setara 1280×720 DIP, pesanan panjang, tombol Perbesar/Kembali ke menu, nama pelanggan, ditunda/resume, tunai dan kembalian. Area lebih pendek tetap mengizinkan scroll daftar dengan total/tombol tetap terlihat. Laporkan resolusi dan skala Windows ketika meninjau preview. Tidak perlu touchscreen, printer, atau akun merchant untuk review ini.
+
+## Sesi kas dan PIN pengelola (M5)
+
+Buka kas sebelum menyelesaikan penjualan. Modal 0 harus dipilih/diisi secara eksplisit. Refund membutuhkan PIN yang dibuat lewat `scripts/Set-ManagerPin.ps1`; tidak ada PIN bawaan. Lihat [M5-CASH-REFUNDS.md](M5-CASH-REFUNDS.md) untuk langkah, batas pengembalian, upgrade database lokal dan penerapan migrasi 003.

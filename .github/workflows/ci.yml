@@ -20,6 +20,8 @@ jobs:
         run: dotnet run --project tests/WarungRafi.RecoveryChecks -c Release
       - name: Verify QRIS durable inbox and replay rules
         run: dotnet run --project tests/WarungRafi.PaymentChecks -c Release
+      - name: Verify cash sessions, refunds and immutable finance journal
+        run: dotnet run --project tests/WarungRafi.FinanceChecks -c Release
       - name: Build Windows touchscreen application
         run: dotnet build apps/desktop/WarungRafi.Desktop -c Release
       - name: Verify sync transport and offline photo cache
@@ -35,6 +37,10 @@ jobs:
           retention-days: 14
       - name: Package unsigned Windows preview
         run: dotnet publish apps/desktop/WarungRafi.Desktop -c Release -r win-x64 --self-contained true -o artifacts/Windows-preview
+      - name: Include manager setup and finance guide
+        run: |
+          Copy-Item scripts/Set-ManagerPin.ps1 artifacts/Windows-preview/
+          Copy-Item docs/M5-CASH-REFUNDS.md artifacts/Windows-preview/
       - uses: actions/upload-artifact@v4
         with:
           name: WarungRafi-Windows-preview
@@ -94,6 +100,8 @@ jobs:
         run: |
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/001_foundation.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/002_sync_monitor.sql
+          psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/003_finance.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/assertions.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/sync_monitor.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/payments.sql
+          psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/finance.sql

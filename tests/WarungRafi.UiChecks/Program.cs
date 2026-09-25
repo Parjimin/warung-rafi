@@ -43,7 +43,7 @@ internal static class Program
     private static async Task Verify()
     {
         Directory.CreateDirectory(artifacts);
-        var store=new LocalStore(Path.Combine(directory,"test.db"));await store.InitializeAsync();
+        var store=new LocalStore(Path.Combine(directory,"test.db"),ManagerPin.Hash("728491"));await store.InitializeAsync();await store.OpenCashAsync(Guid.NewGuid().ToString("N"),0);
         window=new MainWindow(store,true) { Width=1320,Height=850,ShowInTaskbar=false };
         window.Show();AttachReviewRoot();
         await Until(()=>Find<Button>("PayOrder") is not null);
@@ -103,6 +103,42 @@ internal static class Program
         window.HistoryNav.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Until(()=>Find<Button>("Detail-"+saved.Id) is not null);Layout();Screenshot("10-history");
         await Click("Detail-"+saved.Id,()=>Find<TextBox>("OrderSearch") is null);Layout();Screenshot("11-order-detail");
         window.CashNav.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Until(()=>MainWindow.Descendants<TextBlock>(root).Any(x=>x.Text=="Penjualan tercatat"));Layout();Screenshot("12-daily-summary");
+        Check(Get<TextBlock>("ExpectedCash").Text=="Rp49.000","cash page counts sale net of change");
+        foreach(var size in new[]{(1280d,720d),(900d,620d)})
+        {
+            width=size.Item1;height=size.Item2;Layout();
+            Check(Inside(Get<TextBlock>("ExpectedCash"))&&Inside(Get<Button>("CloseCash")),"drawer total and close action fit finance viewport");
+            Screenshot($"15-cash-{width}x{height}");
+        }
+        width=1280;height=720;Layout();
+        await Click("CashOut",()=>Find<TextBox>("MovementAmount") is not null);
+        Get<TextBox>("MovementAmount").Text="2000";Get<TextBox>("MovementReason").Text="Beli es batu";
+        await Click("SaveCashMovement",()=>Find<TextBlock>("ExpectedCash") is not null);
+        Check(Get<TextBlock>("ExpectedCash").Text=="Rp47.000","expense updates drawer immediately");
+        window.HistoryNav.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Until(()=>Find<Button>("Detail-"+saved.Id) is not null);
+        await Click("Detail-"+saved.Id,()=>Find<Button>("OrderRefund") is not null);
+        await Click("OrderRefund",()=>Find<TextBox>("RefundAmount") is not null);
+        Get<TextBox>("RefundAmount").Text="5000";Get<TextBox>("RefundReason").Text="Satu nasi dikembalikan";
+        await Click("RequestRefund",()=>MainWindow.Descendants<Button>(root).Any(x=>AutomationProperties.GetAutomationId(x).StartsWith("Resolve-")));
+        var refund=(await store.RefundsAsync(saved.Id)).Single();
+        Check((await store.ActiveCashAsync())!.Expected==47000,"request alone leaves cash unchanged");
+        await Click("Resolve-"+refund.Id,()=>Find<PasswordBox>("ManagerPin") is not null);Layout();Screenshot("16-refund-approval");
+        Check(!Get<Button>("CompleteRefund").IsEnabled,"refund completion requires explicit returned-money confirmation");
+        Get<TextBox>("RefundReference").Text="Diserahkan kepada Bu Rini";Get<PasswordBox>("ManagerPin").Password="728491";Get<CheckBox>("RefundReturned").IsChecked=true;
+        await Click("CompleteRefund",()=>Find<TextBox>("RefundAmount") is not null);
+        Check((await store.ActiveCashAsync())!.Expected==42000&&(await store.SaleAsync(saved.Id))!.Payment.Amount==49000,"approved refund updates drawer and preserves sale");
+        Screenshot("17-refund-history");
+        window.CashNav.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Until(()=>Find<Button>("CloseCash") is not null);
+        await Click("CloseCash",()=>Find<TextBox>("CountedCash") is not null);
+        Get<TextBox>("CountedCash").Text="41900";Get<TextBox>("ClosingNote").Text="Selisih hitungan seratus rupiah";
+        Check(Get<TextBlock>("CashDifference").Text.Contains("-100"),"closing form shows shortage before commit");
+        await Click("ReviewCloseCash",()=>Find<Button>("ConfirmCloseCash") is not null);
+        await Click("ReviseCloseCash",()=>Find<TextBox>("CountedCash") is not null);
+        Check(Get<TextBox>("CountedCash").Text=="41900","return from closing review preserves entered count");
+        await Click("ReviewCloseCash",()=>Find<Button>("ConfirmCloseCash") is not null);Screenshot("18-close-cash-review");
+        await Click("ConfirmCloseCash",()=>MainWindow.Descendants<Button>(root).Any(x=>AutomationProperties.GetAutomationId(x).StartsWith("CashDetail-")));
+        Check(await store.ActiveCashAsync() is null&&(await store.CashHistoryAsync()).Single().Session.Difference==-100,"closing UI persists actual counted cash and variance");
+        Screenshot("19-cash-history");
         // Reopen a real persisted draft in a new WPF window.
         var draft=OrderRules.Add(Order.New(),DummyCatalog.Products[0]) with { CustomerLabel="Pak Joko" };await store.SaveAsync(draft);
         window.Close();window=new MainWindow(store,true) { ShowInTaskbar=false };window.Show();AttachReviewRoot();
@@ -156,6 +192,11 @@ internal static class Program
         Check(window.Toast.Visibility==Visibility.Visible,"audio failure does not suppress popup");
         await Until(()=>window.Toast.Visibility==Visibility.Collapsed);
         Check(window.Toast.Visibility==Visibility.Collapsed,"audio failure does not prevent popup expiry");
+        await Click("PayOrder",()=>Find<TextBox>("OpeningCash") is not null);Layout();Screenshot("20-open-cash");
+        Check(Get<TextBox>("OpeningCash").Text=="","first payment asks for actual opening cash, no silent default");
+        Get<TextBox>("OpeningCash").Text="100000";
+        await Click("ConfirmOpenCash",()=>Find<TextBox>("Tendered") is not null);
+        Check((await demoStore.ActiveCashAsync())!.Expected==100000&&Get<TextBlock>("CartTotal").Text=="Rp5.000","opening cash returns to intact payment order");
     }
     private static void AttachReviewRoot()
     {

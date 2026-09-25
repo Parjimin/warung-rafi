@@ -1,6 +1,6 @@
 # Status implementasi — checkpoint 25 September 2026
 
-**M4 selesai untuk lingkup perangkat lunak dan simulasi; belum rilis produksi.** Commit `f6fd4cb` lulus [CI Windows, web dan PostgreSQL](https://github.com/Parjimin/warung-rafi/actions/runs/36126169812). M2 tetap menunggu review laptop, M3 menunggu integrasi cloud nyata, dan pengujian merchant/perangkat tetap M6. Pekerjaan berikutnya adalah M5: keuangan dan laporan.
+**M5 aktif: tahap sesi kas dan pengembalian sedang diverifikasi.** Implementasi lokal dan endpoint jurnal tersedia; 50 tes keuangan, 23 dasar, 60 recovery, 16 unit admin dan 12 skenario API lulus lokal. Build WPF berhasil; pemeriksaan interaksi Windows dan PostgreSQL menunggu CI checkpoint ini. [Alur dan batas M5 tahap 1](M5-CASH-REFUNDS.md). M4 selesai untuk software/simulasi. M2 tetap menunggu review laptop, M3 menunggu integrasi cloud, dan uji merchant/perangkat tetap M6.
 
 | Bagian | Implementasi tersedia | Verifikasi / batas saat checkpoint |
 | --- | --- | --- |
@@ -9,12 +9,12 @@
 | M2 — review laptop | Satu bar navigasi, kartu mendatar 2×2, panel pesanan fleksibel/dapat diperbesar, tombol sejajar, pencarian, nama otomatis tersimpan, pembayaran/riwayat/kas dipoles, animasi singkat | 69 pemeriksaan layout/interaksi WPF lulus di CI Windows; screenshot aktual ditinjau; kenyamanan klik serta respons preview baru pada laptop pengguna masih perlu direview; touchscreen/printer tetap M6 |
 | M3 — aktif | Login, tambah/edit menu, unggah/normalisasi foto, konflik draf, publikasi, monitor antrean/versi/konflik perangkat, cache katalog/foto offline | 13 tes unit admin, 5 skenario API melalui Next hasil build, alur browser, 15 pemeriksaan sync/cache Windows dan SQL lulus; setup dan uji Supabase/Storage/Vercel nyata masih terbuka |
 | M4 — selesai (software) | Polling terpisah, validasi inbox atomik, deduplikasi ketat, kebijakan popup 60 detik, simulasi berlabel dengan database terpisah | 31 pemeriksaan inbox SQLite, 84 layout/interaksi WPF, 21 sinkronisasi/cache, 14 unit admin dan 11 skenario API lulus; SQL, build/publish Windows serta screenshot terverifikasi. Merchant nyata tetap M6. [Rincian M4](M4-QRIS.md) |
-| M5 | Ringkasan penjualan tunai/QRIS lokal per tanggal WIB | Ledger, sesi kas, refund, MDR, payout, rekonsiliasi, Sheets belum diimplementasikan |
+| M5 — aktif | Sesi kas, kas masuk/keluar, tutup dan selisih; refund berizin; jurnal lokal permanen dan penerimaan batch server | Tes lokal lulus; CI Windows/SQL menunggu. Rekonsiliasi, MDR aktual, payout, dashboard keuangan dan Sheets masih terbuka |
 | M6 | Panduan setup dan paket preview melalui CI | Finalisasi touchscreen, printer, merchant, installer, backup/restore, perlindungan token, dan UAT masih terbuka |
 
 ## Pengerjaan per milestone
 
-M0 dan M1 selesai. [Pengujian integritas dan pemulihan M1](M1-VALIDATION.md) lulus di CI Windows pada commit `6fe719b`. **M4: QRIS selesai pada lingkup software/simulasi**, dengan [alur, simulasi dan batas verifikasi](M4-QRIS.md). [Alur dan setup M3](M3-ADMIN-SYNC.md) tersedia. Review laptop untuk [M2](M2-UI-REVIEW.md) tetap terbuka. Kriteria integrasi cloud M3 masih terbuka. Berikutnya M5 mencakup sesi kas, ledger, refund, biaya, payout, rekonsiliasi dan Sheets. Touchscreen, printer, dan merchant asli tetap pada M6.
+M0 dan M1 selesai. [Pengujian integritas dan pemulihan M1](M1-VALIDATION.md) lulus di CI Windows pada commit `6fe719b`. **M4: QRIS selesai pada lingkup software/simulasi**, dengan [alur, simulasi dan batas verifikasi](M4-QRIS.md). [Alur dan setup M3](M3-ADMIN-SYNC.md) tersedia. Review laptop untuk [M2](M2-UI-REVIEW.md) tetap terbuka. Kriteria integrasi cloud M3 masih terbuka. M5 tahap pertama mengerjakan sesi kas, jurnal dan refund. Biaya, payout, rekonsiliasi dan Sheets menyusul. Touchscreen, printer, dan merchant asli tetap pada M6.
 
 ## Umpan balik pengguna dan prioritas berikutnya
 
@@ -59,7 +59,7 @@ Bukti awal: [Verify application #1](https://github.com/Parjimin/warung-rafi/acti
 7. Riwayat/daftar pesanan menampilkan hingga 1.000 catatan per tampilan. Ringkasan harian menghitung seluruh transaksi pada tanggal WIB, tanpa limit tersebut. Pagination menjadi pekerjaan lanjutan.
 8. Autentikasi admin memakai satu user Supabase yang diizinkan. Token akses di cookie HTTP-only berlaku maksimal satu jam; setelah itu login ulang. MFA/role/rotasi token perangkat dan hardening login belum selesai.
 9. Kategori awal tetap empat. Item boleh ditambah/diubah/dinonaktifkan. CRUD kategori bebas belum tersedia.
-10. Cash summary adalah penjualan kotor tercatat, bukan saldo laci atau uang bersih rekening. Belum menghitung 0,7% atau tarif lain: biaya tidak di-hardcode tanpa profil merchant dan data aktual.
+10. Kas hari ini menampilkan sesi aktif, uang laci tercatat dan penjualan kotor sesi secara terpisah. Refund berhasil mengurangi laci hanya jika tunai. Sesi bisa melewati tengah malam. Belum ada dashboard biaya aktual, pencairan atau rekonsiliasi provider. Penjualan sebelum migrasi tetap di riwayat dan tidak dibuatkan sesi kas fiktif.
 
 11. Monitor menampilkan laporan perangkat terakhir, bukan kondisi langsung saat offline. Angka antrean menghitung perubahan data; versi cache tidak berarti harga pesanan aktif ikut berubah.
 

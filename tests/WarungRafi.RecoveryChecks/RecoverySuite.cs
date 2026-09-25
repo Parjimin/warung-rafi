@@ -33,7 +33,7 @@ internal sealed class RecoverySuite
     {
         foreach(var stage in new[]{"during-save","before-payment-commit","after-payment-commit","during-ack"})
         {
-            using var db=new TestDatabase();await db.Store.InitializeAsync();
+            using var db=new TestDatabase();await db.Store.InitializeAsync();await db.Store.OpenCashAsync(Guid.NewGuid().ToString("N"),0);
             var prior=await db.SaleAsync();var draft=await db.DraftAsync();
             var pendingBefore=await db.Store.PendingCountAsync();
             db.Execute("CREATE TABLE test_spill(payload BLOB)");
@@ -68,7 +68,7 @@ internal sealed class RecoverySuite
     }
     private async Task DatabaseFull()
     {
-        using var db=new TestDatabase();await db.Store.InitializeAsync();
+        using var db=new TestDatabase();await db.Store.InitializeAsync();await db.Store.OpenCashAsync(Guid.NewGuid().ToString("N"),0);
         var prior=await db.SaleAsync();var draft=await db.DraftAsync();var pending=await db.Store.PendingCountAsync();
         db.Execute("CREATE TABLE test_disk_pressure(payload BLOB)");
         var pageLimit=Convert.ToInt64(db.Scalar("PRAGMA page_count"));
@@ -95,7 +95,7 @@ internal sealed class RecoverySuite
     }
     private async Task ConcurrentCompletion()
     {
-        using var db=new TestDatabase();await db.Store.InitializeAsync();var draft=await db.DraftAsync();
+        using var db=new TestDatabase();await db.Store.InitializeAsync();await db.Store.OpenCashAsync(Guid.NewGuid().ToString("N"),0);var draft=await db.DraftAsync();
         var stores=Enumerable.Range(0,8).Select(_=>new LocalStore(db.Path)).ToArray();
         var results=await Task.WhenAll(stores.Select(s=>s.CompleteAsync(draft.Id,draft.Version,PaymentMethod.Cash,10000)));
         Check(results.Select(x=>x.Payment).Distinct().Count()==1,"concurrent completion: independent connections return one payment");
@@ -104,7 +104,7 @@ internal sealed class RecoverySuite
     }
     private async Task CapacityAndRetry()
     {
-        using var db=new TestDatabase();await db.Store.InitializeAsync();
+        using var db=new TestDatabase();await db.Store.InitializeAsync();await db.Store.OpenCashAsync(Guid.NewGuid().ToString("N"),0);
         var held=await db.Store.SaveAsync(OrderRules.Hold(OrderRules.Add(Order.New(),TestDatabase.Product),"Pesanan lama"));
         var draft=await db.DraftAsync();
         // Seed historical transactions as one fixture transaction. This case tests reads,
@@ -150,7 +150,7 @@ internal sealed class RecoverySuite
     }
     private async Task WibBoundaries()
     {
-        using var db=new TestDatabase();await db.Store.InitializeAsync();
+        using var db=new TestDatabase();await db.Store.InitializeAsync();await db.Store.OpenCashAsync(Guid.NewGuid().ToString("N"),0);
         using(var connection=db.Connect())
         using(var tx=connection.BeginTransaction())
         {
@@ -167,7 +167,7 @@ internal sealed class RecoverySuite
     }
     private async Task InvalidInput()
     {
-        using var db=new TestDatabase();await db.Store.InitializeAsync();var draft=await db.DraftAsync();
+        using var db=new TestDatabase();await db.Store.InitializeAsync();await db.Store.OpenCashAsync(Guid.NewGuid().ToString("N"),0);var draft=await db.DraftAsync();
         await Reject<ArgumentException>(async()=>{await db.Store.CompleteAsync(draft.Id,draft.Version,(PaymentMethod)99,10000);},"invalid method: rejected before persistent payment");
         var invalid=draft with { Lines=[draft.Lines[0] with { Quantity=-1 }] };
         await Reject<ArgumentException>(async()=>{await db.Store.SaveAsync(invalid);},"invalid line: negative quantity cannot poison local outbox");
@@ -178,7 +178,7 @@ internal sealed class RecoverySuite
     }
     private async Task FutureSchema()
     {
-        using var db=new TestDatabase();await db.Store.InitializeAsync();var sale=await db.SaleAsync();
+        using var db=new TestDatabase();await db.Store.InitializeAsync();await db.Store.OpenCashAsync(Guid.NewGuid().ToString("N"),0);var sale=await db.SaleAsync();
         db.Execute("PRAGMA user_version=99");
         await Reject<InvalidDataException>(()=>new LocalStore(db.Path).InitializeAsync(),"future schema: older app refuses to downgrade database");
         Check(Convert.ToInt64(db.Scalar("PRAGMA user_version"))==99 && (await db.Store.SaleAsync(sale.Order.Id))?.Payment==sale.Payment,"future schema: refusal preserves schema marker and existing sale");

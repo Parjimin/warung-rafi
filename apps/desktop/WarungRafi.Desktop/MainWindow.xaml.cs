@@ -97,7 +97,7 @@ public partial class MainWindow : Window
     }
     private async Task UpdateStatus()
     {
-        var count=await store.PendingCountAsync();
+        var count=await store.PendingCountAsync()+await store.PendingFinanceCountAsync();
         StatusText.Text=count==0?"Tersimpan di laptop · Semua perubahan sudah dikirim":$"Tersimpan di laptop · {count} perubahan menunggu dikirim";
         StatusText.ToolTip=StatusText.Text;
         HeldNav.Content=$"Ditunda ({await store.CountAsync(OrderStatus.Held)})";
@@ -144,6 +144,7 @@ public partial class MainWindow : Window
             try
             {
                 await sync.SendOutboxAsync(token);
+                await sync.SendFinanceAsync(token);
             }
             catch(OperationCanceledException) when(token.IsCancellationRequested){break;}
             catch(Exception) { if(!busy)StatusText.Text="Data lokal aman · Pengiriman menunggu koneksi atau pemeriksaan pengelola"; }

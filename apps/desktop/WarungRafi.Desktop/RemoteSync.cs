@@ -33,6 +33,17 @@ internal sealed class RemoteSync(LocalStore store,HttpClient http)
             await store.AcknowledgeAsync(ack.Accepted.Where(known.Contains).ToArray());
         }
     }
+    public async Task SendFinanceAsync(CancellationToken token)
+    {
+        var outgoing=await store.PendingFinanceAsync();if(outgoing.Length==0)return;
+        using var response=await http.PostAsJsonAsync("api/device/finance",new { events=outgoing },token);
+        response.EnsureSuccessStatusCode();
+        var ack=await response.Content.ReadFromJsonAsync<Acknowledgement>(cancellationToken:token);
+        if(ack?.Accepted is null)throw new InvalidDataException("Konfirmasi keuangan kosong.");
+        var known=outgoing.Select(x=>x.Id).ToHashSet();
+        if(ack.Accepted.Any(id=>!known.Contains(id)))throw new InvalidDataException("Konfirmasi keuangan tidak sesuai kiriman.");
+        await store.AcknowledgeFinanceAsync(ack.Accepted);
+    }
     public async Task<ProviderPayment[]> FetchPaymentsAsync(CancellationToken token)
     {
         var cursor=await store.CursorAsync();
@@ -50,7 +61,7 @@ internal sealed class RemoteSync(LocalStore store,HttpClient http)
     {
         var snapshot=await store.CatalogAsync();
         using var response=await http.PostAsJsonAsync("api/device/status",new {
-            pendingCount=await store.PendingCountAsync(),catalogVersion=snapshot.Version
+            pendingCount=await store.PendingCountAsync()+await store.PendingFinanceCountAsync(),catalogVersion=snapshot.Version
         },token);
         response.EnsureSuccessStatusCode();
     }

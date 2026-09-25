@@ -77,6 +77,7 @@ public partial class MainWindow
     }
     private async Task Complete()
     {
+        if(await store.ActiveCashAsync() is null){RenderOpenCash(true);return;}
         lastSale=await store.CompleteAsync(current.Id,current.Version,method,method==PaymentMethod.Cash?Money.ParseInput(tendered):0);
         SetCurrent(lastSale.Order);
         var panel=new StackPanel { MaxWidth=600,VerticalAlignment=VerticalAlignment.Center,HorizontalAlignment=HorizontalAlignment.Center,Margin=new Thickness(20) };

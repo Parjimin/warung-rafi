@@ -10,7 +10,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
         var demo=e.Args.Contains("--demo-qris",StringComparer.OrdinalIgnoreCase);
-        var storage=new LocalStore(DataPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),demo));
+        var storage=new LocalStore(DataPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),demo),Environment.GetEnvironmentVariable("WARUNG_MANAGER_PIN_HASH")??"");
         MainWindow=new MainWindow(storage,demo,demo);
         MainWindow.Show();
     }

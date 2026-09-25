@@ -59,6 +59,19 @@ try
         return Task.FromResult(JsonContentResponse(new { payments=new[]{proof} }));
     };
     Check((await sync.FetchPaymentsAsync(default)).Length==0,"replayed HTTP response creates no second alert");
+    var cashSession=await store.OpenCashAsync(Guid.NewGuid().ToString("N"),50000);
+    handler.Reply=_=>Task.FromResult(new HttpResponseMessage(HttpStatusCode.Conflict));
+    await Fails(()=>sync.SendFinanceAsync(default));Check(await store.PendingFinanceCountAsync()==1,"finance conflict keeps local event queued");
+    handler.Reply=_=>Task.FromResult(JsonContentResponse(new { accepted=new[]{"unknown-finance"} }));
+    await Fails(()=>sync.SendFinanceAsync(default));Check(await store.PendingFinanceCountAsync()==1,"unknown finance acknowledgement cannot discard queued entry");
+    handler.Reply=async request=>
+    {
+        Check(request.RequestUri!.AbsolutePath=="/api/device/finance","finance uses separate ordered journal endpoint");
+        var doc=await request.Content!.ReadFromJsonAsync<JsonElement>();
+        Check(doc.GetProperty("events")[0].GetProperty("amount").GetInt64()==50000,"finance transport preserves whole-rupiah opening cash");
+        return JsonContentResponse(new { accepted=new[]{"open-"+cashSession.Id} });
+    };
+    await sync.SendFinanceAsync(default);Check(await store.PendingFinanceCountAsync()==0&&(await store.ActiveCashAsync())!.Expected==50000,"acknowledgement leaves local drawer history intact");
     // Real WPF image decoder: fixture is a tiny PNG generated as test data, no external image request.
     var png=Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGNU8LFjYGBgYmBgYGBgAAAIBACuE8zpaAAAAABJRU5ErkJggg==");
     handler.Reply=_=>Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new ByteArrayContent(png)});

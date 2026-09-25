@@ -4,17 +4,22 @@ using WarungRafi.Core;
 
 namespace WarungRafi.Storage;
 
-public sealed class LocalStore
+public sealed partial class LocalStore
 {
     private readonly string connectionString;
+    private readonly string databasePath;
+    private readonly string? managerPinHash;
     private readonly Action<SqliteConnection>? configureConnection;
     private readonly SemaphoreSlim gate = new(1, 1);
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-    public LocalStore(string path) : this(path, null) { }
+    public LocalStore(string path) : this(path,null,null) { }
+    public LocalStore(string path,string managerPinHash) : this(path,null,managerPinHash) { }
 
     // Internal seam for deterministic SQLite failure tests. Never configured by the cashier.
-    internal LocalStore(string path, Action<SqliteConnection>? configureConnection)
+    internal LocalStore(string path, Action<SqliteConnection>? configureConnection) : this(path,configureConnection,null) { }
+    private LocalStore(string path,Action<SqliteConnection>? configureConnection,string? managerPinHash)
     {
+        databasePath=Path.GetFullPath(path);this.managerPinHash=managerPinHash;
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         this.configureConnection = configureConnection;
         // Test pragmas/functions must not leak into the production connection pool.
@@ -26,8 +31,13 @@ public sealed class LocalStore
         using(var version = connection.CreateCommand())
         {
             version.CommandText = "PRAGMA user_version";
-            if(Convert.ToInt32(version.ExecuteScalar()) > 1)
+            var previous=Convert.ToInt32(version.ExecuteScalar());
+            if(previous > 2)
                 throw new InvalidDataException("Database dibuat oleh versi aplikasi yang lebih baru. Gunakan aplikasi terbaru; jangan hapus database.");
+            if(previous==1)
+            {
+                using var backup=new SqliteConnection(new SqliteConnectionStringBuilder {DataSource=databasePath+".before-v2-"+Guid.NewGuid().ToString("N")+".db",Pooling=false}.ToString());backup.Open();connection.BackupDatabase(backup);
+            }
         }
         using(var mode = connection.CreateCommand())
         {
@@ -50,9 +60,10 @@ public sealed class LocalStore
                 created_at TEXT NOT NULL, is_copy INTEGER NOT NULL, status TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS ix_orders_status_updated ON orders(status, updated_at);
             CREATE INDEX IF NOT EXISTS ix_outbox_pending ON outbox(acknowledged);
-            PRAGMA user_version=1;
+            PRAGMA user_version=2;
             """;
         command.ExecuteNonQuery();
+        InitializeFinance(connection,tx);
         tx.Commit();
         return true;
     });
@@ -96,10 +107,13 @@ public sealed class LocalStore
         }
         if (current.Version != expectedVersion) throw new InvalidOperationException("Pesanan telah berubah. Buka kembali pesanan.");
         var sale = OrderRules.Complete(current, method, tendered);
+        var session=ActiveSession(connection,tx)??throw new InvalidOperationException("Buka kas terlebih dahulu sebelum menyelesaikan pesanan.");
         var stored = Write(connection, tx, sale.Order, sale.Payment);
         using var payment = Command(connection, tx, "INSERT INTO payments(order_id,payload) VALUES($id,$payload)",
             ("$id", id), ("$payload", JsonSerializer.Serialize(sale.Payment, Json)));
-        payment.ExecuteNonQuery(); tx.Commit();
+        payment.ExecuteNonQuery();
+        AddFinance(connection,tx,"sale-"+id,"sale",session.Id,id,sale.Payment.Amount,method==PaymentMethod.Cash?sale.Payment.Amount:0,"Kasir","Penjualan",sale.Payment);
+        tx.Commit();
         return new CompletedSale(stored, sale.Payment);
     });
 

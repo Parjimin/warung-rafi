@@ -193,7 +193,7 @@ public partial class MainWindow
             var buttons=Columns(Star,new GridLength(10),new GridLength(1.2,GridUnitType.Star));
             var hold=ActionButton("Simpan dulu",async()=>{await Save(OrderRules.Hold(current,customerName));SetCurrent(Order.New());RenderSelling();},id:"HoldOrder");
             hold.IsEnabled=current.Lines.Length>0;hold.Padding=new Thickness(10);hold.MinHeight=52;hold.Background=Brushes.White;hold.BorderBrush=Color("#D8E1D3");hold.FontSize=16;Place(buttons,hold);
-            var pay=ActionButton("Bayar  →",()=>{tendered="";method=PaymentMethod.Cash;RenderPayment();return Task.CompletedTask;},true,"PayOrder");
+            var pay=ActionButton("Bayar  →",async()=>{tendered="";method=PaymentMethod.Cash;if(await store.ActiveCashAsync() is null)RenderOpenCash(true);else RenderPayment();},true,"PayOrder");
             pay.IsEnabled=current.Lines.Length>0;pay.Padding=new Thickness(10);pay.MinHeight=52;Place(buttons,pay,0,2);bottom.Children.Add(buttons);
         }
         Place(grid,bottom,2);return Surface(grid,16);

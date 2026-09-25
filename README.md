@@ -8,7 +8,7 @@ Aplikasi kasir Windows untuk satu kedai: menu besar, pesanan ditunda, tunai, QRI
 
 M3 menambahkan unggah foto menu, pemantauan antrean/versi katalog laptop, serta penanganan konflik draf. Lihat [alur, setup dan batas M3](docs/M3-ADMIN-SYNC.md). Deployment Supabase/Vercel dan uji cloud nyata belum dilakukan.
 
-M4 memperkuat inbox QRIS, memisahkan polling pembayaran, dan menambahkan mode simulasi berlabel dengan database terpisah. [Panduan M4](docs/M4-QRIS.md). CI Windows, web dan PostgreSQL lulus. Total 219 pemeriksaan Windows. Berikutnya M5: keuangan dan laporan.
+M4 memperkuat inbox QRIS, memisahkan polling pembayaran, dan menambahkan mode simulasi berlabel dengan database terpisah. [Panduan M4](docs/M4-QRIS.md). CI Windows, web dan PostgreSQL lulus. Total 219 pemeriksaan Windows. **M5 aktif:** sesi kas, pengembalian berizin dan jurnal sinkronisasi. [Panduan M5 tahap 1](docs/M5-CASH-REFUNDS.md). Verifikasi Windows/SQL checkpoint ini sedang berjalan; biaya aktual, rekonsiliasi, pencairan dan Sheets belum selesai.
 
 ## Pantau progres
 
@@ -30,6 +30,7 @@ Workflow **Sync project tracking** membuat/memperbarui GitHub Milestones dan Iss
 | `src/WarungRafi.Storage` | SQLite, pembayaran, outbox, inbox notifikasi |
 | `tests/WarungRafi.Checks` | Pengujian domain dan integritas penyimpanan |
 | `tests/WarungRafi.RecoveryChecks` | Penghentian proses, kapasitas SQLite, konkurensi, dan antrean besar |
+| `tests/WarungRafi.FinanceChecks` | Sesi kas, refund, PIN, rollback jurnal dan migrasi |
 | `tests/WarungRafi.PaymentChecks` | Inbox QRIS, cursor atomik, deduplikasi dan kesegaran notifikasi |
 | `tests/WarungRafi.SyncChecks` | Transport HTTP, acknowledgement dan cache foto offline Windows |
 | `tests/WarungRafi.UiChecks` | Layout WPF, alur kasir, dan screenshot review di Windows |

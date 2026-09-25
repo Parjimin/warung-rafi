@@ -12,7 +12,7 @@ export async function startHarness(options: { payments?: boolean } = {}) {
     { id: "teh", name: "Es Teh", category: "Minuman", price: 3000, available: true, imageUrl: null }
   ];
   const state = { draft_version: 1, published_version: 1, draft: seed, published: seed };
-  const control = { storageFail: false, dbFail: false, conflict: false, uploaded: Buffer.alloc(0), devices: [] as unknown[], providerCalls: 0, providerFail: false, providerStatus: {} as Record<string, unknown>, providerWrites: [] as Record<string, unknown>[], paymentRows: [] as { sequence: number; transaction_id: string; amount: number; paid_at: string }[] };
+  const control = { financeWrites: [] as unknown[], storageFail: false, dbFail: false, conflict: false, uploaded: Buffer.alloc(0), devices: [] as unknown[], providerCalls: 0, providerFail: false, providerStatus: {} as Record<string, unknown>, providerWrites: [] as Record<string, unknown>[], paymentRows: [] as { sequence: number; transaction_id: string; amount: number; paid_at: string }[] };
   const backend = createServer(async (req, res) => {
     const chunks: Buffer[] = []; for await (const chunk of req) chunks.push(Buffer.from(chunk));
     const bytes = Buffer.concat(chunks); const path = req.url ?? "";
@@ -51,6 +51,10 @@ export async function startHarness(options: { payments?: boolean } = {}) {
       if (path.endsWith("publish_catalog")) {
         if (input.p_version !== state.draft_version) { reply({ code: "40001" }, 500); return; }
         state.published = state.draft; state.published_version++; reply(null); return;
+      }
+      if (path.endsWith("receive_finance_batch")) {
+        if (control.conflict) { reply({ code: "40001" }, 409); return; }
+        control.financeWrites.push(input.p_events); reply(input.p_events.map((e: { id: string }) => e.id)); return;
       }
       if (path.endsWith("receive_device_batch")) { reply({ accepted: control.conflict ? [] : input.p_events.map((e: { id: string }) => e.id), conflict: control.conflict }); return; }
       if (path.endsWith("report_device_status")) { control.devices = [{ device_id: input.p_device, pending_count: input.p_pending, catalog_version: input.p_catalog, last_seen_at: new Date().toISOString(), last_report_at: new Date().toISOString(), last_sync_at: null, conflict_at: null, conflict_events: [] }]; reply(null); return; }

@@ -65,24 +65,13 @@ public partial class MainWindow
             var row=Columns(Star,Auto);row.Margin=new Thickness(0,12,0,12);var name=new StackPanel();name.Children.Add(Text(line.Name,20,true));name.Children.Add(Text($"{line.Quantity} × {line.PriceLabel}",16,false,"#65766E"));Place(row,name);Place(row,Text(line.SubtotalLabel,22,true),0,1);lines.Children.Add(row);
         }
         Place(panel,Scroll(lines),1);var footer=Columns(Star,Auto);Place(footer,Text($"Total  {order.TotalLabel}",30,true));
-        if(order.Status==OrderStatus.Completed)Place(footer,ActionButton("Cetak ulang struk",async()=>{var sale=await store.SaleAsync(order.Id);if(sale is not null)await Print(sale,true);},true),0,1);
+        if(order.Status==OrderStatus.Completed)
+        {
+            var actionsPanel=new StackPanel { Orientation=Orientation.Horizontal };
+            var refund=ActionButton("Pengembalian",()=>RenderRefunds(order),id:"OrderRefund");refund.Margin=new Thickness(0,0,10,0);actionsPanel.Children.Add(refund);
+            actionsPanel.Children.Add(ActionButton("Cetak ulang struk",async()=>{var sale=await store.SaleAsync(order.Id);if(sale is not null)await Print(sale,true);},true));Place(footer,actionsPanel,0,1);
+        }
         else Place(footer,Text($"Dibatalkan · {order.CancellationReason}",18,false,"#87522F"),0,1);
         Place(panel,footer,2);Present("history",Surface(panel));
-    }
-    private async Task RenderCash()
-    {
-        if(!ready)return;
-        var now=DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7));var summary=await store.DailySalesAsync(now.Date);
-        var panel=new StackPanel();panel.Children.Add(Text("Kas hari ini",28,true));
-        var date=Text(now.ToString("dddd, d MMMM yyyy",CultureInfo.GetCultureInfo("id-ID"))+" · WIB",16,false,"#65766E");date.Margin=new Thickness(0,6,0,22);panel.Children.Add(date);
-        var cards=new System.Windows.Controls.Primitives.UniformGrid { Columns=3 };
-        foreach(var (label,value,note) in new[]{("Penjualan tercatat",Money.Format(checked(summary.Cash+summary.Qris)),$"{summary.Count} pesanan selesai"),("Tunai",Money.Format(summary.Cash),"Diterima melalui uang tunai"),("QRIS",Money.Format(summary.Qris),"Dicatat oleh kasir")})
-        {
-            var content=new StackPanel();content.Children.Add(Text(label,18,false,"#65766E"));var amount=Text(value,30,true,"#205C49");amount.Margin=new Thickness(0,14,0,14);content.Children.Add(amount);content.Children.Add(Text(note,15,false,"#65766E"));
-            var card=Surface(content,22);card.Margin=new Thickness(0,0,12,0);cards.Children.Add(card);
-        }
-        panel.Children.Add(cards);
-        var explanation=new StackPanel { Margin=new Thickness(0,24,0,0) };explanation.Children.Add(Text("Tentang ringkasan ini",20,true));
-        var detail=Text("Angka di atas adalah penjualan yang dicatat hari ini, bukan saldo laci atau saldo rekening. Modal, pengeluaran, refund, dan biaya QRIS belum dihitung.",17,false,"#65766E");detail.Margin=new Thickness(0,8,0,0);explanation.Children.Add(detail);panel.Children.Add(explanation);Present("cash",Scroll(panel));
     }
 }
