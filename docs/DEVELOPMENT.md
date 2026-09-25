@@ -33,7 +33,7 @@ Jangan memakai PDF printer sebagai printer kasir. Preview menggunakan driver/spo
 
 ## Database cloud
 
-1. Buat proyek Supabase khusus uji. Jalankan `database/001_foundation.sql` satu kali lewat SQL Editor. Jangan menjalankan migration awal berulang pada database yang sudah terisi; migration selanjutnya harus berupa file baru.
+1. Buat proyek Supabase khusus uji. Jalankan `database/001_foundation.sql`, lalu `database/002_sync_monitor.sql` satu kali lewat SQL Editor. Buat bucket foto dengan `database/storage/menu_photos.sql`. Jangan menjalankan migration awal berulang pada database yang sudah terisi; migration selanjutnya harus berupa file baru.
 2. Buat satu user melalui Supabase Auth. Nonaktifkan public signup bila tidak digunakan. Catat user UUID untuk `ADMIN_USER_ID`.
 3. RLS aktif; anon dan authenticated tidak punya akses tabel langsung. Server saja memakai service role. Jangan masukkan service role ke environment desktop atau variabel `NEXT_PUBLIC_*`.
 4. Tes SQL otomatis menggunakan PostgreSQL sementara dengan role tiruan. Tes ini memverifikasi dedupe, atomic batch, konflik, regresi refund, dan hak akses. Uji layanan Supabase aktual tetap diperlukan.
@@ -51,7 +51,7 @@ npm run dev
 
 Isi `.env.local` sesuai contoh. `APP_ORIGIN` harus sama persis dengan origin browser, tanpa trailing slash. Lokal: `http://localhost:3000`; produksi: `https://domain-yang-dipakai`. Semua key hanya dibaca server. Login memakai email/password user Supabase yang UUID-nya tercantum di `ADMIN_USER_ID`.
 
-Di admin: Tambah menu → Terapkan ke draf → Simpan draf → Terbitkan ke kasir. Draf memakai kontrol versi untuk menolak penimpaan perubahan dari tab lama. Penonaktifan menu memakai kotak Tersedia, bukan menghapus riwayat item. URL foto harus HTTPS; gunakan foto milik warung. Upload foto langsung direncanakan pada M3.
+Di admin: Tambah menu → Terapkan ke draf → Simpan draf → Terbitkan ke kasir. Draf memakai kontrol versi untuk menolak penimpaan perubahan dari tab lama. Penonaktifan menu memakai kotak Tersedia, bukan menghapus riwayat item. URL foto harus HTTPS; gunakan foto milik warung. Unggah foto langsung tersedia: JPG/PNG/WebP maksimal 3 MB; server mengubahnya menjadi JPEG untuk kasir Windows. Lihat [alur M3](M3-ADMIN-SYNC.md).
 
 Untuk Vercel pilih framework Next.js dan **Root Directory `apps/admin`**. Isi environment server sesuai contoh; jangan commit credential. Gunakan paket yang mengizinkan penggunaan usaha. Deployment belum dilakukan pada checkpoint ini karena proyek hosting dan credential belum tersedia. Koneksi serverless menggunakan REST Supabase, sehingga tidak membutuhkan VPS atau koneksi PostgreSQL persisten dari function.
 
@@ -65,7 +65,7 @@ $env:WARUNG_DEVICE_TOKEN = '<token-perangkat>'
 dotnet run --project apps/desktop/WarungRafi.Desktop
 ```
 
-API laptop hanya menerima HTTPS. Ia mengirim maksimum 50 event per batch dan menghapus status pending hanya sesudah menerima daftar ID yang diakui server. Payload event tetap disimpan lokal. Versi out-of-order/conflict menolak batch; jangan mereset database/outbox sebagai jalan pintas. Catat kasusnya untuk inspeksi pengelola. Provider inbox tetap diperiksa walau batch penjualan bermasalah.
+API laptop hanya menerima HTTPS. Ia mengirim maksimum 50 event per batch dan menghapus status pending hanya sesudah menerima daftar ID yang diakui server. Payload event tetap disimpan lokal. Halaman admin Sinkronisasi menampilkan laporan antrean, versi katalog tersimpan, terakhir terhubung, dan ID konflik. Versi out-of-order/conflict menolak batch; jangan mereset database/outbox sebagai jalan pintas. Catat kasusnya untuk inspeksi pengelola. Provider inbox tetap diperiksa walau batch penjualan bermasalah.
 
 Katalog tersimpan lokal dan baru dipasang ke UI ketika layar Jualan tidak berisi keranjang. Harga item yang sudah masuk pesanan tetap menjadi snapshot. Perubahan menu tidak mengubah struk historis.
 

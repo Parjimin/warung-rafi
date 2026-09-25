@@ -47,7 +47,7 @@
     },
     {
       "title": "M2 — Kasir Windows",
-      "description": "Aktif: revisi kedua UI/UX dengan navigasi satu bar, katalog seimbang dan pesanan lebih lega. 69 pemeriksaan WPF lulus dan screenshot aktual ditinjau. Review laptop pengguna masih terbuka; touchscreen/printer di M6.",
+      "description": "Review laptop: revisi kedua UI/UX dan 69 pemeriksaan WPF lulus. Implementasi berlanjut ke M3; touchscreen/printer di M6.",
       "issues": [
         {
           "id": "cashier",
@@ -66,7 +66,7 @@
     },
     {
       "title": "M3 — Admin dan sinkronisasi",
-      "description": "Admin web, katalog, unggah foto, kirim data lokal.",
+      "description": "Aktif: unggah/normalisasi foto, konflik draf, laporan antrean dan katalog laptop, cache offline serta pengujian API/database/Windows. Konfigurasi dan uji Supabase/Vercel nyata masih terbuka.",
       "issues": [
         {
           "id": "admin-catalog",

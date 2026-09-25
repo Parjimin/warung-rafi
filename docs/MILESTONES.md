@@ -12,9 +12,9 @@ Progres dinilai berdasarkan hasil yang dapat diperiksa. **Kode ditulis tidak sam
 | M5 — Keuangan dan laporan | Sesi kas, refund, biaya aktual, pencairan, Sheets | Rekonsiliasi dan total laporan lulus | M1, M3, M4 |
 | M6 — Rilis dan pemulihan | Finalisasi touchscreen, printer, merchant; installer, backup/restore, hardening, panduan | Uji perangkat dan akun asli, UAT penjual, restore, hosting dan kredensial produksi selesai | Milestone inti; perangkat dan pemilik tersedia pada tahap finalisasi |
 
-## Checkpoint — 24 September 2026
+## Checkpoint — 25 September 2026
 
-**M0 dan M1 selesai; M2 aktif dengan preview UI baru.** M1 lulus 23 pemeriksaan dasar dan 60 pemeriksaan recovery/integritas di CI Windows. [Bukti dan batas pengujian](M1-VALIDATION.md) tersedia. [Perapian UI M2](M2-UI-REVIEW.md) sudah diimplementasikan; review kenyamanan klik pada laptop pengguna masih terbuka. Kode awal M3–M4 tidak berarti seluruh kriteria milestone tersebut sudah selesai.
+**M0 dan M1 selesai; M2 dalam review laptop; M3 aktif.** M1 lulus 23 pemeriksaan dasar dan 60 pemeriksaan recovery/integritas di CI Windows. [Bukti dan batas pengujian](M1-VALIDATION.md) tersedia. [Perapian UI M2](M2-UI-REVIEW.md) sudah diimplementasikan; review kenyamanan klik pada laptop pengguna masih terbuka. [M3](M3-ADMIN-SYNC.md) melengkapi unggah foto, konflik draf, laporan perangkat dan verifikasi sinkronisasi/cache offline. Konfigurasi dan uji cloud nyata masih terbuka. M4 belum selesai.
 
 ## Penyesuaian urutan — 24 September 2026
 
