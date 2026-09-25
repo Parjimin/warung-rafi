@@ -4,11 +4,11 @@ Aplikasi kasir Windows untuk satu kedai: menu besar, pesanan ditunda, tunai, QRI
 
 > **Status: implementasi awal, belum siap dipakai menerima transaksi produksi.** Baca [STATUS.md](docs/STATUS.md) untuk bukti pengujian dan keterbatasan.
 
-**M0 dan M1 selesai. M2 dalam review; M3 menunggu integrasi cloud; M4 sedang diverifikasi.** [Validasi M1](docs/M1-VALIDATION.md): 23 pemeriksaan dasar + 60 pemeriksaan recovery/integritas lulus di CI Windows. Navigasi menyatu di atas, kartu menu 2×2, panel pesanan lebih lega, total/tombol tetap terlihat, nama pelanggan tersimpan otomatis, serta halaman pembayaran dan riwayat lebih rapi. Lihat [perubahan UI M2](docs/M2-UI-REVIEW.md). Kenyamanan dan respons preview baru perlu dicoba pada laptop pengguna. Uji touchscreen, printer fisik, dan akun merchant asli dijadwalkan pada M6; pengembangan fungsi lain tetap berjalan.
+**M0 dan M1 selesai. M2 dalam review; M3 menunggu integrasi cloud; M4 selesai untuk software/simulasi.** [Validasi M1](docs/M1-VALIDATION.md): 23 pemeriksaan dasar + 60 pemeriksaan recovery/integritas lulus di CI Windows. Navigasi menyatu di atas, kartu menu 2×2, panel pesanan lebih lega, total/tombol tetap terlihat, nama pelanggan tersimpan otomatis, serta halaman pembayaran dan riwayat lebih rapi. Lihat [perubahan UI M2](docs/M2-UI-REVIEW.md). Kenyamanan dan respons preview baru perlu dicoba pada laptop pengguna. Uji touchscreen, printer fisik, dan akun merchant asli dijadwalkan pada M6; pengembangan fungsi lain tetap berjalan.
 
 M3 menambahkan unggah foto menu, pemantauan antrean/versi katalog laptop, serta penanganan konflik draf. Lihat [alur, setup dan batas M3](docs/M3-ADMIN-SYNC.md). Deployment Supabase/Vercel dan uji cloud nyata belum dilakukan.
 
-M4 memperkuat inbox QRIS, memisahkan polling pembayaran, dan menambahkan mode simulasi berlabel dengan database terpisah. [Panduan M4](docs/M4-QRIS.md). Perubahan checkpoint ini belum terkirim ke GitHub dan belum lolos CI Windows/PostgreSQL; preview terverifikasi masih M3.
+M4 memperkuat inbox QRIS, memisahkan polling pembayaran, dan menambahkan mode simulasi berlabel dengan database terpisah. [Panduan M4](docs/M4-QRIS.md). CI Windows, web dan PostgreSQL lulus. Total 219 pemeriksaan Windows. Berikutnya M5: keuangan dan laporan.
 
 ## Pantau progres
 
@@ -39,7 +39,7 @@ Workflow **Sync project tracking** membuat/memperbarui GitHub Milestones dan Iss
 
 ## Coba paket preview Windows
 
-Buka [preview M3 yang sudah lulus](https://github.com/Parjimin/warung-rafi/actions/runs/36111996368), lalu unduh artifact **WarungRafi-Windows-preview**. Screenshot kasir ada pada **WarungRafi-UI-review**; screenshot admin pada **WarungRafi-M3-admin-review**. Run yang lebih baru dapat dilihat di [Actions](https://github.com/Parjimin/warung-rafi/actions/workflows/ci.yml). Ekstrak ZIP dan jalankan `WarungRafi.exe`. Paket ini untuk mencoba menu dummy dan alur kasir; belum untuk transaksi usaha nyata. Printer dan layanan online perlu dikonfigurasi mengikuti panduan.
+Buka [preview M4 yang sudah lulus](https://github.com/Parjimin/warung-rafi/actions/runs/36126169812), lalu unduh artifact **WarungRafi-Windows-preview**. Screenshot kasir ada pada **WarungRafi-UI-review**; screenshot admin pada **WarungRafi-M3-admin-review**. Run yang lebih baru dapat dilihat di [Actions](https://github.com/Parjimin/warung-rafi/actions/workflows/ci.yml). Ekstrak ZIP dan jalankan `WarungRafi.exe`. Untuk simulasi popup/suara QRIS tanpa merchant, buka `Coba-QRIS.cmd`; data simulasi terpisah dari data kasir normal. Paket ini untuk mencoba menu dummy dan alur kasir; belum untuk transaksi usaha nyata. Printer dan layanan online perlu dikonfigurasi mengikuti panduan.
 
 ## Mulai di Windows
 

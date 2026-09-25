@@ -12,6 +12,8 @@
 ```powershell
 dotnet run --project tests/WarungRafi.Checks
 dotnet run --project tests/WarungRafi.RecoveryChecks
+dotnet run --project tests/WarungRafi.PaymentChecks
+dotnet run --project tests/WarungRafi.SyncChecks
 dotnet run --project tests/WarungRafi.UiChecks
 dotnet run --project apps/desktop/WarungRafi.Desktop
 ```
@@ -19,6 +21,16 @@ dotnet run --project apps/desktop/WarungRafi.Desktop
 Tanpa konfigurasi cloud kasir tetap berjalan dengan menu dummy. Setiap perubahan pesanan disimpan lokal. Satu transaksi SQLite menulis pesanan, pembayaran, dan outbox pada saat selesai. Letak database: `%LOCALAPPDATA%\WarungRafi\warung-rafi.db`. Cache foto berada dalam subfolder `images`.
 
 Alur uji: pilih Nasi → tambah minuman → Simpan dulu → buka dari Ditunda → Bayar → isi uang → Selesaikan Pesanan → lihat kembalian → Pesanan Baru. Tutup/buka aplikasi lalu periksa riwayat. Pakai data uji, bukan transaksi pelanggan.
+
+## Simulasi QRIS tanpa merchant
+
+Pada paket preview M4, buka `Coba-QRIS.cmd` lalu tekan **Coba QRIS** di footer. Dari source:
+
+```powershell
+dotnet run --project apps/desktop/WarungRafi.Desktop -- --demo-qris
+```
+
+Jendela dan popup berlabel simulasi. Database tersendiri di `%LOCALAPPDATA%\WarungRafi\DemoQris\warung-rafi.db`; mode ini tidak sinkron ke cloud maupun mencetak. Popup tetap pasif dan tidak melunasi pesanan. [Perilaku, pengujian dan batas M4](M4-QRIS.md).
 
 ## Printer OKAY 58D
 

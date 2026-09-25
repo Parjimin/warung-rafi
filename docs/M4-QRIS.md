@@ -1,6 +1,6 @@
 # M4 — Notifikasi QRIS statis
 
-Checkpoint 25 September 2026: implementasi dan pengujian API tersedia pada branch kerja `codex/m4-qris-notifications`. **M4 belum dinyatakan selesai**: pengiriman GitHub tertahan karena pemeriksaan persetujuan otomatis gagal akibat batas penggunaan layanan; CI Windows dan PostgreSQL untuk perubahan ini belum dijalankan. Preview terakhir yang sudah terverifikasi tetap paket M3.
+Checkpoint 25 September 2026: **M4 selesai untuk lingkup perangkat lunak dan simulasi**. [CI pada commit `f6fd4cb`](https://github.com/Parjimin/warung-rafi/actions/runs/36126169812) lulus: 219 pemeriksaan Windows, 14 tes unit admin, 11 skenario API, alur browser, build/publish, dan PostgreSQL. Aktivasi merchant dan uji uang nyata tetap M6; paket ini masih preview.
 
 ## Perilaku untuk kasir
 
@@ -10,13 +10,13 @@ Notifikasi normal tampil di pojok kanan atas aplikasi dengan tiga baris:
 > Rp22.500  
 > Pukul 18.44
 
-Popup tidak memiliki tombol, tidak mengambil fokus keyboard, dan tidak menangkap klik. Popup ditampilkan sekitar enam detik. Suara memakai bunyi notifikasi Windows (`SystemSounds.Asterisk`); volume dan bunyi fisik mengikuti pengaturan laptop. Kegagalan audio tidak membatalkan penyimpanan, menghentikan kasir, atau membuat popup menetap.
+Popup tidak memiliki tombol, tidak mengambil fokus keyboard, dan tidak menangkap klik. Popup ditampilkan sekitar enam detik. Ukurannya dipadatkan agar berada di atas area kerja dan tidak menutupi panel pesanan. Suara memakai bunyi notifikasi Windows (`SystemSounds.Asterisk`); volume dan bunyi fisik mengikuti pengaturan laptop. Kegagalan audio tidak membatalkan penyimpanan, menghentikan kasir, atau membuat popup menetap.
 
 Notifikasi hanya menyampaikan bukti pembayaran provider. Pesanan yang sedang dibuka tetap sama. Dua pembayaran Rp22.500 dengan ID berbeda tetap merupakan dua bukti berbeda; kesamaan nominal tidak melunasi atau memasangkan pesanan secara otomatis. Pencatatan QRIS pada pesanan masih berupa konfirmasi kasir, terpisah dari bukti provider dan pencairan rekening. Rekonsiliasi merupakan pekerjaan M5.
 
 ## Coba tanpa akun merchant
 
-Setelah paket M4 berhasil dibangun dan diterbitkan, ekstrak preview Windows lalu buka `Coba-QRIS.cmd`. Alternatif dari folder aplikasi:
+Unduh artifact **WarungRafi-Windows-preview** dari [run M4 yang lulus](https://github.com/Parjimin/warung-rafi/actions/runs/36126169812), ekstrak ZIP, lalu buka `Coba-QRIS.cmd`. Alternatif dari folder aplikasi:
 
 ```powershell
 .\WarungRafi.exe --demo-qris
@@ -46,7 +46,6 @@ Data simulasi tersimpan di `%LOCALAPPDATA%\WarungRafi\DemoQris\warung-rafi.db`. 
 | Commit server | Fungsi PostgreSQL menyimpan status provider dan event notifikasi dalam satu transaksi. Respons berhasil diberikan hanya sesudah RPC berhasil. Gangguan provider/database menghasilkan respons gagal agar dapat diulang. |
 | Deduplikasi server | Satu transaction ID hanya menghasilkan satu event. Refund/partial refund yang sudah tercatat tidak dimundurkan oleh settlement yang terlambat. |
 | Polling laptop | Endpoint ber-token `GET /api/device/payments?after=…` mengirim maksimal 100 event, berurutan. Polling pembayaran berjalan terpisah dari outbox, katalog, foto, dan laporan perangkat. |
-| Regresi domain/storage | **23 pemeriksaan dasar lulus ulang lokal** pada perubahan M4. |
 | Inbox SQLite | Seluruh batch dan cursor disimpan atomik. Identitas, nominal, waktu, ukuran batch dan rentang sequence divalidasi. ID/sequence yang digunakan ulang dengan isi berbeda ditolak; satu baris rusak membatalkan seluruh batch. |
 | Popup | Hanya event baru yang sudah berhasil disimpan dan berumur 0–60 detik yang masuk antrean. Kesegaran diperiksa kembali ketika gilirannya tampil. |
 
@@ -60,17 +59,23 @@ Jika aplikasi berhenti setelah commit lokal tetapi sebelum popup tampil, bukti t
 
 | Lapisan | Bukti pada checkpoint ini |
 | --- | --- |
-| Unit admin | **14 tes lulus lokal**, termasuk validasi signature, identitas/status otoritatif, kegagalan provider dan tanggal kalender. |
-| API hasil build | **11 skenario lulus lokal**: lima skenario M3 dan enam M4. Node melaporkan 13 tes termasuk dua pembungkus. Next hasil build benar-benar menerima request HTTP. Provider dan Supabase menggunakan service fixture lokal. |
-| TypeScript / build web | Typecheck dan build produksi Next berhasil lokal. |
-| Regresi domain/storage | **23 pemeriksaan dasar lulus ulang lokal** pada perubahan M4. |
-| Inbox SQLite | Suite baru `WarungRafi.PaymentChecks` mencakup retry/restart, perubahan identitas, batch rusak, rollback cursor, nominal sama, urutan bercelah dan kesegaran. **31 pemeriksaan lulus lokal di Linux**, termasuk kegagalan cursor dengan trigger SQLite asli. Verifikasi Windows tetap menunggu CI. |
-| Transport Windows | `WarungRafi.SyncChecks` ditambah gangguan koneksi, inbox kosong/rusak, cursor dan replay respons. CI baru belum dijalankan. |
-| UI WPF | `WarungRafi.UiChecks` ditambah alur bukti asli menuju popup simulasi, fokus/ketikan, sound callback, duplikat, bukti lama, tidak melunasi pesanan, dan audio gagal. Screenshot direncanakan `14-qris-simulation.png`; belum dihasilkan pada checkpoint ini. |
-| PostgreSQL | `database/tests/payments.sql` menguji pending/settlement/refund, nominal sama, perubahan identitas, permissions, serta rollback jika insert notifikasi gagal. CI baru belum dijalankan. |
-| Pelacakan milestone | Pemeriksaan lokal memastikan issue merchant dapat dipindah ke M6 tanpa mengganti isi/checklist/status issue. Perubahan GitHub belum dijalankan. |
+| Unit admin | **14 tes lulus lokal dan CI**, termasuk validasi signature, identitas/status otoritatif, kegagalan provider dan tanggal kalender. |
+| API hasil build | **11 skenario lulus lokal dan CI**: lima skenario M3 dan enam M4. Node melaporkan 13 tes termasuk dua pembungkus. Next hasil build benar-benar menerima request HTTP. Provider dan Supabase menggunakan service fixture lokal. |
+| TypeScript / build web | Typecheck dan build produksi Next berhasil lokal dan CI; alur browser admin juga lulus. |
+| Regresi domain/storage | **23 pemeriksaan dasar lulus ulang lokal dan di Windows CI** pada perubahan M4. |
+| Inbox SQLite | Suite baru `WarungRafi.PaymentChecks` mencakup retry/restart, perubahan identitas, batch rusak, rollback cursor, nominal sama, urutan bercelah dan kesegaran. **31 pemeriksaan lulus lokal di Linux dan di Windows CI**, termasuk kegagalan cursor dengan trigger SQLite asli. |
+| Transport Windows | **21 pemeriksaan lulus** pada `WarungRafi.SyncChecks`: transport, gangguan koneksi, inbox kosong/rusak, cursor, replay respons dan cache foto. |
+| UI WPF | **84 pemeriksaan lulus** pada `WarungRafi.UiChecks`, termasuk alur bukti menuju popup simulasi, fokus/ketikan, sound callback, duplikat, bukti lama, tidak melunasi pesanan, audio gagal, serta batas popup di atas area pesanan. Screenshot `14-qris-simulation.png` ditinjau. |
+| PostgreSQL | `database/tests/payments.sql` lulus di PostgreSQL CI: pending/settlement/refund, nominal sama, perubahan identitas, permissions, serta rollback jika insert notifikasi gagal. Database pengujian sementara, bukan Supabase produksi. |
+| Pelacakan milestone | Issue M4 #8 memiliki bukti penerimaan software; issue #9 tetap terbuka pada M6 untuk akun/uang nyata. Workflow menjaga penempatan milestone sesuai planning tanpa mengganti checklist atau status issue. |
 
 Fixture provider hanya dimuat oleh proses pengujian melalui `integration/provider-preload.mjs`; aplikasi produksi tidak mengimpor modul itu dan tidak menyediakan route pembayaran palsu. Uji API memeriksa alur HTTP; uji PostgreSQL terpisah memeriksa transaksi dan deduplikasi database yang sesungguhnya. Sound callback membuktikan aplikasi meminta suara, bukan membuktikan speaker fisik berbunyi.
+
+Total pemeriksaan Windows: **23 dasar + 60 recovery + 31 inbox pembayaran + 21 sinkronisasi/cache + 84 UI = 219**. Paket preview Windows x64 berhasil dipublikasikan sebagai artifact. Tidak ada uji speaker, sentuhan, printer, atau merchant fisik dalam hitungan ini.
+
+![Popup simulasi QRIS di atas area pesanan, tanpa mengambil fokus input](images/m4-qris-simulation.png)
+
+Nominal bukti pada screenshot sengaja berbeda dari keranjang untuk memperlihatkan bahwa bukti tidak otomatis dipasangkan ke pesanan. Screenshot berasal dari aplikasi WPF yang dirender di CI Windows, bukan mockup.
 
 ## Finalisasi M6
 

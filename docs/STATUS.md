@@ -1,6 +1,6 @@
 # Status implementasi — checkpoint 25 September 2026
 
-**M4 aktif: ketahanan inbox dan simulasi QRIS di branch kerja; belum rilis produksi.** Pengiriman perubahan M4 ke GitHub tertahan oleh kegagalan pemeriksaan persetujuan otomatis akibat batas penggunaan layanan. CI Windows/PostgreSQL M4 belum dijalankan; bukti CI terakhir tetap M3. Tabel ini membedakan kode yang tersedia, bukti uji, dan pekerjaan yang masih terbuka. Status CI terbaru dapat diperiksa di tab [Actions](https://github.com/Parjimin/warung-rafi/actions).
+**M4 selesai untuk lingkup perangkat lunak dan simulasi; belum rilis produksi.** Commit `f6fd4cb` lulus [CI Windows, web dan PostgreSQL](https://github.com/Parjimin/warung-rafi/actions/runs/36126169812). M2 tetap menunggu review laptop, M3 menunggu integrasi cloud nyata, dan pengujian merchant/perangkat tetap M6. Pekerjaan berikutnya adalah M5: keuangan dan laporan.
 
 | Bagian | Implementasi tersedia | Verifikasi / batas saat checkpoint |
 | --- | --- | --- |
@@ -8,13 +8,13 @@
 | M1 — selesai | Aturan pesanan, harga snapshot, tunai, ditunda, SQLite, optimistic concurrency, outbox atomik | 23 pemeriksaan dasar + 60 pemeriksaan recovery/integritas lulus di CI Windows: process-kill, SQLITE_FULL, konkurensi, antrean >1.000, dan batas tanggal WIB |
 | M2 — review laptop | Satu bar navigasi, kartu mendatar 2×2, panel pesanan fleksibel/dapat diperbesar, tombol sejajar, pencarian, nama otomatis tersimpan, pembayaran/riwayat/kas dipoles, animasi singkat | 69 pemeriksaan layout/interaksi WPF lulus di CI Windows; screenshot aktual ditinjau; kenyamanan klik serta respons preview baru pada laptop pengguna masih perlu direview; touchscreen/printer tetap M6 |
 | M3 — aktif | Login, tambah/edit menu, unggah/normalisasi foto, konflik draf, publikasi, monitor antrean/versi/konflik perangkat, cache katalog/foto offline | 13 tes unit admin, 5 skenario API melalui Next hasil build, alur browser, 15 pemeriksaan sync/cache Windows dan SQL lulus; setup dan uji Supabase/Storage/Vercel nyata masih terbuka |
-| M4 — aktif, lokal | Polling terpisah, validasi inbox atomik, deduplikasi ketat, kebijakan popup 60 detik, simulasi berlabel dengan database terpisah | 31 pemeriksaan inbox SQLite + 14 unit admin + 11 skenario API dan build/typecheck lulus lokal; pengujian baru Windows/SQL serta publikasi GitHub belum selesai. [Rincian M4](M4-QRIS.md) |
+| M4 — selesai (software) | Polling terpisah, validasi inbox atomik, deduplikasi ketat, kebijakan popup 60 detik, simulasi berlabel dengan database terpisah | 31 pemeriksaan inbox SQLite, 84 layout/interaksi WPF, 21 sinkronisasi/cache, 14 unit admin dan 11 skenario API lulus; SQL, build/publish Windows serta screenshot terverifikasi. Merchant nyata tetap M6. [Rincian M4](M4-QRIS.md) |
 | M5 | Ringkasan penjualan tunai/QRIS lokal per tanggal WIB | Ledger, sesi kas, refund, MDR, payout, rekonsiliasi, Sheets belum diimplementasikan |
 | M6 | Panduan setup dan paket preview melalui CI | Finalisasi touchscreen, printer, merchant, installer, backup/restore, perlindungan token, dan UAT masih terbuka |
 
 ## Pengerjaan per milestone
 
-M0 dan M1 selesai. [Pengujian integritas dan pemulihan M1](M1-VALIDATION.md) lulus di CI Windows pada commit `6fe719b`. Saat ini **M4: QRIS**, dengan [alur, simulasi dan batas verifikasi](M4-QRIS.md). [Alur dan setup M3](M3-ADMIN-SYNC.md) tersedia. Review laptop untuk [M2](M2-UI-REVIEW.md) tetap terbuka. Kriteria integrasi cloud M3 dan verifikasi M4 belum seluruhnya selesai. Touchscreen, printer, dan merchant asli tetap pada M6.
+M0 dan M1 selesai. [Pengujian integritas dan pemulihan M1](M1-VALIDATION.md) lulus di CI Windows pada commit `6fe719b`. **M4: QRIS selesai pada lingkup software/simulasi**, dengan [alur, simulasi dan batas verifikasi](M4-QRIS.md). [Alur dan setup M3](M3-ADMIN-SYNC.md) tersedia. Review laptop untuk [M2](M2-UI-REVIEW.md) tetap terbuka. Kriteria integrasi cloud M3 masih terbuka. Berikutnya M5 mencakup sesi kas, ledger, refund, biaya, payout, rekonsiliasi dan Sheets. Touchscreen, printer, dan merchant asli tetap pada M6.
 
 ## Umpan balik pengguna dan prioritas berikutnya
 
@@ -26,21 +26,23 @@ Uji touchscreen, printer OKAY 58D, serta pembuatan/aktivasi dan uji akun merchan
 
 ## Bukti pengujian
 
-Checkpoint lokal M4: **23 pemeriksaan regresi dasar + 31 pemeriksaan inbox SQLite** di Linux, **14 tes unit admin**, **11 skenario API** melalui Next hasil build (13 termasuk pembungkus), typecheck dan build web lulus. Pengujian desktop dan PostgreSQL baru belum dinyatakan lulus. Daftar di bawah adalah bukti CI terakhir M3, bukan hasil perubahan M4.
+Bukti M4: [Verify application — f6fd4cb](https://github.com/Parjimin/warung-rafi/actions/runs/36126169812), seluruh job lulus. **219 pemeriksaan Windows**: 23 dasar + 60 recovery + 31 inbox pembayaran + 21 sinkronisasi/cache + 84 UI. Artifact **WarungRafi-Windows-preview** berisi aplikasi dan `Coba-QRIS.cmd`; **WarungRafi-UI-review** berisi 19 screenshot render aktual.
 
-- `node --test apps/admin/tests/*.test.ts`: **13 tes lulus**. Mencakup pembayaran, katalog/total, batas body, decoding/ukuran/jenis foto, kegagalan storage dan validasi laporan perangkat.
-- `dotnet run --project tests/WarungRafi.Checks`: **23 pemeriksaan lulus**, juga lulus di CI Windows. Build WPF dan publish self-contained Windows x64 berhasil. Build tidak membuktikan kompatibilitas printer/touchscreen.
-- `dotnet run --project tests/WarungRafi.RecoveryChecks -c Release`: **60 pemeriksaan lulus di CI Windows**. Database tes terisolasi; proses anak benar-benar dihentikan. Simulasi kapasitas menggunakan error asli SQLite `SQLITE_FULL`, bukan memenuhi SSD fisik. Restore dependency lokal pada checkpoint ini terhambat akses NuGet; hasil suite baru mengacu pada CI.
-- `dotnet run --project tests/WarungRafi.UiChecks -c Release`: **69 pemeriksaan lulus di Windows**, mencakup lima ukuran area kerja DIP, empat item tanpa scroll pada 1280×720, kontrol tetap terlihat, nama/draf pulih, ditunda/resume, nominal invalid, kembalian, dan popup pasif. Screenshot aktual WPF ditinjau. Pengukuran DIP bukan uji DPI monitor fisik.
-- `dotnet run --project tests/WarungRafi.SyncChecks -c Release`: **15 pemeriksaan lulus di Windows**: gangguan HTTP, offline, konflik, acknowledgement rusak/sebagian, cache katalog/foto dan pengiriman ulang. HTTP/database/folder terisolasi.
-- `node --test integration/api.test.ts` dari `apps/admin`: **5 skenario API lulus** (Node melaporkan 6 termasuk pembungkus suite), memakai Next hasil build dan service Supabase tiruan.
-- `node integration/browser.mjs`: alur unggah, edit, simpan, terbitkan, konflik dan muat ulang lulus di Chromium CI; monitor desktop/mobile dan screenshot ditinjau.
-- Migrasi 001+002 dan assertions PostgreSQL **lulus di CI**: retry dedupe, rollback batch, konflik versi, persistensi diagnostik, refund tidak mundur, serta role permissions. Database uji sementara, bukan produksi.
-- Instalasi dependency, tes unit, API, typecheck dan build Next.js berhasil lokal pada checkpoint M3; CI juga lulus. Chromium lokal belum tersedia karena unduhan browser tidak lengkap, sehingga bukti browser mengacu pada CI. Lockfile dikomit; instalasi berikutnya memakai `npm ci`.
+- `WarungRafi.Checks`: 23 pemeriksaan domain, harga historis, pembayaran/outbox atomik dan struk; lulus lokal serta Windows CI.
+- `WarungRafi.RecoveryChecks`: 60 pemeriksaan di Windows CI, termasuk penghentian proses, `SQLITE_FULL`, konkurensi dan backlog besar. Tidak memenuhi SSD fisik.
+- `WarungRafi.PaymentChecks`: 31 pemeriksaan lokal/Windows untuk identitas/sequence, retry/restart, nominal sama, batch rusak, rollback cursor dan kesegaran notifikasi.
+- `WarungRafi.SyncChecks`: 21 pemeriksaan Windows untuk HTTP/offline, acknowledgement, konflik, cursor, replay inbox dan cache foto. Service/folder/database terisolasi.
+- `WarungRafi.UiChecks`: 84 pemeriksaan Windows pada lima ukuran area kerja DIP, alur kasir, pemulihan nama/draf dan popup simulasi. Fokus mengetik dipertahankan, tidak ada tombol pada popup, tidak melunasi pesanan, sound callback sekali per bukti baru, dan audio gagal tidak menahan popup. Screenshot terakhir ditinjau: popup berada di atas panel pesanan. Pengukuran DIP bukan uji DPI monitor fisik.
+- Unit admin: 14 tes lulus lokal/CI, termasuk signature, status otoritatif, tanggal provider, kontrak katalog/penjualan, foto dan laporan perangkat.
+- API melalui Next hasil build: 11 skenario lulus lokal/CI (Node melaporkan 13 termasuk pembungkus), terdiri dari lima M3 dan enam M4. Provider dan Supabase menggunakan fixture lokal; tidak memindahkan uang.
+- Browser admin Chromium, typecheck dan build Next lulus CI. Uji browser menggunakan service fixture, belum deployment Supabase/Vercel aktual.
+- Migrasi 001+002 dan assertions/sync_monitor/payments lulus PostgreSQL CI: retry, rollback, konflik, permissions, nominal sama dan status refund tidak mundur. Database uji sementara.
+
+[Dokumentasi M4](M4-QRIS.md) menjelaskan alur, simulasi, bukti, serta batas pengujian. Sound callback membuktikan permintaan suara dari aplikasi; speaker fisik diuji di M6. Build/publish tidak membuktikan kecocokan printer atau touchscreen.
 
 Bukti M3: [Verify application — 4e3fb3c](https://github.com/Parjimin/warung-rafi/actions/runs/36111996368), seluruh job lulus. Tersedia **WarungRafi-Windows-preview**, **WarungRafi-M3-admin-review** dan **WarungRafi-UI-review**. Total pemeriksaan desktop **23 + 60 + 15 + 69 = 167**; ini bukan uji perangkat/merchant fisik.
 
-Bukti UI M2: [Verify application — de455eb](https://github.com/Parjimin/warung-rafi/actions/runs/36063728912), **23 + 60 + 69 pemeriksaan desktop**, build/publish Windows, admin dan database lulus. Unduh **WarungRafi-Windows-preview** dari run ini untuk mencoba UI baru; **WarungRafi-UI-review** berisi 18 screenshot render aktual.
+Bukti UI M2: [Verify application — de455eb](https://github.com/Parjimin/warung-rafi/actions/runs/36063728912), **23 + 60 + 69 pemeriksaan desktop**, build/publish Windows, admin dan database lulus. Run ini disimpan sebagai bukti historis; preview terbaru tersedia pada run M4 di atas. **WarungRafi-UI-review** berisi 18 screenshot render aktual.
 
 Bukti M1: [Verify application — 6fe719b](https://github.com/Parjimin/warung-rafi/actions/runs/36013056985), seluruh job desktop, admin, dan database lulus.
 

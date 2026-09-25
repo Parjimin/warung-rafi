@@ -94,7 +94,7 @@
     },
     {
       "title": "M4 — QRIS statis",
-      "description": "Aktif: polling terpisah, inbox atomik, simulasi popup/suara dengan database terisolasi. Unit dan API lulus lokal; publikasi serta CI Windows/PostgreSQL belum selesai. Merchant asli tetap M6.",
+      "description": "Selesai untuk software/simulasi: webhook otoritatif, inbox atomik, polling terpisah, popup pasif dan suara. CI f6fd4cb lulus: 219 pemeriksaan Windows, unit/API/browser dan PostgreSQL. Aktivasi serta uji merchant nyata tetap M6.",
       "issues": [
         {
           "id": "qris-proof",
@@ -109,7 +109,8 @@
             "Bukti duplikat, terlambat, offline, dan nominal sama diuji tanpa memerlukan akun merchant asli"
           ]
         }
-      ]
+      ],
+      "state": "closed"
     },
     {
       "title": "M5 — Keuangan dan laporan",
