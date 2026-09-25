@@ -10,12 +10,19 @@ try {
  await context.addCookies([{name:'warung_admin',value:'fixture-admin',url:app.origin}]);
  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(app.origin);await page.getByRole('button',{name:'Ubah menu'}).first().waitFor();
+ const cardBox=await page.locator('.product').first().boundingBox();
+ const publishBox=await page.locator('.publish').boundingBox();
+ assert.ok(cardBox && publishBox && publishBox.y>=cardBox.y+cardBox.height,'Publish bar does not cover catalog');
  await page.screenshot({path:'../../artifacts/M3-review/catalog.png',fullPage:true});
  await page.getByRole('button',{name:'Ubah menu'}).first().click();
  const png=await sharp({create:{width:300,height:200,channels:3,background:'#d3dfcf'}}).png().toBuffer();
  await page.getByLabel('Unggah foto').setInputFiles({name:'fixture.png',mimeType:'image/png',buffer:png});
  await page.getByAltText('Pratinjau foto menu').waitFor();
- await page.screenshot({path:'../../artifacts/M3-review/photo-editor.png',fullPage:true});
+ for (const name of ['Batal','Terapkan ke draf']) {
+  const box=await page.getByRole('button',{name,exact:true}).boundingBox();
+  assert.ok(box && box.y>=0 && box.y+box.height<=900,'Editor action stays visible: '+name);
+ }
+ await page.screenshot({path:'../../artifacts/M3-review/photo-editor.png',fullPage:false});
  await page.getByRole('button',{name:'Batal',exact:true}).click();
  await page.getByRole('button',{name:'+ Tambah menu'}).click();
  await page.getByLabel('Nama menu').fill('Sate Telur Uji');await page.getByLabel('Harga (rupiah)').fill('4000');await page.getByRole('combobox').selectOption('Sundukan');
