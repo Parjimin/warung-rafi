@@ -20,6 +20,8 @@ jobs:
         run: dotnet run --project tests/WarungRafi.RecoveryChecks -c Release
       - name: Build Windows touchscreen application
         run: dotnet build apps/desktop/WarungRafi.Desktop -c Release
+      - name: Verify sync transport and offline photo cache
+        run: dotnet run --project tests/WarungRafi.SyncChecks -c Release
       - name: Verify WPF layout and cashier interactions
         timeout-minutes: 2
         run: dotnet run --project tests/WarungRafi.UiChecks -c Release
@@ -50,6 +52,8 @@ jobs:
       - run: npm test
       - run: npm run typecheck
       - run: npm run build
+      - name: Verify built admin APIs with isolated service fixtures
+        run: node --test integration/api.test.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -76,4 +80,6 @@ jobs:
       - name: Apply schema and test retry, rollback, permissions
         run: |
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/001_foundation.sql
+          psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/002_sync_monitor.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/assertions.sql
+          psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/sync_monitor.sql

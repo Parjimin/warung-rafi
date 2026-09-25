@@ -27,6 +27,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer toastTimer=new() { Interval=TimeSpan.FromSeconds(6) };
     private readonly DispatcherTimer nameTimer=new() { Interval=TimeSpan.FromMilliseconds(450) };
     private CompletedSale? lastSale;
+    private Task? imagePrefetch;
 
     public MainWindow() : this(new LocalStore(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"WarungRafi","warung-rafi.db")),false) { }
     internal MainWindow(LocalStore storage, bool isolatedPreview)
@@ -126,7 +127,16 @@ public partial class MainWindow : Window
             catch(Exception) { if(!busy)StatusText.Text="Data lokal aman · Layanan online belum dapat diperiksa"; }
             try
             {
-                await sync.SendOutboxAsync(token);await sync.FetchCatalogAsync(token);
+                await sync.SendOutboxAsync(token);
+            }
+            catch(OperationCanceledException) when(token.IsCancellationRequested){break;}
+            catch(Exception) { if(!busy)StatusText.Text="Data lokal aman · Pengiriman menunggu koneksi atau pemeriksaan pengelola"; }
+            try
+            {
+                await sync.FetchCatalogAsync(token);
+                var snapshot=await store.CatalogAsync();
+                if(imagePrefetch is null||imagePrefetch.IsCompleted)
+                    imagePrefetch=ProductImages.PrefetchAsync(snapshot.Products.Where(x=>x.ImageUrl is not null).Select(x=>x.ImageUrl!),token);
                 if(!busy)
                 {
                     await UpdateStatus();
@@ -138,7 +148,10 @@ public partial class MainWindow : Window
                 }
             }
             catch(OperationCanceledException) when(token.IsCancellationRequested){break;}
-            catch(Exception) { if(!busy)StatusText.Text="Data lokal aman · Pengiriman atau katalog menunggu koneksi"; }
+            catch(Exception) { if(!busy)StatusText.Text="Data lokal aman · Katalog menunggu koneksi"; }
+            try { await sync.ReportStatusAsync(token); }
+            catch(OperationCanceledException) when(token.IsCancellationRequested){break;}
+            catch(Exception) { /* Monitoring failure must not interrupt local transactions. */ }
             try { await Task.Delay(page=="payment"?3000:12000,token); } catch(OperationCanceledException){break;}
         }
     }

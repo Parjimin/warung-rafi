@@ -6,7 +6,8 @@ export async function database(path: string, init: RequestInit = {}): Promise<un
     headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", ...init.headers }
   });
   if (!response.ok) {
-    if (response.status === 409 || response.status === 400) throw new HttpError(409, "Data berubah atau urutan data belum cocok. Muat ulang dan coba kembali.");
+    const failure = await response.json().catch(() => null) as { code?: string } | null;
+    if (response.status === 409 || response.status === 400 || failure?.code === "40001" || failure?.code === "23505") throw new HttpError(409, "Data berubah atau urutan data belum cocok. Muat ulang dan coba kembali.");
     throw new HttpError(503, "Database belum dapat dihubungi.");
   }
   return response.json();

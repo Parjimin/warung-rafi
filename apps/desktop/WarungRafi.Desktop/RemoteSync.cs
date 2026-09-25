@@ -28,7 +28,7 @@ internal sealed class RemoteSync(LocalStore store,HttpClient http)
             using var response=await http.PostAsJsonAsync("api/device/sync",new { events=body },token);
             response.EnsureSuccessStatusCode();
             var ack=await response.Content.ReadFromJsonAsync<Acknowledgement>(cancellationToken:token);
-            if(ack is null)throw new InvalidDataException("Konfirmasi server kosong.");
+            if(ack?.Accepted is null)throw new InvalidDataException("Konfirmasi server kosong.");
             var known=outgoing.Select(x=>x.Id).ToHashSet();
             await store.AcknowledgeAsync(ack.Accepted.Where(known.Contains).ToArray());
         }
@@ -45,6 +45,14 @@ internal sealed class RemoteSync(LocalStore store,HttpClient http)
         var snapshot=await http.GetFromJsonAsync<CatalogSnapshot>("api/device/catalog",token);
         if(snapshot is null)throw new InvalidDataException("Katalog kosong.");
         await store.ReceiveCatalogAsync(snapshot);
+    }
+    public async Task ReportStatusAsync(CancellationToken token)
+    {
+        var snapshot=await store.CatalogAsync();
+        using var response=await http.PostAsJsonAsync("api/device/status",new {
+            pendingCount=await store.PendingCountAsync(),catalogVersion=snapshot.Version
+        },token);
+        response.EnsureSuccessStatusCode();
     }
     private sealed record Acknowledgement(string[] Accepted);
     private sealed record PaymentBatch(ProviderPayment[] Payments);

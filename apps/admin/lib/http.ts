@@ -19,7 +19,7 @@ export async function handled(action: () => Promise<Response>): Promise<Response
     return json({ error: "Layanan belum berhasil menyimpan data. Silakan coba kembali." }, 503);
   }
 }
-export async function body(request: Request, limit = 256_000): Promise<unknown> {
+export async function bytes(request: Request, limit: number): Promise<Buffer> {
   if (!request.body) throw new HttpError(400, "Data kosong.");
   const reader = request.body.getReader(); const chunks: Uint8Array[] = []; let size = 0;
   try {
@@ -29,9 +29,13 @@ export async function body(request: Request, limit = 256_000): Promise<unknown> 
       if (size > limit) { await reader.cancel(); throw new HttpError(413, "Data terlalu besar."); }
       chunks.push(value);
     }
-    try { return JSON.parse(Buffer.concat(chunks).toString("utf8")); }
-    catch { throw new HttpError(400, "Format JSON tidak valid."); }
+    return Buffer.concat(chunks);
   } finally { reader.releaseLock(); }
+}
+export async function body(request: Request, limit = 256_000): Promise<unknown> {
+  const data = await bytes(request, limit);
+  try { return JSON.parse(data.toString("utf8")); }
+  catch { throw new HttpError(400, "Format JSON tidak valid."); }
 }
 export function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new HttpError(400, "Data tidak valid.");

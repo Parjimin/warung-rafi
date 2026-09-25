@@ -7,7 +7,8 @@ export async function POST(request: Request) {
   return handled(async () => {
     device(request);
     const batch = events(object(await body(request)).events);
-    const accepted = await rpc("ingest_device_events", { p_device: required("DEVICE_ID"), p_events: batch });
-    return json({ accepted });
+    const result = await rpc("receive_device_batch", { p_device: required("DEVICE_ID"), p_events: batch }) as { accepted: string[]; conflict: boolean };
+    if (result.conflict) return json({ error: "Urutan data berbeda. Data tetap di laptop; pengelola dapat memeriksa sinkronisasi.", conflict: true }, 409);
+    return json({ accepted: result.accepted });
   });
 }
