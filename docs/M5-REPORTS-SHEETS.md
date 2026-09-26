@@ -40,7 +40,7 @@ Semua bagian memiliki ID stabil; nomor baris spreadsheet bukan identitas transak
 - Mode sesi mencakup pesanan yang ditautkan jurnal penjualan ke sesi itu. Pesanan batal memakai jendela waktu/perangkat sesi; sumber belum menyimpan identitas sesi pembatalan. Bukti provider hanya pasangan pesanan sesi; belum merupakan seluruh penerimaan provider saat sesi berlangsung. Pencairan dan mutasi bank tersedia pada mode kalender, karena sumber hanya merekam tanggal, bukan identitas sesi.
 - Mode kalender juga menyertakan konteks pasangan provider yang dibayar di luar periode, dengan penanda; angka provider ringkasan tetap mengikuti tanggal pembayaran. Payout dilaporkan dan mutasi bank memakai tanggal masing-masing, sehingga pencairan di luar periode yang diterima bank dalam periode tetap tampil.
 - Kas_Harian berisi sesi utuh yang bersinggungan dengan periode, termasuk gerakan di luar tanggal filter. Pergerakan_Kas menandai tiap gerakan di dalam/luar periode. Pengeluaran hanya memakai gerakan kas keluar dalam cakupan.
-- Sumber belum menyimpan identitas kasir pribadi, sesi pembuatan, tipe paket/unit/versi katalog, kategori/lampiran pengeluaran atau refund per item. Angka/data itu tidak direkayasa. Label pelanggan tidak disertakan. Batas praktis: 5.000 pesanan, 20.000 event, 6 MB sumber atau 150.000 sel; pilih periode lebih pendek jika terlampaui. Tidak ada pemotongan baris diam-diam.
+- Sumber belum menyimpan identitas kasir pribadi, sesi pembuatan, tipe paket/unit/versi katalog, kategori/lampiran pengeluaran atau refund per item. Angka/data itu tidak direkayasa. Label pelanggan dihapus dari sumber snapshot laporan. Batas praktis: 5.000 pesanan, 20.000 event, 6 MB sumber atau 150.000 sel; pilih periode lebih pendek jika terlampaui. Tidak ada pemotongan baris diam-diam.
 
 ## Identitas, antrean dan pemulihan
 
@@ -75,4 +75,12 @@ Belum ada koneksi Google milik pengguna atau kredensial produksi yang dipasang d
 
 ## Verifikasi checkpoint
 
-Lokal: 32 tes unit admin, 14 skenario API (16 hasil Node termasuk pembungkus), typecheck/build Next dan enam suite SQL pada PostgreSQL WASM. Kontrak laporan berasal dari serializer C# yang melewati migrasi/RPC PostgreSQL, bukan data saldo buatan terpisah. Sampel manual: bruto Rp46.500, tunai Rp31.500, QRIS kasir Rp15.000, refund berhasil Rp37.500, kas keluar Rp10.000; sesi ditutup seharusnya Rp112.500, fisik Rp112.000, selisih −Rp500. Integrasi Google memakai transport fixture dan kunci uji sementara; akun Google nyata serta scheduler belum diuji. Bukti CI dan screenshot akan dicatat setelah checkpoint lulus.
+Lokal: 32 tes unit admin, 14 skenario API (16 hasil Node termasuk pembungkus), typecheck/build Next dan enam suite SQL pada PostgreSQL WASM. Kontrak laporan berasal dari serializer C# yang melewati migrasi/RPC PostgreSQL, bukan data saldo buatan terpisah. Sampel manual: bruto Rp46.500, tunai Rp31.500, QRIS kasir Rp15.000, refund berhasil Rp37.500, kas keluar Rp10.000; sesi ditutup seharusnya Rp112.500, fisik Rp112.000, selisih −Rp500. Integrasi Google memakai transport fixture dan kunci uji sementara; akun Google nyata serta scheduler belum diuji. [CI `5c2b7f7`](https://github.com/Parjimin/warung-rafi/actions/runs/36244233885) lulus tanpa retry: 306 pemeriksaan Windows, 32 unit admin, 14 skenario API, tiga alur browser, typecheck/build/publish, migrasi 001–005 dan enam suite PostgreSQL 17. Browser membuktikan respons hilang → reload → retry, CSV, quota dan penulisan Sheets terputus → retry dengan tetap 14 tab, serta layout ponsel tanpa overflow halaman. M5/#11 tetap terbuka untuk pemasangan dan pengujian koneksi Google nyata/scheduler.
+
+## Screenshot aplikasi hasil CI
+
+Gambar di bawah memakai fixture uji; label Sheets terverifikasi mengacu pada baca ulang transport uji, bukan workbook Google pengguna. Lima gambar lengkap tersedia pada artifact **WarungRafi-M5-reports-review** di run CI tersebut.
+
+![Laporan dengan total manual dan pilihan CSV](images/m5-report-overview.png)
+
+![Laporan serta status ekspor pada ponsel](images/m5-report-mobile.png)
