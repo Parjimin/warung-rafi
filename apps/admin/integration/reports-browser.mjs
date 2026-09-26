@@ -1,0 +1,34 @@
+import { chromium } from 'playwright';
+import { startHarness } from './harness.ts';
+import { mkdir, readFile } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const h = await startHarness({ reports: true }); let browser;
+await mkdir('../../artifacts/M5-reports-review', { recursive: true });
+try {
+ browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+ const context = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+ await context.addCookies([{ name: 'warung_admin', value: 'fixture-admin', url: h.origin }]);
+ const page = await context.newPage(), errors = []; page.on('pageerror', e => errors.push(e.message));
+ const shot = name => page.screenshot({ path: `../../artifacts/M5-reports-review/${name}.png`, fullPage: true });
+ await page.goto(h.origin + '/laporan'); await page.getByLabel('Basis laporan').selectOption('calendar');
+ await page.getByLabel('Dari tanggal', { exact: true }).fill('2026-09-01'); await page.getByLabel('Sampai tanggal', { exact: true }).fill('2026-10-02');
+ await page.getByRole('button', { name: 'Buat salinan laporan' }).click(); await page.getByText('Pilih rentang tanggal maksimal 31 hari.', { exact: true }).waitFor();
+ assert.equal(await page.getByLabel('Dari tanggal', { exact: true }).isEnabled(), true);
+ await page.getByLabel('Dari tanggal', { exact: true }).fill('2026-09-25'); await page.getByLabel('Sampai tanggal', { exact: true }).fill('2026-09-25');
+ h.control.reportLostCreate = true; await page.getByRole('button', { name: 'Buat salinan laporan' }).click(); await page.getByRole('button', { name: 'Periksa pembuatan laporan' }).waitFor();
+ await page.reload(); await page.getByRole('button', { name: 'Periksa pembuatan laporan' }).waitFor(); h.control.reportLostCreate = false;
+ await page.getByRole('button', { name: 'Periksa pembuatan laporan' }).click(); await page.getByText('Penjualan bruto', { exact: true }).waitFor();
+ assert.equal(h.control.reportJobs.length, 1); await shot('report-overview');
+ await page.getByLabel('Bagian laporan').selectOption('Pengembalian');
+ const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('link', { name: 'Unduh CSV bagian ini' }).click()]);
+ const csv = await readFile(await download.path(), 'utf8'); assert.ok(csv.includes('selesai_dalam_periode')); assert.ok(csv.includes('IDR')); assert.ok(csv.includes('17500')); await shot('report-refunds');
+ await page.getByRole('button', { name: 'Antrekan ke Sheets' }).click(); await page.getByRole('button', { name: 'Proses sekarang' }).waitFor(); h.control.googleStatus = 429;
+ await page.getByRole('button', { name: 'Proses sekarang' }).click(); await page.getByRole('button', { name: 'Jadwalkan ulang' }).waitFor(); assert.equal(h.control.reportJobs[0].state, 'failed'); assert.equal(h.control.reportJobs[0].verified_at, null); await shot('sheets-pending');
+ h.control.googleStatus = 200; h.control.googleLostWrite = true;
+ await page.getByRole('button', { name: 'Jadwalkan ulang' }).click(); await page.getByRole('button', { name: 'Proses sekarang' }).click(); await page.getByRole('button', { name: 'Jadwalkan ulang' }).waitFor(); assert.equal(h.control.googleSheets.length, 14);
+ h.control.googleLostWrite = false; await page.getByRole('button', { name: 'Jadwalkan ulang' }).click(); await page.getByRole('button', { name: 'Proses sekarang' }).click(); await page.getByRole('link', { name: 'Buka Google Sheets' }).waitFor();
+ assert.equal(h.control.googleSheets.length, 14); assert.equal(h.control.reportJobs[0].state, 'succeeded'); await shot('sheets-verified');
+ await page.setViewportSize({ width: 390, height: 844 }); await page.getByLabel('Bagian laporan').selectOption('Kas_Harian');
+ assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false); await shot('report-mobile');
+ assert.deepEqual(errors, []); console.log('Report browser passed: invalid period recovery, lost creation + reload retry, CSV download, quota, lost Sheets write, verified retry without duplicate tabs, mobile overflow.');
+} finally { await browser?.close(); await h.stop(); }

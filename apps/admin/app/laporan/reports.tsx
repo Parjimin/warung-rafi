@@ -1,0 +1,60 @@
+"use client";
+import { useEffect, useState } from "react";
+import type { Report, ReportFilter } from "../../lib/reports.ts";
+type Job = { id: string; filter: ReportFilter; created_at: string; state: string; attempts: number; next_attempt_at: string | null; error_code: string | null; verified_at: string | null; target: string | null };
+type Session = { device_id: string; id: string; closed: boolean; payload: { openedAt: string; closedAt: string | null } };
+type Preview = Omit<Report, "tables"> & { tables: (Report["tables"][number] & { count: number })[] };
+const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+const time = (s: string) => new Date(s).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "short", timeStyle: "short" });
+const money = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
+const states: Record<string, string> = { ready: "Salinan tersimpan · belum diantrekan", queued: "Menunggu ekspor", running: "Sedang dikirim", failed: "Belum berhasil", succeeded: "Sheets terverifikasi" };
+const errors: Record<string, string> = { configuration: "Konfigurasi Sheets belum lengkap.", permission: "Periksa izin spreadsheet dan akun layanan.", quota: "Batas penggunaan Google tercapai; coba sesuai jadwal ulang.", network: "Koneksi terputus; pekerjaan tetap tersimpan.", target_changed: "Tujuan atau tab sumber berubah; periksa konfigurasi.", verification: "Isi Sheets belum cocok dengan snapshot; perlu kirim ulang.", capacity: "Laporan terlalu besar; gunakan periode lebih pendek.", service: "Layanan belum berhasil menyelesaikan ekspor.", interrupted: "Proses terhenti; antrean dapat dipulihkan." };
+const key = "warung-report-create-v1";
+export default function Reports() {
+ const [jobs, setJobs] = useState<Job[]>([]), [sessions, setSessions] = useState<Session[]>([]), [configured, setConfigured] = useState(false);
+ const [mode, setMode] = useState("session"), [session, setSession] = useState(""), [from, setFrom] = useState(today), [to, setTo] = useState(today);
+ const [busy, setBusy] = useState(false), [message, setMessage] = useState(""), [preview, setPreview] = useState<Preview | null>(null), [table, setTable] = useState("Ringkasan_Harian");
+ const [pending, setPending] = useState<{ id: string; filter: ReportFilter } | null>(null);
+ async function api(path: string, init?: RequestInit) { const response = await fetch(path, { ...init, signal: AbortSignal.timeout(65000) }); const result = await response.json(); if (!response.ok) throw Object.assign(new Error(result.error), { status: response.status }); return result; }
+ async function load(initial = false) { const r = await api("/api/admin/reports"); setJobs(r.jobs); setSessions(r.sessions); setConfigured(r.configured); if (initial) { if (r.sessions[0]) setSession(r.sessions[0].device_id + "/" + r.sessions[0].id); else setMode("calendar"); } }
+ async function refresh() { setBusy(true); try { await load(); setMessage("Status terbaru dimuat."); } catch (e) { setMessage((e as Error).message); } finally { setBusy(false); } }
+ useEffect(() => { try { const saved = sessionStorage.getItem(key); if (saved) setPending(JSON.parse(saved)); } catch { /* An unreadable draft does not affect durable reports. */ } setBusy(true); void load(true).catch(e => setMessage(e.message)).finally(() => setBusy(false)); }, []);
+ async function show(id: string) { setBusy(true); try { const p = await api(`/api/admin/reports/${id}`); setPreview(p); setTable("Ringkasan_Harian"); setMessage("Salinan laporan dimuat. Data ini tetap sesuai waktu pembuatannya."); } catch (e) { setMessage((e as Error).message); } finally { setBusy(false); } }
+ async function create(retry = pending) {
+  setBusy(true);
+  try {
+   let command = retry;
+   if (!command) {
+    const selected = sessions.find(s => s.device_id + "/" + s.id === session);
+    if (mode === "session" && !selected) throw new Error("Pilih sesi kas terlebih dahulu.");
+    const filter: ReportFilter = mode === "session" ? { mode: "session", deviceId: selected!.device_id, sessionId: selected!.id } : { mode: "calendar", from, to };
+    command = { id: crypto.randomUUID().replaceAll("-", ""), filter }; sessionStorage.setItem(key, JSON.stringify(command)); setPending(command);
+   }
+   await api("/api/admin/reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", ...command }) });
+   sessionStorage.removeItem(key); setPending(null); await load(); const p = await api(`/api/admin/reports/${command.id}`); setPreview(p); setTable("Ringkasan_Harian"); setMessage("Laporan dibuat. CSV tersedia; Sheets dapat diantrekan setelah diperiksa.");
+  } catch (e) { if ([400, 409, 413].includes((e as { status?: number }).status ?? 0)) { sessionStorage.removeItem(key); setPending(null); } setMessage((e as Error).message); } finally { setBusy(false); }
+ }
+ async function action(id: string, action: string) { setBusy(true); try { const result = await api("/api/admin/reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, action }) }); await load(); setMessage(action === "queue" ? "Ekspor masuk antrean. Proses sekarang atau biarkan runner terjadwal mengambilnya." : result.verified ? "Isi Sheets sudah dibaca ulang dan cocok dengan salinan laporan." : result.processed ? errors[result.code] ?? "Ekspor belum selesai." : "Belum ada pekerjaan yang siap; periksa jadwal ulang atau proses yang masih berjalan."); } catch (e) { setMessage((e as Error).message); } finally { setBusy(false); } }
+ const selected = preview?.tables.find(t => t.name === table); const current = jobs.find(j => j.id === preview?.id);
+ return <main className="finance reports"><span className="eyebrow">LAPORAN & EKSPOR</span><h1>Angka yang bisa ditelusuri.</h1><p>Buat salinan laporan per sesi atau tanggal WIB, periksa rinciannya, lalu unduh CSV atau kirim ke Google Sheets.</p>
+  <section className="report-builder"><div><h2>Buat laporan</h2><p>Salinan menyimpan keadaan data saat dibuat. Setelah sinkronisasi atau koreksi, buat laporan baru.</p></div>
+   <form onSubmit={e => { e.preventDefault(); void create(null); }}><fieldset disabled={busy || !!pending}><label>Basis laporan<select value={mode} onChange={e => setMode(e.target.value)}><option value="session">Sesi kas · termasuk lewat tengah malam</option><option value="calendar">Tanggal kalender WIB · maksimal 31 hari</option></select></label>
+   {mode === "session" ? <label>Sesi kas<select value={session} onChange={e => setSession(e.target.value)} required><option value="">Pilih sesi</option>{sessions.map(s => <option key={s.device_id + "/" + s.id} value={s.device_id + "/" + s.id}>{s.device_id} · {time(s.payload.openedAt)} · {s.closed ? "Ditutup" : "Terbuka"}</option>)}</select></label> : <div className="form-row"><label>Dari tanggal<input type="date" value={from} required onChange={e => setFrom(e.target.value)} /></label><label>Sampai tanggal<input type="date" value={to} required onChange={e => setTo(e.target.value)} /></label></div>}
+   <button>Buat salinan laporan</button></fieldset></form>
+  </section>
+  <div className="message" role="status">{message}</div>
+  {pending && <aside className="conflict"><strong>Pembuatan belum terkonfirmasi</strong><p>Kirim ulang permintaan yang sama agar salinan tidak dibuat dua kali.</p><button disabled={busy} onClick={() => void create()}>Periksa pembuatan laporan</button></aside>}
+  {!configured && <aside className="conflict"><strong>Google Sheets belum terhubung.</strong><p>CSV tetap tersedia. Pengelola hosting perlu mengatur spreadsheet tujuan dan akun layanan sebelum mengaktifkan ekspor.</p></aside>}
+  {preview && <section className="report-preview"><div className="device-head"><div><span className="eyebrow">SALINAN LAPORAN</span><h2>{preview.from} — {preview.to}</h2><p>{preview.filter.mode === "session" ? "Sesi kas" : "Kalender WIB"} · dibuat {time(preview.capturedAt)} WIB</p><small className="report-id">ID {preview.id}</small></div>{current && <span className="device-state">{states[current.state]}</span>}</div>
+   <div className="stats finance-stats"><article><span>Penjualan bruto</span><strong>{money(preview.totals.gross)}</strong><small>{preview.totals.sales} pesanan selesai</small></article><article><span>Refund selesai dalam cakupan</span><strong>{money(preview.totals.refunds)}</strong><small>Mengikuti sesi / waktu pengembalian</small></article><article><span>Pengeluaran laci</span><strong>{money(preview.totals.expenses)}</strong><small>Belum mencakup seluruh biaya usaha</small></article></div>
+   <aside className="conflict"><strong>{preview.tables.find(t => t.name === "Pemeriksaan_Data")?.count ?? 0} catatan perlu diperiksa</strong><p>Biaya aktual belum diketahui untuk {preview.totals.unknownFees} bukti QRIS. Periksa bagian Pemeriksaan Data; angka ini belum menyatakan laba.</p></aside>
+   <div className="report-toolbar"><label>Bagian laporan<select value={table} onChange={e => setTable(e.target.value)}>{preview.tables.map(t => <option key={t.name} value={t.name}>{t.name.replaceAll("_", " ")} · {t.count} baris</option>)}</select></label><a className="button secondary" href={`/api/admin/reports/${preview.id}?csv=${table}`}>Unduh CSV bagian ini</a><button disabled={busy || !configured || current?.state === "running"} onClick={() => void action(preview.id, "queue")}>{current?.state === "succeeded" ? "Antrekan verifikasi ulang" : "Antrekan ke Sheets"}</button></div>
+   <p className="sync-note">Pratinjau maksimal 20 baris. CSV dan Sheets memuat seluruh baris dalam salinan ini. Laporan baru memakai kelompok tab sendiri; tab analisis lain tetap tersedia.</p>
+   {selected && <div className="report-table" tabIndex={0} role="region" aria-label={`Pratinjau ${selected.name}`}><table><thead><tr>{selected.columns.map(c => <th key={c}>{c.replaceAll("_", " ")}</th>)}</tr></thead><tbody>{selected.rows.map((row, i) => <tr key={String(row[0] ?? i)}>{row.map((c, j) => <td key={j}>{c == null || c === "" ? "—" : c}</td>)}</tr>)}</tbody></table>{!selected.count && <p>Tidak ada catatan dalam bagian ini.</p>}</div>}
+  </section>}
+  <section className="report-history"><div className="device-head"><div><h2>Salinan & status ekspor</h2><p>30 laporan terbaru · waktu ditampilkan dalam WIB</p></div><button className="secondary" disabled={busy} onClick={() => void refresh()}>Muat ulang status</button></div>
+   {!jobs.length && <section className="notice"><h2>Belum ada salinan laporan</h2><p>Pilih sesi atau tanggal, lalu buat laporan pertama.</p></section>}
+   {jobs.map(j => <article className="device report-job" key={j.id}><div className="device-head"><h3>{j.filter.mode === "calendar" ? `${j.filter.from} — ${j.filter.to}` : `Sesi kas · ${j.filter.deviceId}`}</h3><span className={`device-state ${j.state === "failed" ? "warning" : ""}`}>{states[j.state]}</span></div><p>Dibuat {time(j.created_at)} WIB · {j.attempts} percobaan pengiriman</p><small className="report-id">{j.id}</small>{j.error_code && <p className="error">{errors[j.error_code] ?? "Periksa konfigurasi ekspor."}</p>}{j.next_attempt_at && <p className="sync-note">Siap dicoba kembali: {time(j.next_attempt_at)} WIB</p>}{j.verified_at && <p className="sync-note">Terakhir dibaca ulang dan cocok: {time(j.verified_at)} WIB</p>}<div className="finance-actions"><button className="secondary" disabled={busy} onClick={() => void show(j.id)}>Lihat laporan</button>{["queued", "failed", "running"].includes(j.state) && <button disabled={busy || !configured} onClick={() => void action(j.id, "run")}>Proses sekarang</button>}{j.state === "failed" && <button className="secondary" disabled={busy || !configured} onClick={() => void action(j.id, "queue")}>Jadwalkan ulang</button>}{j.state === "succeeded" && j.target && <a className="button secondary" href={`https://docs.google.com/spreadsheets/d/${j.target}/edit`} target="_blank" rel="noreferrer">Buka Google Sheets</a>}</div></article>)}
+  </section>
+ </main>;
+}
