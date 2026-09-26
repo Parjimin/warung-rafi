@@ -244,7 +244,10 @@ internal static class Program
     private static T Get<T>(string id) where T:DependencyObject => Find<T>(id)??throw new Exception("Missing UI element: "+id);
     private static async Task Click(string id,Func<bool> done)
     {
-        var button=Get<Button>(id);Check(button.IsEnabled,"Action enabled: "+id);button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Until(done);Layout();
+        // Rendering can precede the final asynchronous status update. Wait until
+        // Run has released its action gate before starting or completing a test step.
+        await Until(()=>window.Navigation.IsEnabled);
+        var button=Get<Button>(id);Check(button.IsEnabled,"Action enabled: "+id);button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Until(()=>window.Navigation.IsEnabled&&done());Layout();
     }
     private static async Task Until(Func<bool> condition)
     {
