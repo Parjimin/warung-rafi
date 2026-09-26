@@ -10,7 +10,7 @@ namespace WarungRafi.Desktop;
 internal static class ReceiptPrinter
 {
     private static readonly SemaphoreSlim Queue=new(1,1);
-    public static async Task PrintAsync(CompletedSale sale,bool copy)
+    public static async Task PrintAsync(CompletedSale sale,bool copy,string? configuredPrinter=null)
     {
         await Queue.WaitAsync();
         try
@@ -18,17 +18,17 @@ internal static class ReceiptPrinter
             var completion=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var thread=new Thread(()=>
             {
-                try { PrintOnSta(sale,copy);completion.SetResult(); }
+                try { PrintOnSta(sale,copy,configuredPrinter);completion.SetResult(); }
                 catch(Exception error) { completion.SetException(error); }
             }) { IsBackground=true,Name="WarungRafi.ReceiptPrinter" };
             thread.SetApartmentState(ApartmentState.STA);thread.Start();await completion.Task;
         }
         finally { Queue.Release(); }
     }
-    private static void PrintOnSta(CompletedSale sale,bool copy)
+    private static void PrintOnSta(CompletedSale sale,bool copy,string? configuredPrinter)
     {
-        var printerName=Environment.GetEnvironmentVariable("WARUNG_PRINTER_NAME");
-        if(string.IsNullOrWhiteSpace(printerName))throw new InvalidOperationException("Printer belum dipilih. Atur WARUNG_PRINTER_NAME sesuai nama printer Windows.");
+        var printerName=configuredPrinter??Environment.GetEnvironmentVariable("WARUNG_PRINTER_NAME");
+        if(string.IsNullOrWhiteSpace(printerName))throw new InvalidOperationException("Printer belum dipilih. Pilih printer Windows melalui Pengaturan.");
         using var server=new LocalPrintServer();
         using var queue=server.GetPrintQueue(printerName);
         var width=58d/25.4*96;

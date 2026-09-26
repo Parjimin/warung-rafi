@@ -72,6 +72,21 @@ try
         return JsonContentResponse(new { accepted=new[]{"open-"+cashSession.Id} });
     };
     await sync.SendFinanceAsync(default);Check(await store.PendingFinanceCountAsync()==0&&(await store.ActiveCashAsync())!.Expected==50000,"acknowledgement leaves local drawer history intact");
+    // Restore review must retain its gate on any interrupted or inconsistent response.
+    using(var connection=new SqliteConnection("Data Source="+path)){connection.Open();using var cmd=connection.CreateCommand();cmd.CommandText="INSERT INTO settings VALUES('recovery_required','1'),('sync_recheck','1')";cmd.ExecuteNonQuery();}
+    var recoveryRequests=0;var recoveryState=new string('a',32);var changed=false;
+    handler.Reply=request=>
+    {
+        if(request.RequestUri!.AbsolutePath.EndsWith("setup"))return Task.FromResult(JsonContentResponse(new {schema=6,deviceId="fixture-device"}));
+        recoveryRequests++;
+        return Task.FromResult(JsonContentResponse(new {state=changed&&recoveryRequests==2?new string('b',32):recoveryState,deviceId="fixture-device",orders=Array.Empty<object>(),finance=(object?)null,next=(string?)null}));
+    };
+    changed=true;await Fails(()=>sync.VerifyRecoveryAsync(default));
+    Check(await store.SettingAsync("recovery_required")=="1","changed final recovery response cannot clear cashier gate");
+    recoveryRequests=0;changed=false;await sync.VerifyRecoveryAsync(default);
+    Check(recoveryRequests==2&&await store.SettingAsync("recovery_required") is null&&await store.SettingAsync("sync_recheck") is null,"stable server review rechecks source then unlocks recovered database");
+    Check(await store.SettingAsync("cloud_device")=="fixture-device","recovery persists server device identity");
+    handler.Reply=_=>Task.FromResult(JsonContentResponse(new{schema=5,deviceId="fixture-device"}));await Fails(()=>sync.CheckSetupAsync(default));Check(true,"older server migration is rejected before recovery");
     // Real WPF image decoder: fixture is a tiny PNG generated as test data, no external image request.
     var png=Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGNU8LFjYGBgYmBgYGBgAAAIBACuE8zpaAAAAABJRU5ErkJggg==");
     handler.Reply=_=>Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new ByteArrayContent(png)});

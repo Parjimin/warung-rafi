@@ -1,4 +1,6 @@
-# Status implementasi — checkpoint 26 September 2026
+# Status implementasi — checkpoint M6
+
+**M6 aktif: kode installer, pengaturan terlindungi, backup/restore dan hardening sudah tersedia; verifikasi Windows/CI checkpoint ini sedang dijalankan.** [Panduan M6](M6-SETUP-RECOVERY.md). Uji akun/perangkat nyata tetap terbuka.
 
 **M5 tahap laporan/CSV/Sheets sudah terverifikasi pada tingkat software.** [CI `5c2b7f7`](https://github.com/Parjimin/warung-rafi/actions/runs/36244233885) lulus **306 pemeriksaan Windows**, 32 tes unit admin, 14 skenario API (16 hasil termasuk pembungkus), tiga alur browser dan enam suite SQL PostgreSQL 17. Laporan tetap per sesi atau tanggal WIB memuat 14 bagian, CSV dan antrean Sheets dengan retry serta verifikasi baca ulang. [Panduan tahap 1](M5-CASH-REFUNDS.md) · [Tahap 2](M5-RECONCILIATION.md) · [Tahap 3 dan screenshot](M5-REPORTS-SHEETS.md). **M5 tetap terbuka untuk koneksi Google nyata dan scheduler.** M2 menunggu review laptop, M3 menunggu integrasi cloud, dan uji merchant/perangkat tetap M6.
 
@@ -10,7 +12,7 @@
 | M3 — aktif | Login, tambah/edit menu, unggah/normalisasi foto, konflik draf, publikasi, monitor antrean/versi/konflik perangkat, cache katalog/foto offline | 13 tes unit admin, 5 skenario API melalui Next hasil build, alur browser, 15 pemeriksaan sync/cache Windows dan SQL lulus; setup dan uji Supabase/Storage/Vercel nyata masih terbuka |
 | M4 — selesai (software) | Polling terpisah, validasi inbox atomik, deduplikasi ketat, kebijakan popup 60 detik, simulasi berlabel dengan database terpisah | 31 pemeriksaan inbox SQLite, 84 layout/interaksi WPF, 21 sinkronisasi/cache, 14 unit admin dan 11 skenario API lulus; SQL, build/publish Windows serta screenshot terverifikasi. Merchant nyata tetap M6. [Rincian M4](M4-QRIS.md) |
 | M5 — aktif | Kas/refund, rekonsiliasi, biaya/pencairan/mutasi bank, audit, snapshot laporan per sesi/tanggal, CSV dan antrean Sheets | 306 Windows, 32 unit admin, 14 skenario API, tiga alur browser dan enam suite PostgreSQL 17 lulus. Screenshot ditinjau. Koneksi Google nyata/scheduler belum diaktifkan; biaya/pencairan masih manual berreferensi |
-| M6 | Panduan setup dan paket preview melalui CI | Finalisasi touchscreen, printer, merchant, installer, backup/restore, perlindungan token, dan UAT masih terbuka |
+| M6 — aktif | Installer/update per pengguna, PIN/DPAPI, backup terenkripsi, restore dengan gate cloud, limiter login dan rotasi token | Verifikasi checkpoint berlangsung; akun nyata, printer/touchscreen dan UAT pemilik tetap terbuka |
 
 ## Pengerjaan per milestone
 
@@ -82,9 +84,9 @@ Bukti awal: [Verify application #1](https://github.com/Parjimin/warung-rafi/acti
 3. Popup hanya judul, nominal, jam; maksimal sekitar enam detik. Inbox disimpan sebelum ditampilkan. Bukti lebih dari 60 detik atau berasal dari masa depan tidak dibunyikan ketika aplikasi mengejar backlog. Ini mencegah suara lama mengesankan ada pembayaran baru. Gangguan saat sesudah simpan sebelum popup dapat menyebabkan popup terlewat; bukti tetap tersimpan.
 4. Laptop membaca notifikasi melalui polling HTTPS, bukan koneksi websocket. Interval dasar 3 detik di pembayaran dan 12 detik di halaman lain, ditambah waktu jaringan/proses. Implementasi M4 memisahkan loop ini dari sinkronisasi katalog/outbox. Tidak ada jaminan suara tepat seketika. Tidak ada notifikasi OS ketika aplikasi ditutup.
 5. Kasir tidak menunggu cloud atau printer untuk menerima pesanan berikutnya. Tidak ada retry cetak otomatis karena status fisik kertas belum dapat dibuktikan. `submitted` berarti masuk spooler, bukan pasti keluar kertas.
-6. Nama printer harus diatur eksplisit. Data lokal tersimpan di SQLite; belum ada backup/restore UI. Jangan menghapus database untuk memperbaiki sinkronisasi.
+6. Nama printer harus diatur eksplisit. Data lokal tersimpan di SQLite; pengaturan printer serta backup/restore tersedia melalui UI M6. Jangan menghapus database untuk memperbaiki sinkronisasi.
 7. Riwayat/daftar pesanan menampilkan hingga 1.000 catatan per tampilan. Ringkasan harian menghitung seluruh transaksi pada tanggal WIB, tanpa limit tersebut. Pagination menjadi pekerjaan lanjutan.
-8. Autentikasi admin memakai satu user Supabase yang diizinkan. Token akses di cookie HTTP-only berlaku maksimal satu jam; setelah itu login ulang. MFA/role/rotasi token perangkat dan hardening login belum selesai.
+8. Autentikasi admin memakai satu user Supabase yang diizinkan. Token akses di cookie HTTP-only berlaku maksimal satu jam; setelah itu login ulang. M6 menambahkan limiter login bersama serta masa pergantian token perangkat. MFA dan multi-role tidak disediakan aplikasi ini.
 9. Kategori awal tetap empat. Item boleh ditambah/diubah/dinonaktifkan. CRUD kategori bebas belum tersedia.
 10. Kas hari ini menampilkan sesi aktif, uang laci tercatat dan penjualan kotor sesi secara terpisah. Refund berhasil mengurangi laci hanya jika tunai. Sesi bisa melewati tengah malam. Dashboard biaya, pencairan dan rekonsiliasi provider tersedia di web admin; masukan biaya/mutasi memakai referensi laporan manual. Penjualan sebelum migrasi tetap di riwayat dan tidak dibuatkan sesi kas fiktif.
 

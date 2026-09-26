@@ -70,7 +70,7 @@ Untuk Vercel pilih framework Next.js dan **Root Directory `apps/admin`**. Isi en
 
 ## Menghubungkan laptop
 
-Buat token acak minimal 32 karakter dari sumber kriptografis. Isi nilai yang sama di `DEVICE_API_TOKEN` server dan `WARUNG_DEVICE_TOKEN` laptop. `DEVICE_ID` server tetap `kasir-utama`; jangan berubah sembarangan karena ia namespace sinkronisasi.
+Buat token acak minimal 32 karakter dari sumber kriptografis. Isi nilai yang sama di `DEVICE_API_TOKEN` server dan kolom token pada Pengaturan laptop. Environment di bawah hanya bootstrap preview sebelum `settings.protected` dibuat. `DEVICE_ID` server tetap `kasir-utama`; jangan berubah sembarangan karena ia namespace sinkronisasi.
 
 ```powershell
 $env:WARUNG_API_BASE_URL = 'https://domain-admin'
@@ -94,7 +94,7 @@ Katalog tersimpan lokal dan baru dipasang ke UI ketika layar Jualan tidak berisi
 
 ## CI dan progres
 
-`Verify application` menjalankan tes .NET, pemeriksaan layout/interaksi WPF dan screenshot **WarungRafi-UI-review**, build/publish WPF pada Windows, tes/typecheck/build Next.js, serta tes SQL pada PostgreSQL sementara. Jika sukses tersedia artifact **WarungRafi-Windows-preview** di run tersebut. Artifact adalah preview tanpa installer/tanda tangan.
+`Verify application` menjalankan tes .NET, pemeriksaan layout/interaksi WPF dan screenshot **WarungRafi-UI-review**, build/publish WPF pada Windows, tes/typecheck/build Next.js, serta tes SQL pada PostgreSQL sementara. Jika sukses tersedia artifact **WarungRafi-Windows-preview** di run tersebut. Artifact portable tetap tersedia; **WarungRafi-Windows-install** menyediakan installer per pengguna, belum bertanda tangan. [Setup/recovery M6](M6-SETUP-RECOVERY.md).
 
 `Sync project tracking` membuat tujuh milestone dan backlog dari `.github/planning.json`. Workflow dipicu perubahan planning pada `main` atau manual lewat Actions. Ia tidak menimpa checklist issue yang sudah diperbarui orang dan tidak menutup issue otomatis.
 
@@ -121,3 +121,7 @@ Setelah migrasi 004, buka `/keuangan` dengan akun pengelola. Pilih periode WIB, 
 Setelah migrasi 005, buka `/laporan` dengan akun pengelola. Buat snapshot per sesi kas atau tanggal WIB, periksa rinciannya, lalu unduh CSV. Ekspor Sheets membutuhkan workbook khusus yang dibagikan kepada akun layanan, `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON` dan runner dengan `EXPORT_RUNNER_TOKEN` terpisah. Kredensial hanya di server. [Panduan lengkap dan batas data](M5-REPORTS-SHEETS.md).
 
 Tombol **Proses sekarang** dapat mengambil antrean secara manual. Untuk otomatis, scheduler hosting memanggil `node scripts/run-sheets-export.mjs` dengan HTTPS `APP_ORIGIN` dan token runner; satu panggilan mengambil satu pekerjaan siap. Jadwal belum diaktifkan dan koneksi akun Google nyata belum diuji. Jangan menandai setup selesai hanya karena variabel environment sudah diisi; verifikasi baca ulang dan cocokkan total pada workbook uji dahulu.
+
+## Operasional M6
+
+Terapkan migrasi 006 sebelum admin versi ini; login sekarang memerlukan limiter database. Jalankan `dotnet run --project tests/WarungRafi.BackupChecks -c Release`, `dotnet run --project tests/WarungRafi.OperationsChecks -c Release` (Windows), dan `scripts/Test-WindowsPackage.ps1` (Windows). Build paket dengan `scripts/Build-WindowsPackage.ps1 -Release <SHA-commit-40-karakter>` setelah publish. Panduan pengaturan, rotasi token, backup dan recovery: [M6](M6-SETUP-RECOVERY.md).

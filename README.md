@@ -10,6 +10,8 @@ M3 menambahkan unggah foto menu, pemantauan antrean/versi katalog laptop, serta 
 
 M4 memperkuat inbox QRIS, memisahkan polling pembayaran, dan menambahkan mode simulasi berlabel dengan database terpisah. [Panduan M4](docs/M4-QRIS.md). CI Windows, web dan PostgreSQL lulus. Total 219 pemeriksaan Windows. **M5 aktif:** sesi kas, pengembalian berizin dan jurnal sinkronisasi. [Panduan M5 tahap 1](docs/M5-CASH-REFUNDS.md). Tahap kas/refund lulus 306 pemeriksaan Windows, tes admin/API/browser dan PostgreSQL 17. Tombol kas tetap terlihat di layar kecil. [M5 tahap 2](docs/M5-RECONCILIATION.md) menambahkan dashboard keuangan, pencocokan QRIS eksplisit, estimasi/biaya aktual, laporan pencairan dan konfirmasi mutasi bank dengan audit permanen. Software tahap 2 terverifikasi. [M5 tahap 3](docs/M5-REPORTS-SHEETS.md) menambahkan laporan tetap per sesi/tanggal WIB, 14 bagian laporan, CSV dan antrean Google Sheets dengan retry serta verifikasi baca ulang. Implementasi diuji dengan layanan tiruan; akun Google nyata dan scheduler belum terhubung.
 
+**M6 sedang difinalisasi pada tingkat software:** installer per pengguna, pengaturan terlindungi, backup terenkripsi, restore dengan pemeriksaan cloud, pembatas login dan pergantian token. [Panduan pemasangan dan pemulihan](docs/M6-SETUP-RECOVERY.md). Pemasangan akun Google/Midtrans serta uji printer tetap tahap berikutnya.
+
 ## Pantau progres
 
 - [Milestone dan kriteria selesai](docs/MILESTONES.md)

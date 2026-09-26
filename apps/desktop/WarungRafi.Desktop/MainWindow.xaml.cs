@@ -30,14 +30,17 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer nameTimer=new() { Interval=TimeSpan.FromMilliseconds(450) };
     private CompletedSale? lastSale;
     private Task? imagePrefetch;
+    private readonly SettingsFile? settingsFile;
+    private readonly DesktopSettings settings;
 
     public MainWindow() : this(new LocalStore(App.DataPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),false)),false) { }
-    internal MainWindow(LocalStore storage, bool isolatedPreview, bool simulatePayments=false, Action? paymentSound=null)
+    internal MainWindow(LocalStore storage, bool isolatedPreview, bool simulatePayments=false, Action? paymentSound=null,SettingsFile? settingsFile=null,DesktopSettings? settings=null)
     {
         if(simulatePayments&&!isolatedPreview)throw new ArgumentException("Simulasi harus terisolasi.");
-        store=storage;this.isolatedPreview=isolatedPreview;this.simulatePayments=simulatePayments;
+        store=storage;this.isolatedPreview=isolatedPreview;this.simulatePayments=simulatePayments;this.settingsFile=settingsFile;this.settings=settings??new DesktopSettings();
         playPaymentSound=paymentSound??(()=> { if(!isolatedPreview||simulatePayments)System.Media.SystemSounds.Asterisk.Play(); });
         InitializeComponent();
+        SettingsButton.IsEnabled=settingsFile is not null;
         if(simulatePayments)
         {
             Title="Warung Rafi — SIMULASI QRIS";
@@ -60,7 +63,7 @@ public partial class MainWindow : Window
             if(drafts.Length>0)SetCurrent(drafts[0]);
             ready=true;RenderSelling();await UpdateStatus();
         });
-        if(ready&&!isolatedPreview)_=ConnectAsync(closing.Token);
+        if(ready&&!isolatedPreview){_=ConnectAsync(closing.Token);_=BackupLoopAsync(closing.Token);}
     }
     private async Task Run(Func<Task> action)
     {
@@ -105,7 +108,7 @@ public partial class MainWindow : Window
     private async Task Print(CompletedSale sale,bool copy)
     {
         if(isolatedPreview)return;
-        try { await ReceiptPrinter.PrintAsync(sale,copy);await store.RecordPrintAsync(sale.Order.Id,copy,"submitted");StatusText.Text="Pesanan tersimpan · Struk dikirim ke printer"; }
+        try { await ReceiptPrinter.PrintAsync(sale,copy,settings.PrinterName);await store.RecordPrintAsync(sale.Order.Id,copy,"submitted");StatusText.Text="Pesanan tersimpan · Struk dikirim ke printer"; }
         catch(Exception ex)
         {
             try { await store.RecordPrintAsync(sale.Order.Id,copy,"uncertain"); } catch { }
@@ -124,8 +127,54 @@ public partial class MainWindow : Window
 
     private async Task ConnectAsync(CancellationToken token)
     {
-        var sync=RemoteSync.FromEnvironment(store);if(sync is null)return;
-        await Task.WhenAll(PollPaymentsAsync(sync,token),SyncDataAsync(sync,token));
+        try
+        {
+            using var sync=settingsFile is null?RemoteSync.FromEnvironment(store):RemoteSync.FromSettings(store,settings);if(sync is null)return;
+            await store.BindCloudAsync(SettingsFile.NormalizeOrigin(settingsFile is null?Environment.GetEnvironmentVariable("WARUNG_API_BASE_URL")??"":settings.ApiOrigin));
+            while(!token.IsCancellationRequested)
+            {
+                try
+                {
+                    await store.BindDeviceAsync(await sync.CheckSetupAsync(token));
+                    if(await store.SettingAsync("sync_recheck")=="1")await sync.VerifyRecoveryAsync(token);
+                    break;
+                }
+                catch(Exception error) when(error is System.Net.Http.HttpRequestException or TaskCanceledException)
+                {
+                    token.ThrowIfCancellationRequested();StatusText.Text="Koneksi server belum siap · mencoba kembali";
+                    await Task.Delay(TimeSpan.FromSeconds(15),token);
+                }
+            }
+            token.ThrowIfCancellationRequested();await Task.WhenAll(PollPaymentsAsync(sync,token),SyncDataAsync(sync,token));
+        }
+        catch(OperationCanceledException) when(token.IsCancellationRequested) { }
+        catch(Exception) {StatusText.Text="Sinkronisasi ditahan · Periksa koneksi/pemulihan pada Pengaturan";}
+
+    }
+    private async void OpenSettings(object sender,RoutedEventArgs e)=>await Run(()=>
+    {
+        if(settingsFile is not null)new MaintenanceWindow(store,settingsFile){Owner=this,WindowStartupLocation=WindowStartupLocation.CenterOwner}.ShowDialog();
+        return Task.CompletedTask;
+    });
+    private async Task BackupLoopAsync(CancellationToken token)
+    {
+        if(settingsFile is null)return;
+        while(!token.IsCancellationRequested)
+        {
+            try
+            {
+                var currentSettings=settingsFile.Load();
+                if(!busy&&page!="payment"&&currentSettings.BackupFolder.Length>0&&(currentSettings.LastBackup is null||currentSettings.LastBackup<DateTimeOffset.UtcNow.AddDays(-1)))
+                {
+                    var id=await store.SettingAsync("database_id");
+                    var destination=Path.Combine(currentSettings.BackupFolder,"auto-"+id+"-"+DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")+"-"+Guid.NewGuid().ToString("N")+".wrbackup");
+                    await store.BackupAsync(destination,currentSettings.BackupPassword);
+                    if(!token.IsCancellationRequested){var latest=settingsFile.Load();if(latest.BackupFolder==currentSettings.BackupFolder&&latest.BackupPassword==currentSettings.BackupPassword)settingsFile.Save(latest with {LastBackup=DateTimeOffset.UtcNow});}
+                }
+            }
+            catch(Exception) {if(!busy)StatusText.Text="Data lokal tersimpan · Backup otomatis belum berhasil; periksa folder pada Pengaturan";}
+            try{await Task.Delay(TimeSpan.FromMinutes(5),token);}catch(OperationCanceledException){break;}
+        }
     }
     private async Task PollPaymentsAsync(RemoteSync sync,CancellationToken token)
     {
