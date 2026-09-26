@@ -41,9 +41,9 @@ Tidak ada PIN bawaan. Paket preview menyertakan `Set-ManagerPin.ps1`; pengelola 
 .\Set-ManagerPin.ps1
 ```
 
-Masukkan PIN 6–12 angka dua kali. Script tidak menampilkan PIN atau hash. Konfigurasi hash disimpan pada variabel lingkungan pengguna Windows `WARUNG_MANAGER_PIN_HASH`. Mulai ulang sesi Windows sebelum membuka kasir agar proses baru membaca konfigurasi. Kebijakan eksekusi script organisasi tetap harus diikuti; script ini tidak mengubah atau melewati kebijakan tersebut.
+Pada versi M6, script membuka layar Pengaturan. Buat PIN 6–12 angka dua kali; hash disimpan dalam `settings.protected` milik akun Windows, terlindungi DPAPI. Tutup dan buka ulang kasir setelah perubahan. Variabel `WARUNG_MANAGER_PIN_HASH` dari preview sebelumnya hanya diimpor ketika file pengaturan belum ada. [Panduan M6](M6-SETUP-RECOVERY.md) menjelaskan migrasi dan pemulihan. Kebijakan eksekusi script organisasi tetap harus diikuti.
 
-Hash menggunakan PBKDF2-SHA256, salt acak 16 byte, 600.000 iterasi dan hasil 32 byte. Lima kesalahan PIN mengunci persetujuan selama lima menit; penghitung tetap tersimpan setelah aplikasi dimulai ulang. PIN tidak dikirim ke server. PIN ini membatasi tindakan dalam aplikasi; pengamanan akun Windows, hak akses file, distribusi konfigurasi, rotasi dan prosedur pemulihan tetap pekerjaan finalisasi M6. Orang yang bisa mengganti konfigurasi aplikasi pada akun Windows tersebut juga bisa mengganti hash PIN.
+Hash menggunakan PBKDF2-SHA256, salt acak 16 byte, 600.000 iterasi dan hasil 32 byte. Lima kesalahan PIN mengunci persetujuan selama lima menit; penghitung tetap tersimpan setelah aplikasi dimulai ulang. PIN tidak dikirim ke server. PIN ini membatasi tindakan dalam aplikasi; pengamanan akun Windows, hak akses file, distribusi konfigurasi, rotasi dan prosedur pemulihan dijelaskan dalam panduan M6; validasi pada akun/laptop pemilik tetap diperlukan. Orang yang bisa mengganti konfigurasi aplikasi pada akun Windows tersebut juga bisa mengganti hash PIN.
 
 ## Penyimpanan dan sinkronisasi
 

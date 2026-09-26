@@ -62,6 +62,7 @@ internal static class Program
         Layout(560,450);var scroll=MainWindow.Descendants<ScrollViewer>(root).First();Check(scroll.ScrollableHeight>0,"small settings window scrolls instead of clipping controls");Get<Button>("SaveConnection").BringIntoView();await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);Screenshot("01-connection-small");
         Layout(806,690);Get<TextBox>("SettingsOrigin").Text="";await Click("SaveConnection");
         await Click("SettingsBackup");Get<TextBox>("BackupFolder").Text=Path.Combine(directory,"scheduled");Get<PasswordBox>("BackupPassword").Password=password;Get<PasswordBox>("BackupPasswordConfirm").Password=password;await Click("SaveBackupSettings");
+        Check(MainWindow.Descendants<ScrollViewer>(root).First().VerticalOffset<1,"switching tabs returns to the top of the form");
         Check(file.Load().BackupPassword==password&&Path.IsPathFullyQualified(file.Load().BackupFolder),"automatic backup schedule saves protected password and folder");Screenshot("02-backup");
         await Click("SettingsRestore");Get<TextBox>("RestoreFile").Text=archive;Get<PasswordBox>("RestorePassword").Password=password;await Click("InspectRestore");
         Check(Find<TextBox>("RestoreConfirm") is not null&&await store.CountAsync()==2,"inspection presents review before changing the database");Screenshot("03-restore-review");

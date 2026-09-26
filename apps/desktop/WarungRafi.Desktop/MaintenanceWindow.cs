@@ -17,20 +17,21 @@ internal sealed class MaintenanceWindow : Window
     private readonly StackPanel content=new() {MaxWidth=740,Margin=new Thickness(22,8,22,22)};
     private readonly TextBlock status=new() {TextWrapping=TextWrapping.Wrap,Margin=new Thickness(22,12,22,16),FontSize=14};
     private readonly StackPanel navigation=new() {Orientation=Orientation.Horizontal,Margin=new Thickness(22,12,22,6)};
-    private readonly string startupMessage;
+    private readonly string startupMessage;private ScrollViewer viewport=null!;
     internal MaintenanceWindow(LocalStore store,SettingsFile file,DatabaseLease? lease=null,string message="")
     {
         this.store=store;this.file=file;this.lease=lease;standalone=lease is not null;settings=file.Load();startupMessage=message;
         Title="Warung Rafi — Pengaturan & Pemulihan";Width=850;Height=760;MinWidth=580;MinHeight=500;
         Background=new SolidColorBrush(Color.FromRgb(242,244,239));Foreground=new SolidColorBrush(Color.FromRgb(36,61,51));FontFamily=new FontFamily("Segoe UI");FontSize=17;WindowStartupLocation=WindowStartupLocation.CenterScreen;
-        var root=new Grid();foreach(var size in new[]{GridLength.Auto,GridLength.Auto,new GridLength(1,GridUnitType.Star),GridLength.Auto})root.RowDefinitions.Add(new RowDefinition{Height=size});
+        var root=new Grid {Background=Background};foreach(var size in new[]{GridLength.Auto,GridLength.Auto,new GridLength(1,GridUnitType.Star),GridLength.Auto})root.RowDefinitions.Add(new RowDefinition{Height=size});
         var title=new TextBlock {Text="Pengaturan & pemulihan",FontSize=28,FontWeight=FontWeights.SemiBold,Margin=new Thickness(22,20,22,4)};root.Children.Add(title);
         root.Children.Add(navigation);Grid.SetRow(navigation,1);
-        var scroll=new ScrollViewer {Content=content,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled};root.Children.Add(scroll);Grid.SetRow(scroll,2);
+        var scroll=viewport=new ScrollViewer {Content=content,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled};root.Children.Add(scroll);Grid.SetRow(scroll,2);
         root.Children.Add(status);Grid.SetRow(status,3);Content=root;Closing+=OnClosing;Loaded+=(_,_)=>RenderUnlock();
     }
     private void OnClosing(object? sender,CancelEventArgs e) {if(busy){e.Cancel=true;status.Text="Tunggu pemeriksaan/penyimpanan selesai sebelum menutup.";}}
     private static T Id<T>(T element,string id) where T:DependencyObject {AutomationProperties.SetAutomationId(element,id);return element;}
+    private void ClearContent(){content.Children.Clear();viewport.ScrollToTop();}
     private void Say(string text)=>status.Text=text;
     private void Text(string text,bool heading=false)=>content.Children.Add(new TextBlock {Text=text,TextWrapping=TextWrapping.Wrap,FontSize=heading?23:16,FontWeight=heading?FontWeights.SemiBold:FontWeights.Normal,Margin=new Thickness(0,12,0,8)});
     private TextBox Input(string label,string id,string value="") {Text(label);var box=Id(new TextBox{Text=value,MinHeight=42,MaxLength=1024,Padding=new Thickness(9)},id);content.Children.Add(box);return box;}
@@ -47,7 +48,7 @@ internal sealed class MaintenanceWindow : Window
     }
     private void RenderUnlock()
     {
-        content.Children.Clear();navigation.Children.Clear();Text(startupMessage.Length>0?startupMessage:"Pengaturan disimpan untuk akun Windows ini. Rahasia tidak disertakan dalam backup transaksi.");
+        ClearContent();navigation.Children.Clear();Text(startupMessage.Length>0?startupMessage:"Pengaturan disimpan untuk akun Windows ini. Rahasia tidak disertakan dalam backup transaksi.");
         if(settings.ManagerPinHash.Length==0)
         {
             Text("Buat PIN pengelola",true);Text("PIN 6–12 angka diperlukan untuk mengubah pengaturan dan menyetujui pengembalian uang.");
@@ -67,7 +68,7 @@ internal sealed class MaintenanceWindow : Window
     }
     private void RenderConnection()
     {
-        if(!unlocked)return;content.Children.Clear();Text("Koneksi laptop",true);Text("Kosongkan alamat untuk memakai kasir offline. Kunci Supabase, Midtrans dan Google hanya dipasang pada server, bukan di laptop.");
+        if(!unlocked)return;ClearContent();Text("Koneksi laptop",true);Text("Kosongkan alamat untuk memakai kasir offline. Kunci Supabase, Midtrans dan Google hanya dipasang pada server, bukan di laptop.");
         var origin=Input("Alamat HTTPS admin","SettingsOrigin",settings.ApiOrigin);var token=Secret("Token laptop baru · kosong berarti tetap","SettingsToken");
         Text("Printer Windows");var printer=Id(new ComboBox {IsEditable=true,Text=settings.PrinterName,MinHeight=42},"SettingsPrinter");content.Children.Add(printer);
         try{using var server=new LocalPrintServer();printer.ItemsSource=server.GetPrintQueues().Select(q=>q.FullName).ToArray();}catch{Text("Daftar printer belum dapat dibaca. Nama printer dapat diisi setelah driver dipasang.");}
@@ -93,7 +94,7 @@ internal sealed class MaintenanceWindow : Window
     }
     private void RenderBackup()
     {
-        content.Children.Clear();Text("Backup transaksi",true);Text("Backup mencakup pesanan, kas/refund, antrean, katalog dan bukti QRIS. Foto cache dan kredensial tidak ikut. Kata sandi backup berbeda dari PIN pengelola dan diperlukan saat laptop diganti.");
+        ClearContent();Text("Backup transaksi",true);Text("Backup mencakup pesanan, kas/refund, antrean, katalog dan bukti QRIS. Foto cache dan kredensial tidak ikut. Kata sandi backup berbeda dari PIN pengelola dan diperlukan saat laptop diganti.");
         var folder=Input("Folder backup otomatis · kosong untuk nonaktif","BackupFolder",settings.BackupFolder);
         Button("Pilih folder","ChooseBackupFolder",()=>{var dialog=new OpenFolderDialog();if(dialog.ShowDialog(this)==true)folder.Text=dialog.FolderName;return Task.CompletedTask;});
         var password=Secret("Kata sandi backup baru · minimal 12 karakter","BackupPassword");var confirm=Secret("Ulangi kata sandi baru","BackupPasswordConfirm");
@@ -115,14 +116,14 @@ internal sealed class MaintenanceWindow : Window
     }
     private void RenderRestore()
     {
-        content.Children.Clear();Text("Pulihkan backup",true);
+        ClearContent();Text("Pulihkan backup",true);
         if(!standalone){Text("Tutup kasir, lalu buka pintasan Pemulihan Warung Rafi. Pemulihan hanya dapat dilakukan saat kasir berhenti agar transaksi baru tidak tertimpa.");return;}
         Text("Pemulihan mengganti database dengan isi backup yang dipilih. Data sesudah waktu backup tidak ikut dipulihkan. Salinan kondisi saat ini disimpan sebelum penggantian.");
         var path=Input("File backup","RestoreFile");Button("Pilih backup","ChooseRestoreFile",()=>{var dialog=new OpenFileDialog{Filter="Backup Warung Rafi|*.wrbackup"};if(dialog.ShowDialog(this)==true)path.Text=dialog.FileName;return Task.CompletedTask;});
         var password=Secret("Kata sandi file backup","RestorePassword");
         Button("Periksa isi backup","InspectRestore",async()=>
         {
-            var selected=path.Text;var secret=password.Password;var info=await BackupArchive.InspectAsync(selected,secret);content.Children.Clear();
+            var selected=path.Text;var secret=password.Password;var info=await BackupArchive.InspectAsync(selected,secret);ClearContent();
             Text("Periksa sebelum memulihkan",true);Text($"Dibuat {info.CreatedAt.ToOffset(TimeSpan.FromHours(7)):dd MMM yyyy HH:mm} WIB\n{info.Orders} pesanan · {info.Payments} pembayaran · {info.FinanceEvents} jurnal kas\n{info.Pending} perubahan belum diakui server saat backup dibuat.");
             var corrupt=Id(new CheckBox {Content=new TextBlock{Text="Database saat ini rusak/tidak bisa dibuka; simpan berkas aslinya lalu pulihkan",TextWrapping=TextWrapping.Wrap},Margin=new Thickness(0,14,0,10)},"RestoreCorrupt");content.Children.Add(corrupt);
             Text("Berkas asli database rusak atau salinan rollback tersimpan lokal tanpa enkripsi di folder data. Jaga akses akun Windows. Jangan menghapusnya sebelum pemulihan dipastikan benar.");
@@ -140,7 +141,7 @@ internal sealed class MaintenanceWindow : Window
     }
     private void RenderRecoveryReview()
     {
-        content.Children.Clear();Text("Pemeriksaan sebelum berjualan",true);Text("Jika backup pernah terhubung cloud, isi pesanan dan jurnal harus cocok dengan server. Backup yang lebih lama dari cloud tidak boleh digunakan untuk membuat jurnal baru.");
+        ClearContent();Text("Pemeriksaan sebelum berjualan",true);Text("Jika backup pernah terhubung cloud, isi pesanan dan jurnal harus cocok dengan server. Backup yang lebih lama dari cloud tidak boleh digunakan untuk membuat jurnal baru.");
         Button("Periksa kecocokan cloud","VerifyRestoredCloud",async()=>
         {
             settings=file.Load();using var sync=RemoteSync.FromSettings(store,settings)??throw new InvalidOperationException("Simpan alamat server dan token pada tab Koneksi terlebih dahulu.");

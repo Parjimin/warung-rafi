@@ -20,7 +20,7 @@ if(Test-Path -LiteralPath $versions){
   }
  }
 }
-foreach($name in @('Current.json','Start-WarungRafi.ps1','Uninstall-WarungRafi.ps1','.warung-install.json')){Remove-Item -LiteralPath (Join-Path $InstallRoot $name) -Force -ErrorAction SilentlyContinue}
+foreach($name in @('Current.json','Current.previous.json','Start-WarungRafi.ps1','Uninstall-WarungRafi.ps1','.warung-install.json')){Remove-Item -LiteralPath (Join-Path $InstallRoot $name) -Force -ErrorAction SilentlyContinue}
 if(!$NoShortcuts){
  $menu=Join-Path ([Environment]::GetFolderPath('Programs')) 'Warung Rafi'
  foreach($name in @('Warung Rafi.lnk','Pemulihan Warung Rafi.lnk')){Remove-Item -LiteralPath (Join-Path $menu $name) -ErrorAction SilentlyContinue}

@@ -37,7 +37,7 @@ try {
  foreach($name in @('Start-WarungRafi.ps1','Uninstall-WarungRafi.ps1')){Copy-Item -LiteralPath (Join-Path $PackagePath $name) -Destination (Join-Path $InstallRoot $name) -Force}
  @{format=1;application='WarungRafi'} | ConvertTo-Json | Set-Content -LiteralPath $marker -Encoding UTF8
  $current=Join-Path $InstallRoot 'Current.json';$temporary=$current+'.tmp';@{release=$manifest.release} | ConvertTo-Json | Set-Content -LiteralPath $temporary -Encoding UTF8
- if(Test-Path -LiteralPath $current){[IO.File]::Replace($temporary,$current,$null)}else{[IO.File]::Move($temporary,$current)}
+ if(Test-Path -LiteralPath $current){[IO.File]::Replace($temporary,$current,(Join-Path $InstallRoot 'Current.previous.json'))}else{[IO.File]::Move($temporary,$current)}
  if(!$NoShortcuts){
   $shell=New-Object -ComObject WScript.Shell
   $menu=Join-Path ([Environment]::GetFolderPath('Programs')) 'Warung Rafi';New-Item -ItemType Directory -Path $menu -Force | Out-Null

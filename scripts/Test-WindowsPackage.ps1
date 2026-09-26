@@ -14,6 +14,7 @@ try {
  Set-Content -LiteralPath (Join-Path $package 'payload/WarungRafi.exe') -Value 'version-two-fixture';Manifest ('b'*40)
  & (Join-Path $package 'Install-WarungRafi.ps1') -PackagePath $package -InstallRoot $install -NoShortcuts
  if((Get-Content (Join-Path $install 'Current.json') -Raw|ConvertFrom-Json).release -ne ('b'*40)){throw 'Activation failed'}
+ if((Get-Content (Join-Path $install 'Current.previous.json') -Raw|ConvertFrom-Json).release -ne ('a'*40)){throw 'Previous activation lost'}
  if(!(Test-Path (Join-Path $install ('versions/'+('a'*40)+'/WarungRafi.exe')))){throw 'Previous version lost'}
  Set-Content -LiteralPath (Join-Path $package 'payload/WarungRafi.exe') -Value 'corrupted-fixture';$rejected=$false
  try{& (Join-Path $package 'Install-WarungRafi.ps1') -PackagePath $package -InstallRoot $install -NoShortcuts}catch{$rejected=$true}
