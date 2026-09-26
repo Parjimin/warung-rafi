@@ -60,6 +60,10 @@ jobs:
       - name: Build verified per-user installation package
         shell: powershell
         run: ./scripts/Build-WindowsPackage.ps1 -Release $env:GITHUB_SHA
+      - name: Launch installed cashier and recovery with bundled runtime
+        shell: powershell
+        timeout-minutes: 2
+        run: ./scripts/Test-InstalledPackage.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: WarungRafi-Windows-install
