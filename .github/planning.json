@@ -114,7 +114,7 @@
     },
     {
       "title": "M5 — Keuangan dan laporan",
-      "description": "Aktif: sesi kas/refund dan rekonsiliasi software terverifikasi. CI 3d90567: 306 pemeriksaan Windows, 22 unit admin, 13 skenario API, browser desktop/ponsel dan PostgreSQL 17 lulus. Biaya/pencairan manual berreferensi; Google Sheets masih terbuka.",
+      "description": "Aktif: software kas/refund, rekonsiliasi, laporan/CSV dan antrean Sheets terverifikasi. CI 5c2b7f7: 306 Windows, 32 unit admin, 14 skenario API, tiga browser, enam suite PostgreSQL 17 lulus. Koneksi Google nyata dan scheduler belum diaktifkan.",
       "issues": [
         {
           "id": "finance",
@@ -130,11 +130,12 @@
         {
           "id": "sheets",
           "title": "M5: Proyeksi Google Sheets dan laporan lengkap",
-          "body": "Direncanakan. Sheets bukan jalur penentu keberhasilan pembayaran.",
+          "body": "Software laporan tersedia: snapshot tetap per sesi atau tanggal WIB, 14 bagian, CSV dan antrean Sheets dengan tab deterministik, retry/backoff, lease serta verifikasi baca ulang. Total cocok dengan jurnal C#/PostgreSQL dan sampel manual. CI 5c2b7f7 lulus seluruh job; screenshot desktop/ponsel ditinjau. Google memakai transport fixture; akun layanan/workbook nyata dan scheduler belum dipasang. Panduan: docs/M5-REPORTS-SHEETS.md. Issue tetap terbuka untuk integrasi nyata, bersama cloud M3.",
           "acceptance": [
             "Kolom transaksi, item, pembayaran, biaya, refund, payout terdokumentasi",
             "Ekspor idempoten memiliki retry serta status",
-            "Total laporan cocok dengan ledger dan sampel manual"
+            "Total laporan cocok dengan ledger dan sampel manual",
+            "Koneksi workbook Google nyata, scheduler dan pemulihan ekspor diuji pada environment uji setelah cloud M3 tersedia"
           ]
         }
       ]

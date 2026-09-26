@@ -46,7 +46,7 @@ Jangan memakai PDF printer sebagai printer kasir. Preview menggunakan driver/spo
 
 ## Database cloud
 
-1. Buat proyek Supabase khusus uji. Jalankan `database/001_foundation.sql`, lalu `database/002_sync_monitor.sql`, `database/003_finance.sql` dan `database/004_reconciliation.sql` satu kali lewat SQL Editor. Buat bucket foto dengan `database/storage/menu_photos.sql`. Jangan menjalankan migration awal berulang pada database yang sudah terisi; migration selanjutnya harus berupa file baru.
+1. Buat proyek Supabase khusus uji. Jalankan `database/001_foundation.sql`, lalu `database/002_sync_monitor.sql`, `database/003_finance.sql`, `database/004_reconciliation.sql` dan `database/005_reports.sql` satu kali lewat SQL Editor. Buat bucket foto dengan `database/storage/menu_photos.sql`. Jangan menjalankan migration awal berulang pada database yang sudah terisi; migration selanjutnya harus berupa file baru.
 2. Buat satu user melalui Supabase Auth. Nonaktifkan public signup bila tidak digunakan. Catat user UUID untuk `ADMIN_USER_ID`.
 3. RLS aktif; anon dan authenticated tidak punya akses tabel langsung. Server saja memakai service role. Jangan masukkan service role ke environment desktop atau variabel `NEXT_PUBLIC_*`.
 4. Tes SQL otomatis menggunakan PostgreSQL sementara dengan role tiruan. Tes ini memverifikasi dedupe, atomic batch, konflik, regresi refund, dan hak akses. Uji layanan Supabase aktual tetap diperlukan.
@@ -115,3 +115,9 @@ Buka kas sebelum menyelesaikan penjualan. Modal 0 harus dipilih/diisi secara eks
 ## Rekonsiliasi QRIS dan pencairan (M5 tahap 2)
 
 Setelah migrasi 004, buka `/keuangan` dengan akun pengelola. Pilih periode WIB, cocokkan bukti secara eksplisit, catat biaya dari laporan provider, lalu catat pencairan dan mutasi bank secara terpisah. [Panduan, perhitungan dan batas](M5-RECONCILIATION.md). Biaya/pencairan masih masukan manual berreferensi; bukan API transfer atau impor laporan otomatis.
+
+## Laporan, CSV dan Google Sheets (M5 tahap 3)
+
+Setelah migrasi 005, buka `/laporan` dengan akun pengelola. Buat snapshot per sesi kas atau tanggal WIB, periksa rinciannya, lalu unduh CSV. Ekspor Sheets membutuhkan workbook khusus yang dibagikan kepada akun layanan, `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON` dan runner dengan `EXPORT_RUNNER_TOKEN` terpisah. Kredensial hanya di server. [Panduan lengkap dan batas data](M5-REPORTS-SHEETS.md).
+
+Tombol **Proses sekarang** dapat mengambil antrean secara manual. Untuk otomatis, scheduler hosting memanggil `node scripts/run-sheets-export.mjs` dengan HTTPS `APP_ORIGIN` dan token runner; satu panggilan mengambil satu pekerjaan siap. Jadwal belum diaktifkan dan koneksi akun Google nyata belum diuji. Jangan menandai setup selesai hanya karena variabel environment sudah diisi; verifikasi baca ulang dan cocokkan total pada workbook uji dahulu.
