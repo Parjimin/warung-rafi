@@ -29,7 +29,7 @@ jobs:
       - name: Verify WPF layout and cashier interactions
         timeout-minutes: 2
         run: dotnet run --project tests/WarungRafi.UiChecks -c Release
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: WarungRafi-UI-review
@@ -41,7 +41,7 @@ jobs:
         run: |
           Copy-Item scripts/Set-ManagerPin.ps1 artifacts/Windows-preview/
           Copy-Item docs/M5-CASH-REFUNDS.md artifacts/Windows-preview/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: WarungRafi-Windows-preview
           path: artifacts/Windows-preview
@@ -73,25 +73,25 @@ jobs:
       - name: Review report snapshots, CSV and Sheets retry
         timeout-minutes: 2
         run: node integration/reports-browser.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: WarungRafi-M5-reports-review
           path: artifacts/M5-reports-review
           retention-days: 14
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: WarungRafi-M5-finance-review
           path: artifacts/M5-admin-review
           retention-days: 14
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: WarungRafi-M3-admin-review
           path: artifacts/M3-review
           retention-days: 14
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: admin-dependency-lock
