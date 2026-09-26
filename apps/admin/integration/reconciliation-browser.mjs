@@ -41,7 +41,7 @@ try {
  assert.equal(h.control.finance.summary.receivedBank, 21000); assert.equal(h.control.finance.summary.gross, 90000); await shot('payout');
  await page.setViewportSize({ width: 390, height: 844 });
  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false); await shot('payout-mobile');
- await tab('Koreksi mutasi bank'); await dialog().getByLabel('Alasan / catatan pemeriksaan').scrollIntoViewIfNeeded();
+ await tab('Koreksi mutasi bank'); assert.equal(await dialog().getByText('Catatan tersimpan. Laporan diperbarui.', { exact: true }).count(), 0); await dialog().getByLabel('Alasan / catatan pemeriksaan').scrollIntoViewIfNeeded();
  const box = await dialog().getByRole('button', { name: 'Simpan catatan' }).boundingBox(); assert.ok(box && box.y >= 0 && box.y + box.height <= 844, 'Dialog save stays reachable on mobile');
  await page.screenshot({ path: '../../artifacts/M5-admin-review/bank-dialog-mobile.png', fullPage: false });
  await dialog().getByRole('button', { name: 'Batal', exact: true }).click();
