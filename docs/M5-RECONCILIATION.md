@@ -42,4 +42,14 @@ Jika respons hilang, halaman menyimpan perintah tertunda dalam session storage d
 
 ## Verifikasi checkpoint
 
-Lokal: 22 tes unit admin, typecheck dan build Next lulus; migrasi 001–004 beserta lima suite SQL lulus PostgreSQL 18.3 WASM. Pengujian mencakup identitas/retry, revisi lama, pencocokan bernominal sama/selisih, biaya belum diketahui, snapshot estimasi, alokasi ganda, neto dan mutasi bank, pembatalan, tanggal WIB, pagination, akses service-role dan rollback jika penulisan jurnal gagal. Bukti CI PostgreSQL 17 serta browser akan dicatat setelah run checkpoint selesai.
+Lokal: 22 tes unit admin, typecheck dan build Next lulus; migrasi 001–004 beserta lima suite SQL lulus PostgreSQL 18.3 WASM. Pengujian mencakup identitas/retry, revisi lama, pencocokan bernominal sama/selisih, biaya belum diketahui, snapshot estimasi, alokasi ganda, neto dan mutasi bank, pembatalan, tanggal WIB, pagination, akses service-role dan rollback jika penulisan jurnal gagal. CI [`3d90567`](https://github.com/Parjimin/warung-rafi/actions/runs/36242047390) lulus seluruh job: 306 pemeriksaan Windows, 22 unit admin, 13 skenario API (15 hasil Node termasuk pembungkus), dua alur browser serta PostgreSQL 17. Tujuh screenshot admin keuangan ditinjau; data fixture terisolasi dan bukan bukti merchant/cloud produksi.
+
+## Tampilan yang sudah ditinjau
+
+Render Chromium dari CI `e81c66c` (tampilan admin yang sama pada checkpoint `3d90567`); data fixture uji, bukan transaksi merchant nyata.
+
+![Ringkasan keuangan](images/m5-finance-dashboard.png)
+
+![Pencairan dan selisih mutasi bank](images/m5-finance-payout.png)
+
+![Form mutasi bank pada lebar 390 px](images/m5-finance-bank-mobile.png)

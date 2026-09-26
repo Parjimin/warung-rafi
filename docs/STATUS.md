@@ -1,6 +1,6 @@
 # Status implementasi — checkpoint 26 September 2026
 
-**M5 aktif: tahap sesi kas dan pengembalian sudah terverifikasi.** CI commit `58ba711` lulus **306 pemeriksaan Windows**, 16 tes unit admin, 12 skenario API (14 hasil termasuk pembungkus), alur browser dan PostgreSQL 17. Revisi migrasi SQL serta tombol kas yang tetap terlihat di layar kecil sudah lolos; screenshot aktual telah ditinjau. [Alur dan batas M5 tahap 1](M5-CASH-REFUNDS.md). Rekonsiliasi, biaya aktual, pencairan, dashboard keuangan dan Sheets masih terbuka. M4 selesai untuk software/simulasi; M2 menunggu review laptop, M3 menunggu integrasi cloud, dan uji merchant/perangkat tetap M6.
+**M5 aktif: tahap kas/refund dan rekonsiliasi tersedia serta terverifikasi pada tingkat software.** CI [`3d90567`](https://github.com/Parjimin/warung-rafi/actions/runs/36242047390) lulus **306 pemeriksaan Windows**, 22 tes unit admin, 13 skenario API (15 hasil termasuk pembungkus), dua alur browser, dan PostgreSQL 17. Dashboard admin mencakup pencocokan QRIS eksplisit, estimasi dan biaya aktual, pencairan, konfirmasi mutasi bank serta audit permanen. [Panduan tahap 1](M5-CASH-REFUNDS.md) · [Panduan tahap 2](M5-RECONCILIATION.md). Google Sheets tetap terbuka. M2 menunggu review laptop, M3 menunggu integrasi cloud, dan uji merchant/perangkat tetap M6.
 
 | Bagian | Implementasi tersedia | Verifikasi / batas saat checkpoint |
 | --- | --- | --- |
@@ -9,12 +9,12 @@
 | M2 — review laptop | Satu bar navigasi, kartu mendatar 2×2, panel pesanan fleksibel/dapat diperbesar, tombol sejajar, pencarian, nama otomatis tersimpan, pembayaran/riwayat/kas dipoles, animasi singkat | 69 pemeriksaan layout/interaksi WPF lulus di CI Windows; screenshot aktual ditinjau; kenyamanan klik serta respons preview baru pada laptop pengguna masih perlu direview; touchscreen/printer tetap M6 |
 | M3 — aktif | Login, tambah/edit menu, unggah/normalisasi foto, konflik draf, publikasi, monitor antrean/versi/konflik perangkat, cache katalog/foto offline | 13 tes unit admin, 5 skenario API melalui Next hasil build, alur browser, 15 pemeriksaan sync/cache Windows dan SQL lulus; setup dan uji Supabase/Storage/Vercel nyata masih terbuka |
 | M4 — selesai (software) | Polling terpisah, validasi inbox atomik, deduplikasi ketat, kebijakan popup 60 detik, simulasi berlabel dengan database terpisah | 31 pemeriksaan inbox SQLite, 84 layout/interaksi WPF, 21 sinkronisasi/cache, 14 unit admin dan 11 skenario API lulus; SQL, build/publish Windows serta screenshot terverifikasi. Merchant nyata tetap M6. [Rincian M4](M4-QRIS.md) |
-| M5 — aktif | Sesi kas, kas masuk/keluar, tutup dan selisih; refund berizin; jurnal lokal permanen dan penerimaan batch server | 306 pemeriksaan Windows, 16 unit admin, 12 skenario API, browser dan PostgreSQL 17 lulus. Screenshot kas/refund/tutup kas ditinjau; tombol kas tetap terlihat di 1280×720 dan 900×620 DIP. Rekonsiliasi, MDR aktual, payout, dashboard keuangan dan Sheets masih terbuka |
+| M5 — aktif | Sesi kas/refund; dashboard keuangan WIB; pencocokan QRIS; snapshot tarif estimasi, biaya aktual; pencairan dan mutasi bank; audit permanen | 306 pemeriksaan Windows, 22 unit admin, 13 skenario API, dua alur browser dan PostgreSQL 17 lulus. Screenshot desktop/ponsel ditinjau. Biaya/pencairan memakai masukan manual berreferensi; Google Sheets masih terbuka |
 | M6 | Panduan setup dan paket preview melalui CI | Finalisasi touchscreen, printer, merchant, installer, backup/restore, perlindungan token, dan UAT masih terbuka |
 
 ## Pengerjaan per milestone
 
-M0 dan M1 selesai. [Pengujian integritas dan pemulihan M1](M1-VALIDATION.md) lulus di CI Windows pada commit `6fe719b`. **M4: QRIS selesai pada lingkup software/simulasi**, dengan [alur, simulasi dan batas verifikasi](M4-QRIS.md). [Alur dan setup M3](M3-ADMIN-SYNC.md) tersedia. Review laptop untuk [M2](M2-UI-REVIEW.md) tetap terbuka. Kriteria integrasi cloud M3 masih terbuka. M5 tahap pertama mengerjakan sesi kas, jurnal dan refund. Biaya, payout, rekonsiliasi dan Sheets menyusul. Touchscreen, printer, dan merchant asli tetap pada M6.
+M0 dan M1 selesai. [Pengujian integritas dan pemulihan M1](M1-VALIDATION.md) lulus di CI Windows pada commit `6fe719b`. **M4: QRIS selesai pada lingkup software/simulasi**, dengan [alur, simulasi dan batas verifikasi](M4-QRIS.md). [Alur dan setup M3](M3-ADMIN-SYNC.md) tersedia. Review laptop untuk [M2](M2-UI-REVIEW.md) tetap terbuka. Kriteria integrasi cloud M3 masih terbuka. M5 tahap pertama menyelesaikan sesi kas, jurnal dan refund. Tahap kedua menyelesaikan rekonsiliasi, biaya, pencairan dan dashboard pada tingkat software. Google Sheets menyusul. Touchscreen, printer, dan merchant asli tetap pada M6.
 
 ## Umpan balik pengguna dan prioritas berikutnya
 
@@ -25,6 +25,15 @@ Revisi kedua M2 menyatukan brand/navigasi/tanggal dalam satu bar atas, menyeimba
 Uji touchscreen, printer OKAY 58D, serta pembuatan/aktivasi dan uji akun merchant asli **dijadwalkan pada M6**. Printer belum tersedia; pemilik belum sempat menyiapkan merchant. Pengembangan fitur lain tetap lanjut. M4 dapat menggunakan mock/fixture berlabel uji, tanpa menganggap transaksi simulasi sebagai pembayaran nyata.
 
 ## Bukti pengujian
+
+Bukti M5 tahap 2: [CI 3d90567](https://github.com/Parjimin/warung-rafi/actions/runs/36242047390), seluruh job lulus. Windows tetap 306 pemeriksaan; admin menjadi 22 unit dan 13 skenario API (15 hasil Node termasuk pembungkus). Artifact **WarungRafi-M5-finance-review** memuat tujuh screenshot aktual desktop/ponsel dengan data fixture.
+
+- PostgreSQL 17: migrasi 001–004, lima suite SQL; retry identitas sama, penolakan isi berubah/revisi lama, pencocokan satu-ke-satu dan selisih, biaya null vs nol, snapshot estimasi, neto payout, alokasi ganda, tanggal WIB, selisih bank, pembatalan, akses backend/RLS, dan rollback projection/revisi saat jurnal gagal.
+- Browser: pencocokan, tarif, estimasi, aktual, konflik tab dengan isian bertahan, respons hilang lalu reload/kirim ulang tanpa penulisan ganda, pencairan, mutasi berselisih, pembatalan serta jejak audit. Tidak ada overflow horizontal pada 390 px; tombol simpan dialog terjangkau. Screenshot aktual desktop/ponsel telah ditinjau.
+- Koreksi timestamp webhook memastikan status refund berikutnya tidak menggeser tanggal pembayaran. Agregat mencakup semua baris dalam periode, walau detail dibatasi 50 per halaman.
+- Pemeriksaan WPF sempat timeout pada transisi buka pesanan → bayar di run `e81c66c`; retry lulus. Checkpoint `3d90567` memperbaiki sinkronisasi tes: menunggu operasi UI selesai sebelum langkah berikutnya. Seluruh job lulus tanpa retry pada checkpoint tersebut.
+- Browser/API memakai service fixture; aturan transaksi diuji terpisah pada PostgreSQL. Tarif fixture bukan tarif merchant nyata. Tidak ada dana ditransfer atau koneksi bank langsung. Google Sheets, cloud aktual serta merchant/perangkat masih mengikuti milestone masing-masing.
+
 
 Bukti M5 tahap 1: [Verify application — 58ba711](https://github.com/Parjimin/warung-rafi/actions/runs/36209021572), **seluruh job lulus**. Total **306 pemeriksaan Windows**: 23 dasar + 60 recovery + 31 inbox + 50 keuangan + 26 sinkronisasi/cache + 116 UI. Artifact **WarungRafi-Windows-preview** menyertakan aplikasi, simulasi QRIS, `Set-ManagerPin.ps1` dan panduan kas/refund. Artifact **WarungRafi-UI-review** memuat 26 screenshot Windows aktual.
 
@@ -61,7 +70,7 @@ Bukti awal: [Verify application #1](https://github.com/Parjimin/warung-rafi/acti
 ## Batas perilaku versi ini
 
 1. Menu/harga awal adalah dummy. Katalog terbitan menggantikannya. Ilustrasi menu awal berupa gambar vektor lokal sementara; URL foto dari admin di-cache setelah unduhan berhasil. Unggah foto tersedia setelah bucket Storage dikonfigurasi. Foto yang belum berhasil diunduh memakai placeholder saat offline; objek storage tanpa referensi belum dibersihkan otomatis.
-2. Pembayaran QRIS dicatat sebagai pernyataan kasir. Bukti provider tidak dihubungkan otomatis ke pesanan, meskipun nominal sama. Tidak ada fitur rekonsiliasi final pada versi ini.
+2. Pembayaran QRIS dicatat sebagai pernyataan kasir. Bukti provider tidak dihubungkan otomatis ke pesanan, meskipun nominal sama. Pengelola dapat mencocokkan bukti dan pesanan secara eksplisit di Keuangan dengan alasan serta audit, termasuk pasangan berselisih.
 3. Popup hanya judul, nominal, jam; maksimal sekitar enam detik. Inbox disimpan sebelum ditampilkan. Bukti lebih dari 60 detik atau berasal dari masa depan tidak dibunyikan ketika aplikasi mengejar backlog. Ini mencegah suara lama mengesankan ada pembayaran baru. Gangguan saat sesudah simpan sebelum popup dapat menyebabkan popup terlewat; bukti tetap tersimpan.
 4. Laptop membaca notifikasi melalui polling HTTPS, bukan koneksi websocket. Interval dasar 3 detik di pembayaran dan 12 detik di halaman lain, ditambah waktu jaringan/proses. Implementasi M4 memisahkan loop ini dari sinkronisasi katalog/outbox. Tidak ada jaminan suara tepat seketika. Tidak ada notifikasi OS ketika aplikasi ditutup.
 5. Kasir tidak menunggu cloud atau printer untuk menerima pesanan berikutnya. Tidak ada retry cetak otomatis karena status fisik kertas belum dapat dibuktikan. `submitted` berarti masuk spooler, bukan pasti keluar kertas.
@@ -69,10 +78,10 @@ Bukti awal: [Verify application #1](https://github.com/Parjimin/warung-rafi/acti
 7. Riwayat/daftar pesanan menampilkan hingga 1.000 catatan per tampilan. Ringkasan harian menghitung seluruh transaksi pada tanggal WIB, tanpa limit tersebut. Pagination menjadi pekerjaan lanjutan.
 8. Autentikasi admin memakai satu user Supabase yang diizinkan. Token akses di cookie HTTP-only berlaku maksimal satu jam; setelah itu login ulang. MFA/role/rotasi token perangkat dan hardening login belum selesai.
 9. Kategori awal tetap empat. Item boleh ditambah/diubah/dinonaktifkan. CRUD kategori bebas belum tersedia.
-10. Kas hari ini menampilkan sesi aktif, uang laci tercatat dan penjualan kotor sesi secara terpisah. Refund berhasil mengurangi laci hanya jika tunai. Sesi bisa melewati tengah malam. Belum ada dashboard biaya aktual, pencairan atau rekonsiliasi provider. Penjualan sebelum migrasi tetap di riwayat dan tidak dibuatkan sesi kas fiktif.
+10. Kas hari ini menampilkan sesi aktif, uang laci tercatat dan penjualan kotor sesi secara terpisah. Refund berhasil mengurangi laci hanya jika tunai. Sesi bisa melewati tengah malam. Dashboard biaya, pencairan dan rekonsiliasi provider tersedia di web admin; masukan biaya/mutasi memakai referensi laporan manual. Penjualan sebelum migrasi tetap di riwayat dan tidak dibuatkan sesi kas fiktif.
 
 11. Monitor menampilkan laporan perangkat terakhir, bukan kondisi langsung saat offline. Angka antrean menghitung perubahan data; versi cache tidak berarti harga pesanan aktif ikut berubah.
 
 ## Gate sebelum produksi
 
-Build dan tes CI lulus; uji Windows 1366×768 / scaling; uji printer USB; aktivasi dan uji Midtrans static QRIS; Supabase dan paket Vercel yang sesuai penggunaan komersial; migrasi kredensial; ledger/refund/rekonsiliasi; backup/restore; UAT penjual. Daftar pekerjaan dapat dipantau pada Issues per milestone.
+Build dan tes CI lulus; uji Windows 1366×768 / scaling; uji printer USB; aktivasi dan uji Midtrans static QRIS; Supabase dan paket Vercel yang sesuai penggunaan komersial; migrasi kredensial; validasi operasional ledger/refund/rekonsiliasi dan laporan Sheets; backup/restore; UAT penjual. Daftar pekerjaan dapat dipantau pada Issues per milestone.

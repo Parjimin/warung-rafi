@@ -114,12 +114,12 @@
     },
     {
       "title": "M5 — Keuangan dan laporan",
-      "description": "Aktif: sesi kas, refund berizin, jurnal dan sinkronisasi lulus 306 pemeriksaan Windows, admin/API/browser serta PostgreSQL 17 (58ba711). Screenshot ditinjau. MDR aktual, payout, rekonsiliasi dan Sheets tetap terbuka.",
+      "description": "Aktif: sesi kas/refund dan rekonsiliasi software terverifikasi. CI 3d90567: 306 pemeriksaan Windows, 22 unit admin, 13 skenario API, browser desktop/ponsel dan PostgreSQL 17 lulus. Biaya/pencairan manual berreferensi; Google Sheets masih terbuka.",
       "issues": [
         {
           "id": "finance",
           "title": "M5: Buku kas, refund, dan rekonsiliasi",
-          "body": "Tahap sesi kas, kas masuk/keluar, tutup berselisih, refund berizin, jurnal permanen dan sinkronisasi berurutan sudah terverifikasi. CI 58ba711: 306 pemeriksaan Windows, admin/API/browser dan PostgreSQL 17 lulus. Screenshot kas/refund ditinjau, termasuk tombol kas pada layar kecil. Biaya aktual, payout dan rekonsiliasi belum selesai. Penjualan selesai tidak boleh dihapus. Bukti dan batas: docs/M5-CASH-REFUNDS.md serta docs/STATUS.md.",
+          "body": "Kas/refund serta rekonsiliasi software selesai: dashboard WIB, pencocokan QRIS eksplisit, estimasi terpisah dari biaya aktual, pencairan dan mutasi bank, audit permanen dan retry idempoten. CI 3d90567: 306 Windows, 22 unit admin, 13 skenario API, dua alur browser dan PostgreSQL 17 lulus. Screenshot desktop/ponsel ditinjau. Biaya/pencairan dimasukkan manual dari laporan; belum API bank/transfer. Panduan: docs/M5-CASH-REFUNDS.md dan docs/M5-RECONCILIATION.md. Sheets tetap issue terpisah, cloud aktual M3 dan merchant/perangkat M6.",
           "acceptance": [
             "Modal, pemasukan/pengeluaran, tutup sesi dan selisih kas",
             "Refund beralasan dan berizin mempertahankan jejak audit",

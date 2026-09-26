@@ -46,7 +46,7 @@ Jangan memakai PDF printer sebagai printer kasir. Preview menggunakan driver/spo
 
 ## Database cloud
 
-1. Buat proyek Supabase khusus uji. Jalankan `database/001_foundation.sql`, lalu `database/002_sync_monitor.sql` dan `database/003_finance.sql` satu kali lewat SQL Editor. Buat bucket foto dengan `database/storage/menu_photos.sql`. Jangan menjalankan migration awal berulang pada database yang sudah terisi; migration selanjutnya harus berupa file baru.
+1. Buat proyek Supabase khusus uji. Jalankan `database/001_foundation.sql`, lalu `database/002_sync_monitor.sql`, `database/003_finance.sql` dan `database/004_reconciliation.sql` satu kali lewat SQL Editor. Buat bucket foto dengan `database/storage/menu_photos.sql`. Jangan menjalankan migration awal berulang pada database yang sudah terisi; migration selanjutnya harus berupa file baru.
 2. Buat satu user melalui Supabase Auth. Nonaktifkan public signup bila tidak digunakan. Catat user UUID untuk `ADMIN_USER_ID`.
 3. RLS aktif; anon dan authenticated tidak punya akses tabel langsung. Server saja memakai service role. Jangan masukkan service role ke environment desktop atau variabel `NEXT_PUBLIC_*`.
 4. Tes SQL otomatis menggunakan PostgreSQL sementara dengan role tiruan. Tes ini memverifikasi dedupe, atomic batch, konflik, regresi refund, dan hak akses. Uji layanan Supabase aktual tetap diperlukan.
@@ -90,7 +90,7 @@ Katalog tersimpan lokal dan baru dipasang ke UI ketika layar Jualan tidak berisi
 - Endpoint memeriksa SHA512 lalu memanggil Status API untuk identitas/status yang otoritatif. Database menyimpan transaction ID unik dan satu notification event ketika settlement pertama diterima. Respons sukses baru diberikan setelah commit database.
 - Laptop menyimpan bukti/cursor sebelum mengantrekan suara dan popup. Kesamaan nominal tidak digunakan untuk melunasi pesanan.
 - Tes otomatis tidak memanggil akun nyata dan tidak memindahkan uang. Uji merchant membutuhkan akun serta skenario nominal yang disetujui pemilik.
-- Settlement transaksi di Midtrans bukan bukti dana sudah dicairkan ke SeaBank. Rekonsiliasi pencairan terpisah masuk M5.
+- Settlement transaksi di Midtrans bukan bukti dana sudah dicairkan ke SeaBank. Rekonsiliasi dan konfirmasi mutasi bank tersedia terpisah di halaman Keuangan (M5).
 
 ## CI dan progres
 
@@ -111,3 +111,7 @@ Lihat [M2-UI-REVIEW.md](M2-UI-REVIEW.md). Coba empat item tanpa scroll pada area
 ## Sesi kas dan PIN pengelola (M5)
 
 Buka kas sebelum menyelesaikan penjualan. Modal 0 harus dipilih/diisi secara eksplisit. Refund membutuhkan PIN yang dibuat lewat `scripts/Set-ManagerPin.ps1`; tidak ada PIN bawaan. Lihat [M5-CASH-REFUNDS.md](M5-CASH-REFUNDS.md) untuk langkah, batas pengembalian, upgrade database lokal dan penerapan migrasi 003.
+
+## Rekonsiliasi QRIS dan pencairan (M5 tahap 2)
+
+Setelah migrasi 004, buka `/keuangan` dengan akun pengelola. Pilih periode WIB, cocokkan bukti secara eksplisit, catat biaya dari laporan provider, lalu catat pencairan dan mutasi bank secara terpisah. [Panduan, perhitungan dan batas](M5-RECONCILIATION.md). Biaya/pencairan masih masukan manual berreferensi; bukan API transfer atau impor laporan otomatis.
