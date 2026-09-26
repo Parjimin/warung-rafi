@@ -1,6 +1,6 @@
 # Status implementasi — checkpoint 26 September 2026
 
-**M5 aktif: sesi kas dan pengembalian sudah melewati CI Windows/admin; perbaikan akhir masih lokal.** CI commit `7922f9c` lulus 300 pemeriksaan Windows dan job admin, tetapi job database gagal pada sintaks `CASE` migrasi 003. Perbaikan SQL `44fa8b8` lulus seluruh migrasi serta empat suite SQL di PostgreSQL WASM lokal (PGlite 0.5.8 / PostgreSQL 18.3). Tombol kas masuk/keluar dipasang tetap di bawah panel setelah review screenshot layar kecil; build aplikasi dan tes WPF lokal lulus. Pengiriman perbaikan ke GitHub ditolak pemeriksaan persetujuan otomatis dan menunggu izin eksplisit untuk push. CI PostgreSQL 17 dan render Windows revisi terbaru masih perlu dijalankan sebelum masuk `main`. [Alur dan batas M5 tahap 1](M5-CASH-REFUNDS.md). M4 selesai untuk software/simulasi. M2 tetap menunggu review laptop, M3 menunggu integrasi cloud, dan uji merchant/perangkat tetap M6.
+**M5 aktif: tahap sesi kas dan pengembalian sudah terverifikasi.** CI commit `58ba711` lulus **306 pemeriksaan Windows**, 16 tes unit admin, 12 skenario API (14 hasil termasuk pembungkus), alur browser dan PostgreSQL 17. Revisi migrasi SQL serta tombol kas yang tetap terlihat di layar kecil sudah lolos; screenshot aktual telah ditinjau. [Alur dan batas M5 tahap 1](M5-CASH-REFUNDS.md). Rekonsiliasi, biaya aktual, pencairan, dashboard keuangan dan Sheets masih terbuka. M4 selesai untuk software/simulasi; M2 menunggu review laptop, M3 menunggu integrasi cloud, dan uji merchant/perangkat tetap M6.
 
 | Bagian | Implementasi tersedia | Verifikasi / batas saat checkpoint |
 | --- | --- | --- |
@@ -9,7 +9,7 @@
 | M2 — review laptop | Satu bar navigasi, kartu mendatar 2×2, panel pesanan fleksibel/dapat diperbesar, tombol sejajar, pencarian, nama otomatis tersimpan, pembayaran/riwayat/kas dipoles, animasi singkat | 69 pemeriksaan layout/interaksi WPF lulus di CI Windows; screenshot aktual ditinjau; kenyamanan klik serta respons preview baru pada laptop pengguna masih perlu direview; touchscreen/printer tetap M6 |
 | M3 — aktif | Login, tambah/edit menu, unggah/normalisasi foto, konflik draf, publikasi, monitor antrean/versi/konflik perangkat, cache katalog/foto offline | 13 tes unit admin, 5 skenario API melalui Next hasil build, alur browser, 15 pemeriksaan sync/cache Windows dan SQL lulus; setup dan uji Supabase/Storage/Vercel nyata masih terbuka |
 | M4 — selesai (software) | Polling terpisah, validasi inbox atomik, deduplikasi ketat, kebijakan popup 60 detik, simulasi berlabel dengan database terpisah | 31 pemeriksaan inbox SQLite, 84 layout/interaksi WPF, 21 sinkronisasi/cache, 14 unit admin dan 11 skenario API lulus; SQL, build/publish Windows serta screenshot terverifikasi. Merchant nyata tetap M6. [Rincian M4](M4-QRIS.md) |
-| M5 — aktif | Sesi kas, kas masuk/keluar, tutup dan selisih; refund berizin; jurnal lokal permanen dan penerimaan batch server | CI awal: 300 pemeriksaan Windows dan admin lulus; migrasi SQL gagal lalu diperbaiki serta lulus PGlite lokal. Revisi UI terkompilasi, belum dirender ulang di Windows karena push menunggu persetujuan. Rekonsiliasi, MDR aktual, payout, dashboard keuangan dan Sheets masih terbuka |
+| M5 — aktif | Sesi kas, kas masuk/keluar, tutup dan selisih; refund berizin; jurnal lokal permanen dan penerimaan batch server | 306 pemeriksaan Windows, 16 unit admin, 12 skenario API, browser dan PostgreSQL 17 lulus. Screenshot kas/refund/tutup kas ditinjau; tombol kas tetap terlihat di 1280×720 dan 900×620 DIP. Rekonsiliasi, MDR aktual, payout, dashboard keuangan dan Sheets masih terbuka |
 | M6 | Panduan setup dan paket preview melalui CI | Finalisasi touchscreen, printer, merchant, installer, backup/restore, perlindungan token, dan UAT masih terbuka |
 
 ## Pengerjaan per milestone
@@ -26,15 +26,15 @@ Uji touchscreen, printer OKAY 58D, serta pembuatan/aktivasi dan uji akun merchan
 
 ## Bukti pengujian
 
-Bukti M5 tahap 1: [Verify application — 7922f9c](https://github.com/Parjimin/warung-rafi/actions/runs/36162269646). Job Windows dan admin lulus; **run keseluruhan gagal** karena sintaks `CASE` di migrasi SQL 003. Total **300 pemeriksaan Windows**: 23 dasar + 60 recovery + 31 inbox + 50 keuangan + 26 sinkronisasi/cache + 110 UI. Screenshot kas 1280×720 / 900×620, persetujuan refund dan pemeriksaan tutup kas telah ditinjau. Hasil ini untuk checkpoint awal, bukan revisi lokal berikutnya.
+Bukti M5 tahap 1: [Verify application — 58ba711](https://github.com/Parjimin/warung-rafi/actions/runs/36209021572), **seluruh job lulus**. Total **306 pemeriksaan Windows**: 23 dasar + 60 recovery + 31 inbox + 50 keuangan + 26 sinkronisasi/cache + 116 UI. Artifact **WarungRafi-Windows-preview** menyertakan aplikasi, simulasi QRIS, `Set-ManagerPin.ps1` dan panduan kas/refund. Artifact **WarungRafi-UI-review** memuat 26 screenshot Windows aktual.
 
-Verifikasi lokal lanjutan 26 September 2026:
+- Keuangan: modal, penjualan neto kembalian, kas masuk/keluar, refund sebagian, batas saldo, PIN/cooldown, penutupan berselisih, retry, restart, rollback outbox, jurnal permanen dan backup migrasi.
+- UI: alur kas keluar, permintaan dan persetujuan refund, pemeriksaan sebelum tutup kas, kembali mengubah hitungan, dan buka kas dari pembayaran. Enam pemeriksaan baru membuktikan tombol kas tetap terlihat pada 1280×720 dan 900×620 DIP, termasuk ketika rincian digulir. Screenshot kas pada kedua ukuran, PIN refund dan konfirmasi tutup kas telah ditinjau. DIP bukan uji DPI monitor fisik.
+- Admin: 16 tes unit, 12 skenario API melalui aplikasi hasil build (Node melaporkan 14 termasuk pembungkus), typecheck, build Next.js dan alur browser lulus. Kontrak jurnal memakai fixture serializer C#; service cloud/provider memakai fixture terisolasi.
+- PostgreSQL 17: migrasi 001–003 dan suite `assertions`, `sync_monitor`, `payments`, `finance` lulus. Pengiriman ulang tidak menggandakan jurnal; gap urutan, snapshot pesanan yang belum diterima dan perubahan isi ditolak secara atomik; hak akses serta larangan ubah/hapus jurnal diuji.
+- Checkpoint awal `7922f9c` lulus Windows/admin tetapi gagal pada sintaks `CASE` migrasi 003. Koreksi ini sudah dibuktikan pada run `58ba711`; kegagalan awal tidak dihitung sebagai keberhasilan. Sebelum CI, seluruh migrasi/suite SQL juga lulus PostgreSQL 18.3 WASM melalui PGlite lokal.
 
-- Migrasi 001–003 dan suite `assertions`, `sync_monitor`, `payments`, `finance` lulus pada PostgreSQL 18.3 WASM melalui PGlite 0.5.8. Adapter hanya mengganti perintah psql `\copy` fixture dengan INSERT serta menghapus `\set`; logika SQL tidak diubah. Ini tidak menggantikan job PostgreSQL 17 di CI atau integrasi Supabase asli.
-- Build aplikasi WPF dan proyek tes UI lulus tanpa warning/error, memakai referensi paket lokal dan dependensi proyek yang telah dibangun. Enam pemeriksaan tambahan memastikan tombol kas tetap terlihat di 1280×720 / 900×620, termasuk setelah daftar digulir; **belum dieksekusi pada Windows**.
-- 50 pemeriksaan keuangan lokal dijalankan ulang dan lulus menggunakan assembly checkpoint yang sama dengan CI. Source domain/storage keuangan tidak berubah pada revisi UI/SQL.
-- Patch UI memasang aksi kas di luar area scroll, memberi jarak label/nominal, dan menyamakan gaya kolom PIN. Screenshot lama tidak dijadikan bukti hasil render revisi ini.
-- Push perbaikan ditolak oleh pemeriksaan persetujuan otomatis. Repo/akun pemilik telah cocok, tetapi reviewer tetap meminta izin eksplisit untuk publikasi kode ke repo publik. `main` belum diperbarui dan M5 tetap terbuka.
+Bukti ini belum mencakup Supabase/Vercel produksi, merchant asli, printer, touchscreen atau speaker fisik. Tahap berikutnya tetap diperlukan sebelum M5 ditutup dan aplikasi dipakai operasional.
 
 Bukti M4: [Verify application — f6fd4cb](https://github.com/Parjimin/warung-rafi/actions/runs/36126169812), seluruh job lulus. **219 pemeriksaan Windows**: 23 dasar + 60 recovery + 31 inbox pembayaran + 21 sinkronisasi/cache + 84 UI. Artifact **WarungRafi-Windows-preview** berisi aplikasi dan `Coba-QRIS.cmd`; **WarungRafi-UI-review** berisi 19 screenshot render aktual.
 
@@ -52,7 +52,7 @@ Bukti M4: [Verify application — f6fd4cb](https://github.com/Parjimin/warung-ra
 
 Bukti M3: [Verify application — 4e3fb3c](https://github.com/Parjimin/warung-rafi/actions/runs/36111996368), seluruh job lulus. Tersedia **WarungRafi-Windows-preview**, **WarungRafi-M3-admin-review** dan **WarungRafi-UI-review**. Total pemeriksaan desktop **23 + 60 + 15 + 69 = 167**; ini bukan uji perangkat/merchant fisik.
 
-Bukti UI M2: [Verify application — de455eb](https://github.com/Parjimin/warung-rafi/actions/runs/36063728912), **23 + 60 + 69 pemeriksaan desktop**, build/publish Windows, admin dan database lulus. Run ini disimpan sebagai bukti historis; preview terbaru tersedia pada run M4 di atas. **WarungRafi-UI-review** berisi 18 screenshot render aktual.
+Bukti UI M2: [Verify application — de455eb](https://github.com/Parjimin/warung-rafi/actions/runs/36063728912), **23 + 60 + 69 pemeriksaan desktop**, build/publish Windows, admin dan database lulus. Run ini disimpan sebagai bukti historis; preview terbaru tersedia pada run M5 di atas. **WarungRafi-UI-review** berisi 18 screenshot render aktual.
 
 Bukti M1: [Verify application — 6fe719b](https://github.com/Parjimin/warung-rafi/actions/runs/36013056985), seluruh job desktop, admin, dan database lulus.
 

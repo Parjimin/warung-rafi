@@ -8,7 +8,7 @@ Aplikasi kasir Windows untuk satu kedai: menu besar, pesanan ditunda, tunai, QRI
 
 M3 menambahkan unggah foto menu, pemantauan antrean/versi katalog laptop, serta penanganan konflik draf. Lihat [alur, setup dan batas M3](docs/M3-ADMIN-SYNC.md). Deployment Supabase/Vercel dan uji cloud nyata belum dilakukan.
 
-M4 memperkuat inbox QRIS, memisahkan polling pembayaran, dan menambahkan mode simulasi berlabel dengan database terpisah. [Panduan M4](docs/M4-QRIS.md). CI Windows, web dan PostgreSQL lulus. Total 219 pemeriksaan Windows. **M5 aktif:** sesi kas, pengembalian berizin dan jurnal sinkronisasi. [Panduan M5 tahap 1](docs/M5-CASH-REFUNDS.md). Verifikasi Windows/SQL checkpoint ini sedang berjalan; biaya aktual, rekonsiliasi, pencairan dan Sheets belum selesai.
+M4 memperkuat inbox QRIS, memisahkan polling pembayaran, dan menambahkan mode simulasi berlabel dengan database terpisah. [Panduan M4](docs/M4-QRIS.md). CI Windows, web dan PostgreSQL lulus. Total 219 pemeriksaan Windows. **M5 aktif:** sesi kas, pengembalian berizin dan jurnal sinkronisasi. [Panduan M5 tahap 1](docs/M5-CASH-REFUNDS.md). Tahap kas/refund lulus 306 pemeriksaan Windows, tes admin/API/browser dan PostgreSQL 17. Tombol kas tetap terlihat di layar kecil. Biaya aktual, rekonsiliasi, pencairan dan Sheets belum selesai.
 
 ## Pantau progres
 
@@ -40,7 +40,7 @@ Workflow **Sync project tracking** membuat/memperbarui GitHub Milestones dan Iss
 
 ## Coba paket preview Windows
 
-Buka [preview M4 yang sudah lulus](https://github.com/Parjimin/warung-rafi/actions/runs/36126169812), lalu unduh artifact **WarungRafi-Windows-preview**. Screenshot kasir ada pada **WarungRafi-UI-review**; screenshot admin pada **WarungRafi-M3-admin-review**. Run yang lebih baru dapat dilihat di [Actions](https://github.com/Parjimin/warung-rafi/actions/workflows/ci.yml). Ekstrak ZIP dan jalankan `WarungRafi.exe`. Untuk simulasi popup/suara QRIS tanpa merchant, buka `Coba-QRIS.cmd`; data simulasi terpisah dari data kasir normal. Paket ini untuk mencoba menu dummy dan alur kasir; belum untuk transaksi usaha nyata. Printer dan layanan online perlu dikonfigurasi mengikuti panduan.
+Buka [preview M5 tahap kas/refund yang sudah lulus](https://github.com/Parjimin/warung-rafi/actions/runs/36209021572), lalu unduh artifact **WarungRafi-Windows-preview**. Screenshot kasir ada pada **WarungRafi-UI-review**; screenshot admin pada **WarungRafi-M3-admin-review**. Run yang lebih baru dapat dilihat di [Actions](https://github.com/Parjimin/warung-rafi/actions/workflows/ci.yml). Ekstrak ZIP dan jalankan `WarungRafi.exe`. Untuk simulasi popup/suara QRIS tanpa merchant, buka `Coba-QRIS.cmd`; data simulasi terpisah dari data kasir normal. Paket ini untuk mencoba menu dummy dan alur kasir; belum untuk transaksi usaha nyata. Printer dan layanan online perlu dikonfigurasi mengikuti panduan.
 
 ## Mulai di Windows
 

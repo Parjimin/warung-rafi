@@ -68,9 +68,21 @@ Pesanan, pembayaran, antrean lama dan bukti QRIS dipertahankan. Transaksi lama t
 
 Tes WPF menjalankan klik kas keluar, refund, pemeriksaan tutup kas, kembali mengubah hitungan, penutupan berselisih dan pembukaan kas dari pembayaran. Screenshot otomatis mencakup layar kas pada 1280×720 dan 900×620 DIP. Ini belum mengukur kenyamanan sentuh di perangkat nyata.
 
-Review screenshot awal menemukan tombol kas masuk/keluar ikut tergulir pada 900×620. Revisi lokal memasang kedua tombol di bagian bawah panel, menambah jarak label dan nominal, serta merapikan kolom PIN. Build lulus; enam pemeriksaan visibilitas tambahan dan render revisi ini masih menunggu Windows CI.
+Review screenshot awal menemukan tombol kas masuk/keluar ikut tergulir pada 900×620. Revisi `58ba711` memasang kedua tombol di bagian bawah panel, menambah jarak label dan nominal, serta merapikan kolom PIN. Build, enam pemeriksaan visibilitas tambahan dan render Windows sudah lulus. Rincian yang panjang tetap dapat digulir tanpa menyembunyikan tombol kas.
 
 Hasil CI untuk commit yang diverifikasi dicatat di [STATUS.md](STATUS.md). Tes API memakai service fixture terisolasi; tes SQL memakai PostgreSQL sungguhan di CI. Keduanya belum membuktikan integrasi merchant atau akun cloud produksi.
+
+## Screenshot terverifikasi
+
+Render WPF aktual dari CI `58ba711`, memakai data uji. Tombol kas terpasang tetap di bawah; pada area kecil rincian dapat digulir.
+
+![Kas 1280×720](images/m5-cash.png)
+
+![Kas 900×620](images/m5-cash-small.png)
+
+![Persetujuan pengembalian](images/m5-refund.png)
+
+[Unduh preview yang lolos CI](https://github.com/Parjimin/warung-rafi/actions/runs/36209021572) → **WarungRafi-Windows-preview**. Ekstrak ZIP dan jalankan `WarungRafi.exe`. Untuk mencoba persetujuan refund, atur PIN mengikuti petunjuk di atas. Tidak ada PIN bawaan.
 
 ## Tahap M5 berikutnya
 

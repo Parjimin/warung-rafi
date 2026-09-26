@@ -114,12 +114,12 @@
     },
     {
       "title": "M5 — Keuangan dan laporan",
-      "description": "Aktif: checkpoint kas/refund lulus CI Windows/admin; koreksi SQL lulus PostgreSQL WASM lokal. Revisi UI menunggu push dan CI akhir. MDR aktual, payout, rekonsiliasi dan Sheets tetap terbuka.",
+      "description": "Aktif: sesi kas, refund berizin, jurnal dan sinkronisasi lulus 306 pemeriksaan Windows, admin/API/browser serta PostgreSQL 17 (58ba711). Screenshot ditinjau. MDR aktual, payout, rekonsiliasi dan Sheets tetap terbuka.",
       "issues": [
         {
           "id": "finance",
           "title": "M5: Buku kas, refund, dan rekonsiliasi",
-          "body": "Sesi kas, kas masuk/keluar, tutup dengan selisih, refund berizin, jurnal permanen dan sinkronisasi berurutan tersedia. CI awal: 300 pemeriksaan Windows dan admin lulus; kegagalan sintaks SQL sudah diperbaiki dan lulus PostgreSQL WASM lokal. Revisi akhir belum terkirim setelah penolakan persetujuan otomatis; tunggu izin push, CI PostgreSQL 17 dan render Windows. Biaya, payout dan rekonsiliasi belum selesai. Penjualan selesai tidak boleh dihapus. Bukti dan batas: docs/M5-CASH-REFUNDS.md serta docs/STATUS.md.",
+          "body": "Tahap sesi kas, kas masuk/keluar, tutup berselisih, refund berizin, jurnal permanen dan sinkronisasi berurutan sudah terverifikasi. CI 58ba711: 306 pemeriksaan Windows, admin/API/browser dan PostgreSQL 17 lulus. Screenshot kas/refund ditinjau, termasuk tombol kas pada layar kecil. Biaya aktual, payout dan rekonsiliasi belum selesai. Penjualan selesai tidak boleh dihapus. Bukti dan batas: docs/M5-CASH-REFUNDS.md serta docs/STATUS.md.",
           "acceptance": [
             "Modal, pemasukan/pengeluaran, tutup sesi dan selisih kas",
             "Refund beralasan dan berizin mempertahankan jejak audit",
