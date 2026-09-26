@@ -1,0 +1,53 @@
+import { chromium } from 'playwright';
+import { startHarness } from './harness.ts';
+import { mkdir } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const h = await startHarness(); let browser;
+await mkdir('../../artifacts/M5-admin-review', { recursive: true });
+try {
+ browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+ const context = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+ await context.addCookies([{ name: 'warung_admin', value: 'fixture-admin', url: h.origin }]);
+ const page = await context.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
+ const tab = name => page.getByRole('button', { name, exact: true }).click();
+ const dialog = () => page.getByRole('dialog');
+ const fill = (name, value) => dialog().getByLabel(name, { exact: true }).fill(value);
+ const save = async () => { await fill('Alasan / catatan pemeriksaan', 'Dicocokkan dengan dokumen uji'); await dialog().getByRole('button', { name: 'Simpan catatan' }).click(); await dialog().waitFor({ state: 'hidden' }); };
+ const shot = name => page.screenshot({ path: `../../artifacts/M5-admin-review/${name}.png`, fullPage: true });
+ await page.goto(h.origin + '/keuangan'); await page.getByText('Omzet pesanan selesai', { exact: true }).waitFor(); await shot('overview');
+ await tab('Cocokkan'); await page.getByRole('button', { name: 'Pilih pesanan', exact: true }).first().click(); await page.getByRole('button', { name: 'Pilih bukti', exact: true }).first().click(); await tab('Tinjau pasangan'); await save();
+ assert.equal(h.control.finance.summary.unmatchedOrders, 1); assert.equal(h.control.finance.summary.gross, 90000); await shot('matching');
+ await tab('Biaya'); await tab('Tambah tarif');
+ await fill('Merchant ID', 'merchant-uji'); await fill('Nama tarif / sumber perjanjian', 'Tarif fixture, bukan tarif merchant'); await fill('Tarif (basis poin; 100 = 1%)', '65'); await fill('Biaya tetap (Rp)', '0'); await save();
+ await page.getByRole('button', { name: 'Hitung estimasi' }).first().click(); await save();
+ await page.getByRole('button', { name: 'Catat biaya aktual' }).first().click();
+ await fill('MDR aktual (Rp)', '150'); await fill('Biaya lain aktual (Rp)', '50'); await fill('Refund dalam laporan provider (Rp)', '500'); await fill('Referensi laporan biaya', 'Laporan biaya uji 001');
+ // A second tab changes the revision: local fields survive until an explicit refresh.
+ h.control.finance.revision++;
+ await fill('Alasan / catatan pemeriksaan', 'Pemeriksaan biaya uji'); await dialog().getByRole('button', { name: 'Simpan catatan' }).click(); await dialog().getByRole('button', { name: 'Muat ulang laporan' }).waitFor();
+ assert.equal(await dialog().getByLabel('MDR aktual (Rp)', { exact: true }).inputValue(), '150');
+ await dialog().getByRole('button', { name: 'Muat ulang laporan' }).click();
+ // A committed command loses its response; reloading recovers the identical command.
+ h.control.financeResponseLost = true; await dialog().getByRole('button', { name: 'Simpan catatan' }).click(); await dialog().getByRole('button', { name: 'Kirim ulang catatan' }).waitFor();
+ const writesBeforeRetry = h.control.financeAdminWrites.length;
+ await page.reload(); await page.getByRole('button', { name: 'Kirim ulang catatan' }).waitFor();
+ h.control.financeResponseLost = false; await page.getByRole('button', { name: 'Kirim ulang catatan' }).click(); await page.getByText('Catatan tersimpan. Laporan diperbarui.', { exact: true }).waitFor(); assert.equal(h.control.financeAdminWrites.length, writesBeforeRetry);
+ await tab('Biaya'); await shot('costs');
+ await tab('Pencairan'); assert.equal(await page.getByRole('checkbox').nth(1).isDisabled(), true);
+ await page.getByRole('checkbox').first().check(); await tab('Tinjau pencairan');
+ await fill('Referensi laporan pencairan', 'Pencairan uji 001'); await fill('Nama bank', 'Bank Uji'); await fill('Empat digit terakhir rekening', '1234'); await fill('Biaya pencairan (Rp)', '500'); await fill('Penyesuaian bertanda +/− (Rp)', '-25'); await save();
+ assert.equal(h.control.finance.payouts[0].expected_net, 21275); assert.equal(h.control.finance.payouts[0].received_amount, null);
+ await tab('Catat mutasi bank'); await fill('Nominal mutasi bank (Rp)', '21000'); await fill('Referensi mutasi bank', 'Mutasi uji 001'); await save();
+ assert.equal(h.control.finance.summary.receivedBank, 21000); assert.equal(h.control.finance.summary.gross, 90000); await shot('payout');
+ await page.setViewportSize({ width: 390, height: 844 });
+ assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false); await shot('payout-mobile');
+ await tab('Koreksi mutasi bank'); await dialog().getByLabel('Alasan / catatan pemeriksaan').scrollIntoViewIfNeeded();
+ const box = await dialog().getByRole('button', { name: 'Simpan catatan' }).boundingBox(); assert.ok(box && box.y >= 0 && box.y + box.height <= 844, 'Dialog save stays reachable on mobile');
+ await page.screenshot({ path: '../../artifacts/M5-admin-review/bank-dialog-mobile.png', fullPage: false });
+ await dialog().getByRole('button', { name: 'Batal', exact: true }).click();
+ await tab('Batalkan catatan'); await save(); assert.equal(h.control.finance.summary.receivedBank, 0); assert.equal(h.control.finance.providers[0].payout_id, null);
+ await tab('Jejak audit'); await page.locator('.finance-audit summary').first().click();
+ await tab('Ringkasan'); await shot('overview-mobile');
+ assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false); assert.deepEqual(errors, []);
+ console.log('Finance browser passed: explicit match, tariff, estimate, actual cost, conflict draft, lost response + reload retry, payout, bank difference, void history, mobile/dialog reachability.');
+} finally { await browser?.close(); await h.stop(); }

@@ -1,0 +1,112 @@
+"use client";
+import { useEffect, useState, type FormEvent } from "react";
+import { financeCommand, rupiahInput, type FinanceCommand, type FinanceSnapshot, type OrderRow, type ProviderRow, type PayoutRow } from "../../lib/reconciliation.ts";
+const money = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
+const date = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+const stamp = (s: string) => new Date(s).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "short", timeStyle: "short" });
+const actionNames: Record<string, string> = { match: "Cocokkan bukti", unmatch: "Lepas pasangan", fee_profile: "Simpan tarif", estimate_fee: "Simpan estimasi", actual_cost: "Simpan biaya aktual", payout: "Catat pencairan", bank_receipt: "Catat mutasi bank", void_payout: "Batalkan catatan pencairan" };
+const pendingKey = "warung-finance-pending-v1";
+type Editor = { action: string; proof?: ProviderRow; order?: OrderRow; payout?: PayoutRow };
+export default function Dashboard() {
+  const [from, setFrom] = useState(date); const [to, setTo] = useState(date);
+  const [data, setData] = useState<FinanceSnapshot | null>(null); const [tab, setTab] = useState("Ringkasan");
+  const [pages, setPages] = useState({ orders: 0, providers: 0, payouts: 0 });
+  const [busy, setBusy] = useState(false); const [stale, setStale] = useState(false); const [message, setMessage] = useState("");
+  const [pending, setPending] = useState<FinanceCommand | null>(null); const [editor, setEditor] = useState<Editor | null>(null);
+  const [order, setOrder] = useState<OrderRow | null>(null); const [proof, setProof] = useState<ProviderRow | null>(null);
+  const [selected, setSelected] = useState<ProviderRow[]>([]);
+  const locked = busy || stale || !!pending;
+  async function load(nextPages = pages, dates = { from, to }) {
+    const response = await fetch(`/api/admin/finance?${new URLSearchParams({ ...dates, orders: String(nextPages.orders), providers: String(nextPages.providers), payouts: String(nextPages.payouts) })}`, { signal: AbortSignal.timeout(20000) });
+    const result = await response.json(); if (!response.ok) throw new Error(result.error);
+    setData(result); setPages(nextPages); setStale(false);
+  }
+  async function refresh(nextPages = pages, dates = { from, to }) {
+    setBusy(true); try { await load(nextPages, dates); setMessage("Laporan terbaru dimuat."); } catch (error) { setStale(true); setMessage((error as Error).message); } finally { setBusy(false); }
+  }
+  useEffect(() => {
+    try { const saved = sessionStorage.getItem(pendingKey); if (saved) { setPending(financeCommand(JSON.parse(saved))); setMessage("Ada penyimpanan yang belum terkonfirmasi. Kirim ulang untuk memeriksa hasilnya."); } }
+    catch { setStale(true); setMessage("Data pemulihan tidak terbaca. Muat ulang laporan sebelum melanjutkan."); }
+    void refresh(); // One initial request; changing date inputs does not change the displayed report until applied.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  async function send(command: FinanceCommand) {
+    setBusy(true); setPending(command);
+    try {
+      sessionStorage.setItem(pendingKey, JSON.stringify(command));
+      const response = await fetch("/api/admin/finance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(command), signal: AbortSignal.timeout(20000) });
+      const result = await response.json();
+      if (!response.ok) {
+        if (response.status >= 400 && response.status < 500) { setPending(null); sessionStorage.removeItem(pendingKey); setStale(true); }
+        throw new Error(result.error);
+      }
+      setPending(null); sessionStorage.removeItem(pendingKey); setEditor(null); setSelected([]); setOrder(null); setProof(null); setStale(true);
+      try { await load(); setMessage("Catatan tersimpan. Laporan diperbarui."); }
+      catch { setMessage("Catatan tersimpan, tetapi laporan belum dimuat ulang. Tekan Muat ulang."); }
+    } catch (error) { setMessage((error as Error).message + " Isian tetap tersimpan di halaman ini."); }
+    finally { setBusy(false); }
+  }
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (!editor || !data || locked) return;
+    try {
+      const fields = new FormData(event.currentTarget); const values: Record<string, unknown> = Object.fromEntries(fields);
+      for (const key of ["mdr", "other", "refunded", "rateBps", "fixedFee", "fee", "adjustment", "amount"]) if (fields.has(key)) values[key] = rupiahInput(String(fields.get(key)), key === "adjustment");
+      void send(financeCommand({ ...values, id: crypto.randomUUID().replaceAll("-", ""), revision: data.revision, action: editor.action, transactionId: editor.proof?.transaction_id, deviceId: editor.order?.device_id, orderId: editor.order?.id, payoutId: editor.payout?.id, transactions: selected.map(p => p.transaction_id), allowDifference: fields.get("allowDifference") === "on" }));
+    } catch (error) { setMessage((error as Error).message); }
+  }
+  const pager = (key: keyof typeof pages, total: number) => <div className="finance-pager"><span>{total} catatan · halaman {pages[key] + 1}</span><button className="secondary" disabled={busy || pages[key] === 0} onClick={() => void refresh({ ...pages, [key]: pages[key] - 1 }, { from: data!.from, to: data!.to })}>Sebelumnya</button><button className="secondary" disabled={busy || (pages[key] + 1) * 50 >= total} onClick={() => void refresh({ ...pages, [key]: pages[key] + 1 }, { from: data!.from, to: data!.to })}>Berikutnya</button></div>;
+  const field = (label: string, name: string, type = "text", value?: string | number) => <label>{label}<input name={name} type={type} required defaultValue={value} maxLength={name === "accountLast4" ? 4 : 200} inputMode={["mdr", "other", "refunded", "rateBps", "fixedFee", "fee", "amount", "accountLast4"].includes(name) ? "numeric" : undefined} /></label>;
+  const choose = (p: ProviderRow) => setSelected(current => current.some(v => v.transaction_id === p.transaction_id) ? current.filter(v => v.transaction_id !== p.transaction_id) : [...current, p]);
+  const subtotal = selected.reduce((n, p) => n + p.amount - (p.cost?.actual_mdr ?? 0) - (p.cost?.actual_other ?? 0) - (p.cost?.actual_refund ?? 0), 0);
+  return <main className="finance">
+    <div className="heading"><div><span className="eyebrow">BUKU KEUANGAN</span><h1>Dari penjualan ke rekening.</h1><p>Telusuri pesanan, bukti QRIS, biaya, dan pencairan dalam satu tempat.</p></div></div>
+    <form className="finance-filter" onSubmit={e => { e.preventDefault(); setSelected([]); void refresh({ orders: 0, providers: 0, payouts: 0 }); }}>
+      <label>Dari tanggal<input type="date" value={from} onChange={e => setFrom(e.target.value)} required /></label><label>Sampai tanggal<input type="date" value={to} onChange={e => setTo(e.target.value)} required /></label>
+      <button disabled={busy}>Tampilkan</button><button className="secondary" type="button" disabled={busy} onClick={() => void refresh(pages, data ? { from: data.from, to: data.to } : { from, to })}>Muat ulang</button>
+      <span>Waktu Indonesia Barat · maksimal 31 hari</span>
+    </form>
+    <div className="message" role="status">{message}</div>
+    {pending && <section className="conflict"><strong>Penyimpanan belum terkonfirmasi</strong><p>{actionNames[pending.action]} · {pending.reason}. Pengiriman ulang memakai identitas yang sama.</p><button disabled={busy} onClick={() => void send(pending)}>Kirim ulang catatan</button></section>}
+    {stale && <p className="error">Muat ulang laporan sebelum membuat catatan berikutnya.</p>}
+    <div className="tabs finance-tabs" role="group" aria-label="Bagian keuangan">{["Ringkasan", "Cocokkan", "Biaya", "Pencairan", "Jejak audit"].map(t => <button key={t} aria-pressed={tab === t} className={tab === t ? "" : "secondary"} onClick={() => setTab(t)}>{t}</button>)}</div>
+    {!data ? <section className="notice"><h2>Laporan belum tersedia</h2><p>{busy ? "Sedang memuat catatan…" : "Tekan Muat ulang untuk mencoba kembali."}</p></section> : <>
+      <p className="finance-period">Periode ditampilkan: <strong>{data.from} — {data.to}</strong> · diperbarui {stamp(data.generatedAt)} WIB</p>
+      {(!data.devices.length || data.devices.some(d => d.pending_count === null || d.pending_count > 0 || !d.last_report_at || Date.now() - Date.parse(d.last_report_at) > 15 * 60000)) && <aside className="conflict"><strong>Data laptop mungkin belum lengkap.</strong><p>Ada antrean, laporan perangkat lama, atau perangkat belum melapor. <a href="/sinkronisasi"><u>Periksa sinkronisasi</u></a> sebelum menutup laporan.</p></aside>}
+      {tab === "Ringkasan" && <>
+        <div className="stats finance-stats"><article><span>Omzet pesanan selesai</span><strong>{money(data.summary.gross)}</strong><small>{data.summary.salesCount} pesanan · sebelum refund</small></article><article><span>Pengembalian selesai</span><strong>{money(data.summary.refunds)}</strong><small>Berdasarkan tanggal pengembalian</small></article><article className="finance-highlight"><span>Masuk rekening terkonfirmasi</span><strong>{money(data.summary.receivedBank)}</strong><small>Catatan mutasi bank pada periode ini</small></article></div>
+        <div className="finance-columns"><section className="device"><h2>Penjualan & bukti bayar</h2><dl className="finance-totals"><dt>Penjualan tunai</dt><dd>{money(data.summary.cashSales)}</dd><dt>Penjualan QRIS</dt><dd>{money(data.summary.qrisSales)}</dd><dt>Bukti provider QRIS</dt><dd>{money(data.summary.providerGross)}</dd><dt>Pesanan belum berpasangan</dt><dd>{data.summary.unmatchedOrders}</dd><dt>Bukti belum berpasangan</dt><dd>{data.summary.unmatchedProviders}</dd><dt>Pasangan berselisih</dt><dd>{data.summary.differences}</dd></dl><p className="sync-note">Bukti QRIS adalah pembanding penjualan. Pencocokan tidak mengubah omzet atau status pesanan.</p></section>
+        <section className="device"><h2>Biaya & pencairan</h2><dl className="finance-totals"><dt>Biaya aktual tercatat</dt><dd>{money(data.summary.actualFees)}</dd><dt>Bukti belum punya biaya aktual</dt><dd>{data.summary.providerCount - data.summary.actualKnown}</dd><dt>Estimasi tersimpan</dt><dd>{money(data.summary.estimateFees)}</dd><dt>Refund pada laporan provider</dt><dd>{money(data.summary.providerRefunds)}</dd><dt>Neto pencairan dilaporkan</dt><dd>{money(data.summary.payoutNet)}</dd></dl><p className="sync-note">Estimasi: {data.summary.estimateKnown} dari {data.summary.providerCount} bukti. Biaya aktual memakai referensi laporan. Neto pencairan belum berarti dana masuk bank.</p></section></div>
+      </>}
+      {tab === "Cocokkan" && <>
+        <section className="finance-selection"><div><strong>Pasangan yang dipilih</strong><p>Pesanan: {order ? `${order.number} · ${order.device_id} · ${money(order.amount)}` : "Belum dipilih"}<br />Bukti: {proof ? `${proof.transaction_id} · ${money(proof.amount)}` : "Belum dipilih"}</p><small>Pilihan tetap tersedia saat berpindah halaman atau periode.</small></div><button disabled={locked || !order || !proof} onClick={() => setEditor({ action: "match", order: order!, proof: proof! })}>Tinjau pasangan</button></section>
+        <div className="finance-columns"><section><h2>Pesanan QRIS kasir</h2>{data.orders.map(o => <article className="finance-row" key={`${o.device_id}:${o.id}`}><div><strong>{o.number}</strong><small>{o.device_id} · {stamp(o.paid_at)} WIB</small><b>{money(o.amount)}</b><small>{o.match ? `Terhubung: ${o.match.transaction_id}` : "Belum berpasangan"}</small></div><button className="secondary" disabled={locked || !!o.match} onClick={() => setOrder(o)}>{order?.id === o.id && order?.device_id === o.device_id ? "Dipilih" : "Pilih pesanan"}</button></article>)}{!data.orders.length && <p>Belum ada pesanan QRIS pada periode ini.</p>}{pager("orders", data.counts.orders)}</section>
+        <section><h2>Bukti provider</h2>{data.providers.map(p => <article className="finance-row" key={p.transaction_id}><div><strong>{p.transaction_id}</strong><small>{p.merchant_id} · {stamp(p.paid_at)} WIB</small><b>{money(p.amount)}</b><small>{p.match ? `Terhubung: ${p.match.device_id} / ${p.match.order_id} · selisih ${money(p.match.difference)}` : "Belum berpasangan"}</small></div>{p.match ? <button className="secondary" disabled={locked} onClick={() => setEditor({ action: "unmatch", proof: p })}>Lepas pasangan</button> : <button className="secondary" disabled={locked} onClick={() => setProof(p)}>{proof?.transaction_id === p.transaction_id ? "Dipilih" : "Pilih bukti"}</button>}</article>)}{!data.providers.length && <p>Belum ada bukti provider pada periode ini.</p>}{pager("providers", data.counts.providers)}</section></div>
+      </>}
+      {tab === "Biaya" && <>
+        <section className="finance-selection"><div><strong>Tarif estimasi berdasarkan masa berlaku</strong><p>Tarif diisi dari perjanjian merchant. Angka estimasi disimpan sebagai snapshot dan dipisahkan dari biaya aktual.</p></div><button disabled={locked} onClick={() => setEditor({ action: "fee_profile" })}>Tambah tarif</button></section>
+        {data.profiles.map(p => <p className="finance-profile" key={p.id}><b>{p.label} · {p.merchant_id}</b><br />{p.valid_from} s.d. {p.valid_to} · {p.rate_bps} basis poin + {money(p.fixed_fee)} · pembulatan {p.rounding}</p>)}
+        {data.providers.map(p => <article className="finance-row" key={p.transaction_id}><div><strong>{p.transaction_id} · {money(p.amount)}</strong><small>{p.merchant_id} · {stamp(p.paid_at)} WIB</small><p>Estimasi: {p.cost?.estimated_fee == null ? "Belum dihitung" : money(p.cost.estimated_fee)}<br />Aktual: {p.cost?.actual_mdr == null ? "Belum diketahui" : `${money(p.cost.actual_mdr + (p.cost.actual_other ?? 0))} · refund ${money(p.cost.actual_refund ?? 0)}`}</p><small>{p.cost?.reference && `Laporan: ${p.cost.reference}`}{p.payout_id && " · Sudah dialokasikan ke pencairan"}</small></div><div className="finance-actions"><button className="secondary" disabled={locked || p.cost?.estimated_fee != null} onClick={() => setEditor({ action: "estimate_fee", proof: p })}>Hitung estimasi</button><button disabled={locked || !!p.payout_id} onClick={() => setEditor({ action: "actual_cost", proof: p })}>Catat biaya aktual</button></div></article>)}{!data.providers.length && <p>Belum ada bukti provider pada periode ini.</p>}{pager("providers", data.counts.providers)}
+      </>}
+      {tab === "Pencairan" && <>
+        <section className="finance-selection"><div><strong>{selected.length} bukti dipilih · subtotal {money(subtotal)}</strong><p>Subtotal sesudah biaya transaksi dan refund, sebelum biaya pencairan atau penyesuaian.</p><small>Pencatatan berdasarkan laporan provider; tidak mengirim transfer bank.</small></div><button disabled={locked || !selected.length} onClick={() => setEditor({ action: "payout" })}>Tinjau pencairan</button></section>
+        <details className="device" open><summary>Pilih bukti untuk pencairan baru</summary>{data.providers.map(p => <label className="check finance-choice" key={p.transaction_id}><input type="checkbox" checked={selected.some(s => s.transaction_id === p.transaction_id)} disabled={locked || !!p.payout_id || p.cost?.actual_mdr == null || (!selected.some(s => s.transaction_id === p.transaction_id) && (selected.length >= 50 || selected.some(s => s.merchant_id !== p.merchant_id)))} onChange={() => choose(p)} /><span>{p.transaction_id} · {money(p.amount)}<small>{p.merchant_id} · {p.payout_id ? "Sudah dialokasikan" : p.cost?.actual_mdr == null ? "Lengkapi biaya aktual dahulu" : "Siap dialokasikan"}</small></span></label>)}{!data.providers.length && <p>Belum ada bukti provider pada periode ini.</p>}{pager("providers", data.counts.providers)}</details>
+        <h2>Catatan pencairan</h2>{data.payouts.map(p => <article className="device finance-payout" key={p.id}><div className="device-head"><h2>{p.reference}</h2><span className={`device-state ${p.received_amount == null || p.voided_at ? "warning" : ""}`}>{p.voided_at ? "Dibatalkan" : p.received_amount == null ? "Belum dikonfirmasi bank" : "Mutasi bank tercatat"}</span></div><p>{p.reported_on} · {p.bank_name} •••• {p.account_last4} · {p.transactions.length} bukti</p><dl><div><dt>Neto laporan provider</dt><dd>{money(p.expected_net)}</dd></div><div><dt>Masuk rekening</dt><dd>{p.received_amount == null ? "Belum diketahui" : money(p.received_amount)}</dd></div><div><dt>Selisih bank − laporan</dt><dd>{p.received_amount == null ? "—" : money(p.received_amount - p.expected_net)}</dd></div></dl><details><summary>Rincian perhitungan</summary><p>Bruto {money(p.gross)} − biaya transaksi {money(p.transaction_fees)} − refund {money(p.refunds)} − biaya pencairan {money(p.fee)} + penyesuaian {money(p.adjustment)}.</p><p>{p.transactions.join(", ")}</p>{p.bank_reference && <p>Mutasi: {p.bank_reference} · {p.received_on}</p>}</details>{!p.voided_at && <div className="finance-actions"><button disabled={locked} onClick={() => setEditor({ action: "bank_receipt", payout: p })}>{p.received_amount == null ? "Catat mutasi bank" : "Koreksi mutasi bank"}</button><button className="secondary" disabled={locked} onClick={() => setEditor({ action: "void_payout", payout: p })}>Batalkan catatan</button></div>}</article>)}{!data.payouts.length && <p>Belum ada pencairan yang dilaporkan pada periode ini.</p>}{pager("payouts", data.counts.payouts)}
+      </>}
+      {tab === "Jejak audit" && <section className="device"><h2>50 perubahan terakhir · semua periode</h2><p>Pelaku, alasan, serta nilai sebelum dan sesudah disimpan permanen.</p>{data.audit.map(a => <details className="finance-audit" key={a.id}><summary>{actionNames[a.action] ?? a.action} · {stamp(a.created_at)} WIB</summary><p>{a.reason} · {a.actor} · revisi {a.revision}</p><pre>{JSON.stringify({ sebelum: a.before_value, sesudah: a.after_value }, null, 2)}</pre></details>)}{!data.audit.length && <p>Belum ada perubahan keuangan oleh pengelola.</p>}</section>}
+    </>}
+    {editor && <dialog ref={node => { if (node && !node.open) node.showModal(); }} className="finance-editor" aria-labelledby="finance-editor-title" onCancel={e => { e.preventDefault(); if (!locked) setEditor(null); }}><h2 id="finance-editor-title">{actionNames[editor.action]}</h2><form onSubmit={submit}><fieldset disabled={locked}>
+      {editor.proof && <p>{editor.proof.transaction_id} · {money(editor.proof.amount)}</p>}
+      {editor.action === "match" && <><p>Pesanan {editor.order!.number} · {editor.order!.device_id} · {money(editor.order!.amount)}<br />Selisih: {money(editor.proof!.amount - editor.order!.amount)}</p>{editor.proof!.amount !== editor.order!.amount && <label className="check"><input type="checkbox" name="allowDifference" required />Saya mencatat pasangan ini dengan selisih nominal.</label>}</>}
+      {editor.action === "unmatch" && <p>Hubungan ini dilepas; jejak pasangan sebelumnya tetap disimpan.</p>}
+      {editor.action === "fee_profile" && <>{field("Merchant ID", "merchantId")}{field("Nama tarif / sumber perjanjian", "label")}<div className="form-row">{field("Berlaku mulai", "from", "date", from)}{field("Berlaku sampai", "to", "date", to)}</div><div className="form-row">{field("Tarif (basis poin; 100 = 1%)", "rateBps")}{field("Biaya tetap (Rp)", "fixedFee")}</div><label>Pembulatan<select name="rounding"><option value="half_up">Terdekat; setengah ke atas</option><option value="floor">Ke bawah</option><option value="ceiling">Ke atas</option></select></label><p>Periode satu merchant tidak boleh tumpang tindih. Tarif tersimpan tidak dapat ditimpa.</p></>}
+      {editor.action === "estimate_fee" && <p>Gunakan tarif yang berlaku pada tanggal bukti ini. Estimasi akan disimpan sekali dan tidak dianggap sebagai biaya aktual.</p>}
+      {editor.action === "actual_cost" && <><p>Salin nominal dari laporan provider. Isi 0 bila memang nol; kolom kosong berarti belum diketahui.</p><div className="form-row">{field("MDR aktual (Rp)", "mdr", "text", editor.proof?.cost?.actual_mdr ?? undefined)}{field("Biaya lain aktual (Rp)", "other", "text", editor.proof?.cost?.actual_other ?? undefined)}</div>{field("Refund dalam laporan provider (Rp)", "refunded", "text", editor.proof?.cost?.actual_refund ?? undefined)}{field("Referensi laporan biaya", "reference", "text", editor.proof?.cost?.reference ?? undefined)}</>}
+      {editor.action === "payout" && <><p>{selected.length} bukti · subtotal {money(subtotal)}<br />{selected.map(p => p.transaction_id).join(", ")}</p>{field("Referensi laporan pencairan", "reference")}{field("Tanggal laporan pencairan", "reportedOn", "date", date())}<div className="form-row">{field("Nama bank", "bankName")}{field("Empat digit terakhir rekening", "accountLast4")}</div><div className="form-row">{field("Biaya pencairan (Rp)", "fee")}{field("Penyesuaian bertanda +/− (Rp)", "adjustment")}</div><p>Neto = subtotal − biaya pencairan + penyesuaian. Jelaskan penyesuaian dalam alasan di bawah.</p></>}
+      {editor.payout && <p>{editor.payout.reference} · {editor.payout.bank_name} •••• {editor.payout.account_last4}<br />Neto laporan {money(editor.payout.expected_net)}</p>}
+      {editor.action === "bank_receipt" && <>{field("Tanggal masuk rekening", "receivedOn", "date", editor.payout?.received_on ?? date())}{field("Nominal mutasi bank (Rp)", "amount", "text", editor.payout?.received_amount ?? undefined)}{field("Referensi mutasi bank", "reference", "text", editor.payout?.bank_reference ?? undefined)}<p>Isi dari mutasi rekening. Perbedaan nominal tetap terlihat sebagai selisih.</p></>}
+      {editor.action === "void_payout" && <p>Catatan dikeluarkan dari total aktif, termasuk konfirmasi banknya. Bukti dapat dialokasikan kembali. Riwayat pembatalan tetap tersimpan.</p>}
+      {field("Alasan / catatan pemeriksaan", "reason")}
+      <div className="finance-actions"><button type="button" className="secondary" onClick={() => setEditor(null)}>Batal</button><button type="submit">Simpan catatan</button></div>
+    </fieldset></form><p role="status" className="sync-note">{message}</p>{pending && <button disabled={busy} onClick={() => void send(pending)}>Kirim ulang catatan</button>}{stale && !pending && <button disabled={busy} onClick={() => void refresh()}>Muat ulang laporan</button>}</dialog>}
+  </main>;
+}

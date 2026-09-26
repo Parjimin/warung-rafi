@@ -3,6 +3,7 @@ import { createServer, type Server } from "node:http";
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import type { Product } from "../lib/catalog.ts";
+import { financeFixture, applyFixture } from "./reconciliation-fixture.ts";
 const listen = (server: Server) => new Promise<number>(resolve => server.listen(0, "127.0.0.1", () => resolve((server.address() as { port: number }).port)));
 export async function startHarness(options: { payments?: boolean } = {}) {
   const seed: Product[] = [
@@ -12,7 +13,8 @@ export async function startHarness(options: { payments?: boolean } = {}) {
     { id: "teh", name: "Es Teh", category: "Minuman", price: 3000, available: true, imageUrl: null }
   ];
   const state = { draft_version: 1, published_version: 1, draft: seed, published: seed };
-  const control = { financeWrites: [] as unknown[], storageFail: false, dbFail: false, conflict: false, uploaded: Buffer.alloc(0), devices: [] as unknown[], providerCalls: 0, providerFail: false, providerStatus: {} as Record<string, unknown>, providerWrites: [] as Record<string, unknown>[], paymentRows: [] as { sequence: number; transaction_id: string; amount: number; paid_at: string }[] };
+  const finance = financeFixture(); const commands = new Map<string, unknown>();
+  const control = { finance, financeAdminWrites: [] as {p_actor: string; p_command: Record<string, unknown>}[], financeResponseLost: false, financeWrites: [] as unknown[], storageFail: false, dbFail: false, conflict: false, uploaded: Buffer.alloc(0), devices: [] as unknown[], providerCalls: 0, providerFail: false, providerStatus: {} as Record<string, unknown>, providerWrites: [] as Record<string, unknown>[], paymentRows: [] as { sequence: number; transaction_id: string; amount: number; paid_at: string }[] };
   const backend = createServer(async (req, res) => {
     const chunks: Buffer[] = []; for await (const chunk of req) chunks.push(Buffer.from(chunk));
     const bytes = Buffer.concat(chunks); const path = req.url ?? "";
@@ -36,6 +38,15 @@ export async function startHarness(options: { payments?: boolean } = {}) {
     if (path.startsWith("/rest/v1/device_sync_status")) { reply(control.devices); return; }
     if (path.startsWith("/rest/v1/rpc/")) {
       const input = JSON.parse(bytes.toString());
+      if (path.endsWith("finance_dashboard")) { reply({ ...finance, from: input.p_from, to: input.p_to }); return; }
+      if (path.endsWith("apply_finance_admin")) {
+        const command = input.p_command;
+        if (commands.has(command.id)) { reply(commands.get(command.id)); return; }
+        if (control.conflict || command.revision !== finance.revision) { reply({ code: "40001" }, 409); return; }
+        control.financeAdminWrites.push(input); applyFixture(finance, command, input.p_actor);
+        const result = { saved: true, revision: finance.revision, replayed: false }; commands.set(command.id, result);
+        reply(result, control.financeResponseLost ? 503 : 200); return;
+      }
       if (path.endsWith("record_provider_payment")) {
         control.providerWrites.push(input.p_payment);
         // Transport fixture only; PostgreSQL transition/atomicity rules are tested separately.
