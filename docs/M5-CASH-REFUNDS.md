@@ -68,6 +68,8 @@ Pesanan, pembayaran, antrean lama dan bukti QRIS dipertahankan. Transaksi lama t
 
 Tes WPF menjalankan klik kas keluar, refund, pemeriksaan tutup kas, kembali mengubah hitungan, penutupan berselisih dan pembukaan kas dari pembayaran. Screenshot otomatis mencakup layar kas pada 1280×720 dan 900×620 DIP. Ini belum mengukur kenyamanan sentuh di perangkat nyata.
 
+Review screenshot awal menemukan tombol kas masuk/keluar ikut tergulir pada 900×620. Revisi lokal memasang kedua tombol di bagian bawah panel, menambah jarak label dan nominal, serta merapikan kolom PIN. Build lulus; enam pemeriksaan visibilitas tambahan dan render revisi ini masih menunggu Windows CI.
+
 Hasil CI untuk commit yang diverifikasi dicatat di [STATUS.md](STATUS.md). Tes API memakai service fixture terisolasi; tes SQL memakai PostgreSQL sungguhan di CI. Keduanya belum membuktikan integrasi merchant atau akun cloud produksi.
 
 ## Tahap M5 berikutnya

@@ -1,6 +1,6 @@
-# Status implementasi — checkpoint 25 September 2026
+# Status implementasi — checkpoint 26 September 2026
 
-**M5 aktif: tahap sesi kas dan pengembalian sedang diverifikasi.** Implementasi lokal dan endpoint jurnal tersedia; 50 tes keuangan, 23 dasar, 60 recovery, 16 unit admin dan 12 skenario API lulus lokal. Build WPF berhasil; pemeriksaan interaksi Windows dan PostgreSQL menunggu CI checkpoint ini. [Alur dan batas M5 tahap 1](M5-CASH-REFUNDS.md). M4 selesai untuk software/simulasi. M2 tetap menunggu review laptop, M3 menunggu integrasi cloud, dan uji merchant/perangkat tetap M6.
+**M5 aktif: sesi kas dan pengembalian sudah melewati CI Windows/admin; perbaikan akhir masih lokal.** CI commit `7922f9c` lulus 300 pemeriksaan Windows dan job admin, tetapi job database gagal pada sintaks `CASE` migrasi 003. Perbaikan SQL `44fa8b8` lulus seluruh migrasi serta empat suite SQL di PostgreSQL WASM lokal (PGlite 0.5.8 / PostgreSQL 18.3). Tombol kas masuk/keluar dipasang tetap di bawah panel setelah review screenshot layar kecil; build aplikasi dan tes WPF lokal lulus. Pengiriman perbaikan ke GitHub ditolak pemeriksaan persetujuan otomatis dan menunggu izin eksplisit untuk push. CI PostgreSQL 17 dan render Windows revisi terbaru masih perlu dijalankan sebelum masuk `main`. [Alur dan batas M5 tahap 1](M5-CASH-REFUNDS.md). M4 selesai untuk software/simulasi. M2 tetap menunggu review laptop, M3 menunggu integrasi cloud, dan uji merchant/perangkat tetap M6.
 
 | Bagian | Implementasi tersedia | Verifikasi / batas saat checkpoint |
 | --- | --- | --- |
@@ -9,7 +9,7 @@
 | M2 — review laptop | Satu bar navigasi, kartu mendatar 2×2, panel pesanan fleksibel/dapat diperbesar, tombol sejajar, pencarian, nama otomatis tersimpan, pembayaran/riwayat/kas dipoles, animasi singkat | 69 pemeriksaan layout/interaksi WPF lulus di CI Windows; screenshot aktual ditinjau; kenyamanan klik serta respons preview baru pada laptop pengguna masih perlu direview; touchscreen/printer tetap M6 |
 | M3 — aktif | Login, tambah/edit menu, unggah/normalisasi foto, konflik draf, publikasi, monitor antrean/versi/konflik perangkat, cache katalog/foto offline | 13 tes unit admin, 5 skenario API melalui Next hasil build, alur browser, 15 pemeriksaan sync/cache Windows dan SQL lulus; setup dan uji Supabase/Storage/Vercel nyata masih terbuka |
 | M4 — selesai (software) | Polling terpisah, validasi inbox atomik, deduplikasi ketat, kebijakan popup 60 detik, simulasi berlabel dengan database terpisah | 31 pemeriksaan inbox SQLite, 84 layout/interaksi WPF, 21 sinkronisasi/cache, 14 unit admin dan 11 skenario API lulus; SQL, build/publish Windows serta screenshot terverifikasi. Merchant nyata tetap M6. [Rincian M4](M4-QRIS.md) |
-| M5 — aktif | Sesi kas, kas masuk/keluar, tutup dan selisih; refund berizin; jurnal lokal permanen dan penerimaan batch server | Tes lokal lulus; CI Windows/SQL menunggu. Rekonsiliasi, MDR aktual, payout, dashboard keuangan dan Sheets masih terbuka |
+| M5 — aktif | Sesi kas, kas masuk/keluar, tutup dan selisih; refund berizin; jurnal lokal permanen dan penerimaan batch server | CI awal: 300 pemeriksaan Windows dan admin lulus; migrasi SQL gagal lalu diperbaiki serta lulus PGlite lokal. Revisi UI terkompilasi, belum dirender ulang di Windows karena push menunggu persetujuan. Rekonsiliasi, MDR aktual, payout, dashboard keuangan dan Sheets masih terbuka |
 | M6 | Panduan setup dan paket preview melalui CI | Finalisasi touchscreen, printer, merchant, installer, backup/restore, perlindungan token, dan UAT masih terbuka |
 
 ## Pengerjaan per milestone
@@ -25,6 +25,16 @@ Revisi kedua M2 menyatukan brand/navigasi/tanggal dalam satu bar atas, menyeimba
 Uji touchscreen, printer OKAY 58D, serta pembuatan/aktivasi dan uji akun merchant asli **dijadwalkan pada M6**. Printer belum tersedia; pemilik belum sempat menyiapkan merchant. Pengembangan fitur lain tetap lanjut. M4 dapat menggunakan mock/fixture berlabel uji, tanpa menganggap transaksi simulasi sebagai pembayaran nyata.
 
 ## Bukti pengujian
+
+Bukti M5 tahap 1: [Verify application — 7922f9c](https://github.com/Parjimin/warung-rafi/actions/runs/36162269646). Job Windows dan admin lulus; **run keseluruhan gagal** karena sintaks `CASE` di migrasi SQL 003. Total **300 pemeriksaan Windows**: 23 dasar + 60 recovery + 31 inbox + 50 keuangan + 26 sinkronisasi/cache + 110 UI. Screenshot kas 1280×720 / 900×620, persetujuan refund dan pemeriksaan tutup kas telah ditinjau. Hasil ini untuk checkpoint awal, bukan revisi lokal berikutnya.
+
+Verifikasi lokal lanjutan 26 September 2026:
+
+- Migrasi 001–003 dan suite `assertions`, `sync_monitor`, `payments`, `finance` lulus pada PostgreSQL 18.3 WASM melalui PGlite 0.5.8. Adapter hanya mengganti perintah psql `\copy` fixture dengan INSERT serta menghapus `\set`; logika SQL tidak diubah. Ini tidak menggantikan job PostgreSQL 17 di CI atau integrasi Supabase asli.
+- Build aplikasi WPF dan proyek tes UI lulus tanpa warning/error, memakai referensi paket lokal dan dependensi proyek yang telah dibangun. Enam pemeriksaan tambahan memastikan tombol kas tetap terlihat di 1280×720 / 900×620, termasuk setelah daftar digulir; **belum dieksekusi pada Windows**.
+- 50 pemeriksaan keuangan lokal dijalankan ulang dan lulus menggunakan assembly checkpoint yang sama dengan CI. Source domain/storage keuangan tidak berubah pada revisi UI/SQL.
+- Patch UI memasang aksi kas di luar area scroll, memberi jarak label/nominal, dan menyamakan gaya kolom PIN. Screenshot lama tidak dijadikan bukti hasil render revisi ini.
+- Push perbaikan ditolak oleh pemeriksaan persetujuan otomatis. Repo/akun pemilik telah cocok, tetapi reviewer tetap meminta izin eksplisit untuk publikasi kode ke repo publik. `main` belum diperbarui dan M5 tetap terbuka.
 
 Bukti M4: [Verify application — f6fd4cb](https://github.com/Parjimin/warung-rafi/actions/runs/36126169812), seluruh job lulus. **219 pemeriksaan Windows**: 23 dasar + 60 recovery + 31 inbox pembayaran + 21 sinkronisasi/cache + 84 UI. Artifact **WarungRafi-Windows-preview** berisi aplikasi dan `Coba-QRIS.cmd`; **WarungRafi-UI-review** berisi 19 screenshot render aktual.
 

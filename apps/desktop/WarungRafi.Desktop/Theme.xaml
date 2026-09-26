@@ -64,6 +64,19 @@
         <ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="#234F3F"/></Trigger></ControlTemplate.Triggers>
       </ControlTemplate></Setter.Value></Setter>
     </Style>
+    <Style TargetType="PasswordBox">
+      <Setter Property="FontSize" Value="18"/><Setter Property="Padding" Value="12,8"/><Setter Property="MinHeight" Value="48"/>
+      <Setter Property="Background" Value="#F7F9F4"/><Setter Property="Foreground" Value="#233E35"/>
+      <Setter Property="BorderBrush" Value="#DEE6DF"/><Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="SelectionBrush" Value="#B3D4BB"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="PasswordBox">
+        <Border x:Name="Box" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10">
+          <ScrollViewer x:Name="PART_ContentHost" Margin="0"/>
+        </Border>
+        <ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="#234F3F"/></Trigger></ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
     <Style TargetType="ScrollViewer"><Setter Property="PanningMode" Value="VerticalOnly"/><Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/></Style>
     <Style TargetType="ToolTip"><Setter Property="FontSize" Value="16"/></Style>
   </ResourceDictionary>

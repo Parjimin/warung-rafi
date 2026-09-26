@@ -108,6 +108,11 @@ internal static class Program
         {
             width=size.Item1;height=size.Item2;Layout();
             Check(Inside(Get<TextBlock>("ExpectedCash"))&&Inside(Get<Button>("CloseCash")),"drawer total and close action fit finance viewport");
+            foreach(var id in new[]{"CashIn","CashOut"})
+                Check(VisibleWithinParents(Get<Button>(id)),id+" stays visible without scrolling at "+width+"x"+height);
+            Get<ScrollViewer>("CashBalanceViewport").ScrollToEnd();Layout();
+            Check(VisibleWithinParents(Get<Button>("CashIn"))&&VisibleWithinParents(Get<Button>("CashOut")),"cash actions stay pinned when reviewing drawer entries");
+            Get<ScrollViewer>("CashBalanceViewport").ScrollToHome();Layout();
             Screenshot($"15-cash-{width}x{height}");
         }
         width=1280;height=720;Layout();
@@ -223,6 +228,17 @@ internal static class Program
     {
         var p=element.TransformToAncestor(root).Transform(new Point());
         return p.X>=0&&p.Y>=0&&p.X+element.ActualWidth<=root.ActualWidth+1&&p.Y+element.ActualHeight<=root.ActualHeight+1;
+    }
+    private static bool VisibleWithinParents(FrameworkElement element)
+    {
+        if(!element.IsVisible||!Inside(element))return false;
+        for(DependencyObject? parent=VisualTreeHelper.GetParent(element);parent is not null&&parent!=root;parent=VisualTreeHelper.GetParent(parent))
+        {
+            if(parent is not FrameworkElement frame)continue;
+            var bounds=element.TransformToAncestor(frame).TransformBounds(new Rect(0,0,element.ActualWidth,element.ActualHeight));
+            if(bounds.Left<-.5||bounds.Top<-.5||bounds.Right>frame.ActualWidth+.5||bounds.Bottom>frame.ActualHeight+.5)return false;
+        }
+        return true;
     }
     private static T? Find<T>(string id) where T:DependencyObject => MainWindow.Descendants<T>(root).FirstOrDefault(x=>AutomationProperties.GetAutomationId(x)==id);
     private static T Get<T>(string id) where T:DependencyObject => Find<T>(id)??throw new Exception("Missing UI element: "+id);

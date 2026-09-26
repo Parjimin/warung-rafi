@@ -21,7 +21,7 @@ public partial class MainWindow
     }
     private static void CashLine(StackPanel panel,string name,long amount,bool emphasis=false)
     {
-        var row=Columns(Star,Auto);row.Margin=new Thickness(0,8,0,8);Place(row,Text(name,emphasis?20:17,emphasis,"#65766E"));Place(row,Text(Money.Format(amount),emphasis?26:20,true),0,1);panel.Children.Add(row);
+        var row=Columns(Star,new GridLength(16),Auto);row.Margin=new Thickness(0,8,0,8);Place(row,Text(name,emphasis?20:17,emphasis,"#65766E"));Place(row,Text(Money.Format(amount),emphasis?26:20,true),0,2);panel.Children.Add(row);
     }
     private async Task RenderCash()
     {
@@ -37,13 +37,13 @@ public partial class MainWindow
         else
         {
             var columns=Columns(new GridLength(1.15,GridUnitType.Star),new GridLength(18),Star);
-            var balance=new StackPanel();balance.Children.Add(Text("Uang di laci menurut catatan",20,false,"#65766E"));
+            var left=Rows(Star,Auto);var balance=new StackPanel();balance.Children.Add(Text("Uang di laci menurut catatan",20,false,"#65766E"));
             var expected=Identify(Text(Money.Format(position.Expected),42,true,"#205C49"),"ExpectedCash");expected.Margin=new Thickness(0,10,0,20);balance.Children.Add(expected);
             CashLine(balance,"Modal awal",position.Session.OpeningCash);CashLine(balance,"Penjualan tunai",position.CashSales);CashLine(balance,"Kas masuk lainnya",position.CashIn);CashLine(balance,"Kas keluar",-position.CashOut);CashLine(balance,"Pengembalian tunai",-position.CashRefunds);
             var actions=Columns(Star,new GridLength(10),Star);actions.Margin=new Thickness(0,16,0,0);
             Place(actions,ActionButton("+ Kas masuk",()=>{RenderCashMovement(position,true);return Task.CompletedTask;},id:"CashIn"));
-            Place(actions,ActionButton("− Kas keluar",()=>{RenderCashMovement(position,false);return Task.CompletedTask;},id:"CashOut"),0,2);balance.Children.Add(actions);
-            Place(columns,Surface(Scroll(balance,"CashBalanceViewport")));
+            Place(actions,ActionButton("− Kas keluar",()=>{RenderCashMovement(position,false);return Task.CompletedTask;},id:"CashOut"),0,2);
+            Place(left,Scroll(balance,"CashBalanceViewport"));Place(left,actions,1);Place(columns,Surface(left));
             var right=Rows(Star,Auto);var sales=new StackPanel();sales.Children.Add(Text("Penjualan tercatat",22,true));
             CashLine(sales,$"{position.SaleCount} pesanan dalam sesi ini",position.Gross,true);CashLine(sales,"Di antaranya QRIS",position.QrisSales);
             var detail=Text("QRIS dicatat kasir dan tidak menambah uang di laci. Angka ini belum menunjukkan pencairan atau biaya provider.",17,false,"#65766E");detail.Margin=new Thickness(0,12,0,16);sales.Children.Add(detail);

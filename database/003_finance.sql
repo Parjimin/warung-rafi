@@ -49,9 +49,9 @@ begin
       if kind='sale' then
         select payload->'payment' into payment from order_snapshots where device_id=p_device and id=oid and status=2;
         if payment is null then raise exception 'sale snapshot not received' using errcode='40001'; end if;
-        if eid<>'sale-'||oid or payment<>d or amount is distinct from (payment->>'amount')::bigint or delta<>case when (payment->>'method')::integer=0 then amount else 0 end then raise exception 'sale differs from payment'; end if;
+        if eid<>'sale-'||oid or payment<>d or amount is distinct from (payment->>'amount')::bigint or delta<>(case when (payment->>'method')::integer=0 then amount else 0 end) then raise exception 'sale differs from payment'; end if;
       elsif kind in ('cash_in','cash_out') then
-        if oid is not null or amount<1 or amount>1000000000 or length(trim(e->>'reason')) not between 3 and 200 or delta<>case when kind='cash_in' then amount else -amount end then raise exception 'invalid movement'; end if;
+        if oid is not null or amount<1 or amount>1000000000 or length(trim(e->>'reason')) not between 3 and 200 or delta<>(case when kind='cash_in' then amount else -amount end) then raise exception 'invalid movement'; end if;
       elsif kind='session_closed' then
         if oid is not null or eid<>'close-'||sid or delta<>0 or d->>'closedAt' is null or (d->>'expectedAtClose')::bigint is distinct from s.expected or (d->>'countedCash')::bigint is distinct from amount or d->>'id' is distinct from sid or d->>'openedAt' is distinct from s.payload->>'openedAt' or d->>'openingCash' is distinct from s.payload->>'openingCash' or d->>'openedBy' is distinct from s.payload->>'openedBy' or (amount<>s.expected and length(trim(d->>'closingNote'))<3) then raise exception 'invalid closing'; end if;
         update cash_sessions set closed=true,payload=d where device_id=p_device and id=sid;
@@ -72,7 +72,7 @@ begin
       if not found or r.state<>0 then raise exception 'refund is not pending' using errcode='40001'; end if;
       if eid<>'resolve-'||r.id or oid is distinct from r.order_id or amount<>r.amount or (d - array['state','completedAt','sessionId','approvedBy','reference','failureReason'])<>(r.payload - array['state','completedAt','sessionId','approvedBy','reference','failureReason']) or d->>'approvedBy' is distinct from 'Pengelola' then raise exception 'refund identity changed'; end if;
       if kind='refund_completed' then
-        if delta<>case when (r.payload->>'channel')::integer=0 then -amount else 0 end or (d->>'state')::integer is distinct from 1 or d->>'completedAt' is null or d->>'sessionId' is distinct from sid or length(trim(d->>'reference'))<3 then raise exception 'invalid completed refund'; end if;
+        if delta<>(case when (r.payload->>'channel')::integer=0 then -amount else 0 end) or (d->>'state')::integer is distinct from 1 or d->>'completedAt' is null or d->>'sessionId' is distinct from sid or length(trim(d->>'reference'))<3 then raise exception 'invalid completed refund'; end if;
       else
         if delta<>0 or sid is not null or (d->>'state')::integer is distinct from 2 or d->>'completedAt' is not null or d->>'sessionId' is not null or length(trim(d->>'failureReason'))<3 then raise exception 'invalid failed refund'; end if;
       end if;
