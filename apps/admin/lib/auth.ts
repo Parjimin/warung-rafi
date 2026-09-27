@@ -8,7 +8,11 @@ export function sameSecret(left: string, right: string) {
 export function device(request: Request) {
   const token = required("DEVICE_API_TOKEN");
   if (token.length < 32) throw new HttpError(503, "Token perangkat belum dikonfigurasi dengan benar.");
-  if (!sameSecret(request.headers.get("authorization") ?? "", `Bearer ${token}`)) throw new HttpError(401, "Perangkat belum diizinkan.");
+  const provided = request.headers.get("authorization") ?? "";
+  const previous = process.env.DEVICE_API_TOKEN_PREVIOUS ?? "", until = Date.parse(process.env.DEVICE_TOKEN_PREVIOUS_UNTIL ?? "");
+  const active = sameSecret(provided, `Bearer ${token}`);
+  const grace = previous.length >= 32 && until > Date.now() && until <= Date.now() + 7 * 86400000 && sameSecret(provided, `Bearer ${previous}`);
+  if (!active && !grace) throw new HttpError(401, "Perangkat belum diizinkan.");
 }
 export function sameOrigin(request: Request) {
   if (request.headers.get("origin") !== required("APP_ORIGIN")) throw new HttpError(403, "Asal permintaan tidak diizinkan.");

@@ -64,6 +64,7 @@ public sealed partial class LocalStore
             """;
         command.ExecuteNonQuery();
         InitializeFinance(connection,tx);
+        using(var identity=Command(connection,tx,"INSERT OR IGNORE INTO settings VALUES('database_id',$id)",("$id",Guid.NewGuid().ToString("N"))))identity.ExecuteNonQuery();
         tx.Commit();
         return true;
     });

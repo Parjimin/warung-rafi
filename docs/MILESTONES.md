@@ -12,9 +12,11 @@ Progres dinilai berdasarkan hasil yang dapat diperiksa. **Kode ditulis tidak sam
 | M5 — Keuangan dan laporan | Sesi kas, refund, biaya aktual, pencairan, Sheets | Rekonsiliasi dan total laporan lulus | M1, M3, M4 |
 | M6 — Rilis dan pemulihan | Finalisasi touchscreen, printer, merchant; installer, backup/restore, hardening, panduan | Uji perangkat dan akun asli, UAT penjual, restore, hosting dan kredensial produksi selesai | Milestone inti; perangkat dan pemilik tersedia pada tahap finalisasi |
 
-## Checkpoint — 26 September 2026
+## Checkpoint — 27 September 2026
 
 **M0 dan M1 selesai; M2 dalam review laptop; M3 menunggu integrasi cloud; M4 selesai untuk software/simulasi.** M1 lulus 23 pemeriksaan dasar dan 60 pemeriksaan recovery/integritas di CI Windows. [Bukti dan batas pengujian](M1-VALIDATION.md) tersedia. [Perapian UI M2](M2-UI-REVIEW.md) sudah diimplementasikan; review kenyamanan klik pada laptop pengguna masih terbuka. [M3](M3-ADMIN-SYNC.md) melengkapi unggah foto, konflik draf, laporan perangkat dan verifikasi sinkronisasi/cache offline. Konfigurasi dan uji cloud nyata masih terbuka. [M4](M4-QRIS.md) lulus 219 pemeriksaan Windows, unit/API/browser web dan PostgreSQL. Pengujian merchant nyata tetap M6. **M5 aktif:** tahap sesi kas, refund berizin, jurnal dan sinkronisasi lulus 306 pemeriksaan Windows, admin/API/browser dan PostgreSQL 17 pada commit `58ba711`. Revisi migrasi SQL dan layout layar kecil terverifikasi; screenshot telah ditinjau. [Panduan tahap 1](M5-CASH-REFUNDS.md). [Tahap 2](M5-RECONCILIATION.md): dashboard, pencocokan bukti/pesanan, estimasi dan biaya aktual, pencairan serta mutasi bank lulus pengujian software. [Tahap 3](M5-REPORTS-SHEETS.md) menyediakan snapshot laporan per sesi/tanggal WIB, CSV dan ekspor Sheets berantre dengan verifikasi baca ulang. Koneksi Google nyata dan scheduler masih terbuka, sehingga M5 belum ditutup.
+
+**M6 perangkat lunak operasional terverifikasi sesuai arahan pengguna:** installer/update, pengaturan, perlindungan rahasia, backup/restore, pemeriksaan cloud dan hardening login. [CI `52ff711`](https://github.com/Parjimin/warung-rafi/actions/runs/36273095782) lulus 383 pemeriksaan Windows, admin/API/browser, tujuh suite PostgreSQL dan audit dependency. [Panduan M6](M6-SETUP-RECOVERY.md). Milestone tetap terbuka sampai setup nyata, printer/touchscreen, merchant dan UAT selesai.
 
 ## Penyesuaian urutan — 24 September 2026
 

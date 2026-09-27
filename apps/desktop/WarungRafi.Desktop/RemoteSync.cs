@@ -7,17 +7,47 @@ using WarungRafi.Storage;
 
 namespace WarungRafi.Desktop;
 
-internal sealed class RemoteSync(LocalStore store,HttpClient http)
+internal sealed class RemoteSync(LocalStore store,HttpClient http) : IDisposable
 {
     public static RemoteSync? FromEnvironment(LocalStore store)
     {
-        var address=Environment.GetEnvironmentVariable("WARUNG_API_BASE_URL");
-        var token=Environment.GetEnvironmentVariable("WARUNG_DEVICE_TOKEN");
-        if(string.IsNullOrWhiteSpace(address)||string.IsNullOrWhiteSpace(token))return null;
-        if(!Uri.TryCreate(address.TrimEnd('/')+"/",UriKind.Absolute,out var uri)||uri.Scheme!="https")return null;
-        var http=new HttpClient { BaseAddress=uri,Timeout=TimeSpan.FromSeconds(15) };
-        http.DefaultRequestHeaders.Authorization=new AuthenticationHeaderValue("Bearer",token);
-        return new(store,http);
+        return FromSettings(store,new DesktopSettings(Environment.GetEnvironmentVariable("WARUNG_API_BASE_URL")??"",Environment.GetEnvironmentVariable("WARUNG_DEVICE_TOKEN")??""));
+    }
+    public static RemoteSync? FromSettings(LocalStore store,DesktopSettings settings)
+    {
+        if(settings.ApiOrigin.Length==0)return null;
+        SettingsFile.Validate(settings);
+        var http=new HttpClient(new HttpClientHandler { AllowAutoRedirect=false }) { BaseAddress=new Uri(SettingsFile.NormalizeOrigin(settings.ApiOrigin)),Timeout=TimeSpan.FromSeconds(15) };
+        http.DefaultRequestHeaders.Authorization=new AuthenticationHeaderValue("Bearer",settings.DeviceToken);return new(store,http);
+    }
+    public void Dispose()=>http.Dispose();
+    public async Task<string> CheckSetupAsync(CancellationToken token)
+    {
+        var setup=await http.GetFromJsonAsync<JsonElement>("api/device/setup",token);
+        if(setup.GetProperty("schema").GetInt32()!=6)throw new InvalidDataException("Versi server belum sesuai. Terapkan migrasi 006 terlebih dahulu.");
+        var id=setup.GetProperty("deviceId").GetString();
+        if(string.IsNullOrWhiteSpace(id)||id.Length>80)throw new InvalidDataException("Identitas laptop kosong/tidak valid.");return id;
+    }
+    public async Task VerifyRecoveryAsync(CancellationToken token)
+    {
+        var device=await CheckSetupAsync(token);var origin=http.BaseAddress!.GetLeftPart(UriPartial.Authority)+"/";
+        await store.BindCloudAsync(origin);await store.BindDeviceAsync(device);string after="";string? state=null;var seen=new HashSet<string>();
+        do
+        {
+            var page=await http.GetFromJsonAsync<JsonElement>("api/device/recovery?after="+Uri.EscapeDataString(after)+(state is null?"":"&state="+Uri.EscapeDataString(state)),token);
+            var received=page.GetProperty("state").GetString();
+            if(received is null||received.Length!=32||(state is not null&&received!=state)||page.GetProperty("deviceId").GetString()!=device)throw new InvalidDataException("Data server berubah saat diperiksa. Ulangi pemeriksaan.");
+            state=received;await store.ValidateRecoveryPageAsync(page);
+            var next=page.GetProperty("next");if(next.ValueKind==JsonValueKind.Null)break;
+            after=next.GetString()??throw new InvalidDataException("Cursor pemulihan kosong.");
+            if(!Guid.TryParseExact(after,"N",out _)||!seen.Add(after))throw new InvalidDataException("Cursor pemulihan tidak valid.");
+        }while(!token.IsCancellationRequested);
+        token.ThrowIfCancellationRequested();
+        // Re-read the first page with the same state to reject a source change during pagination.
+        var final=await http.GetFromJsonAsync<JsonElement>("api/device/recovery?state="+state,token);
+        if(final.GetProperty("state").GetString()!=state||final.GetProperty("deviceId").GetString()!=device)throw new InvalidDataException("Data server berubah saat diperiksa. Ulangi pemeriksaan.");
+        await store.ValidateRecoveryPageAsync(final);token.ThrowIfCancellationRequested();
+        await store.CompleteCloudRecoveryAsync();
     }
     public async Task SendOutboxAsync(CancellationToken token)
     {

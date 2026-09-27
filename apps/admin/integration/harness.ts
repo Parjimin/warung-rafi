@@ -8,7 +8,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import type { Product } from "../lib/catalog.ts";
 import { financeFixture, applyFixture } from "./reconciliation-fixture.ts";
 const listen = (server: Server) => new Promise<number>(resolve => server.listen(0, "127.0.0.1", () => resolve((server.address() as { port: number }).port)));
-export async function startHarness(options: { payments?: boolean; reports?: boolean } = {}) {
+export async function startHarness(options: { payments?: boolean; reports?: boolean; previousUntil?: string } = {}) {
   const reportSource = JSON.parse(readFileSync(new URL("../../../database/tests/fixtures/report-contract.json", import.meta.url), "utf8"));
   const googleKey = options.reports ? generateKeyPairSync("rsa", { modulusLength: 2048 }).privateKey.export({ type: "pkcs8", format: "pem" }).toString() : "";
   const seed: Product[] = [
@@ -19,7 +19,7 @@ export async function startHarness(options: { payments?: boolean; reports?: bool
   ];
   const state = { draft_version: 1, published_version: 1, draft: seed, published: seed };
   const finance = financeFixture(); const commands = new Map<string, unknown>();
-  const control = { reportJobs: [] as (ReportJob & { lease_token?: string })[], reportActors: [] as string[], reportLostCreate: false, googleStatus: 200, googleLostWrite: false, googleCorrupt: false, googleWrites: 0, googleSheets: [] as any[], finance, financeAdminWrites: [] as {p_actor: string; p_command: Record<string, unknown>}[], financeResponseLost: false, financeWrites: [] as unknown[], storageFail: false, dbFail: false, conflict: false, uploaded: Buffer.alloc(0), devices: [] as unknown[], providerCalls: 0, providerFail: false, providerStatus: {} as Record<string, unknown>, providerWrites: [] as Record<string, unknown>[], paymentRows: [] as { sequence: number; transaction_id: string; amount: number; paid_at: string }[] };
+  const control = { loginAllowed: true, loginKeys: [] as string[], recoveryState: "a".repeat(32), reportJobs: [] as (ReportJob & { lease_token?: string })[], reportActors: [] as string[], reportLostCreate: false, googleStatus: 200, googleLostWrite: false, googleCorrupt: false, googleWrites: 0, googleSheets: [] as any[], finance, financeAdminWrites: [] as {p_actor: string; p_command: Record<string, unknown>}[], financeResponseLost: false, financeWrites: [] as unknown[], storageFail: false, dbFail: false, conflict: false, uploaded: Buffer.alloc(0), devices: [] as unknown[], providerCalls: 0, providerFail: false, providerStatus: {} as Record<string, unknown>, providerWrites: [] as Record<string, unknown>[], paymentRows: [] as { sequence: number; transaction_id: string; amount: number; paid_at: string }[] };
   const backend = createServer(async (req, res) => {
     const chunks: Buffer[] = []; for await (const chunk of req) chunks.push(Buffer.from(chunk));
     const bytes = Buffer.concat(chunks); const path = req.url ?? "";
@@ -65,6 +65,9 @@ export async function startHarness(options: { payments?: boolean; reports?: bool
     if (path.startsWith("/rest/v1/device_sync_status")) { reply(control.devices); return; }
     if (path.startsWith("/rest/v1/rpc/")) {
       const input = JSON.parse(bytes.toString());
+      if (path.endsWith("reserve_login_attempt")) { control.loginKeys.push(input.p_key); reply(control.loginAllowed); return; }
+      if (path.endsWith("device_setup")) { reply({ schema: 6, serverTime: new Date().toISOString() }); return; }
+      if (path.endsWith("device_recovery_page")) { if(input.p_state && input.p_state !== control.recoveryState) { reply({code:"40001"},409); return; } reply({state:control.recoveryState,orders:[],finance:null,next:null,deviceId:input.p_device}); return; }
       if (path.endsWith("create_report")) {
         let job = control.reportJobs.find(j => j.id === input.p_id);
         if (job && (JSON.stringify(job.filter) !== JSON.stringify(input.p_filter) || job.actor !== input.p_actor)) { reply({ code: "40001" }, 409); return; }
@@ -120,7 +123,7 @@ export async function startHarness(options: { payments?: boolean; reports?: bool
   const probe = createServer(); const port = await listen(probe); await new Promise<void>(resolve => probe.close(() => resolve()));
   const origin = `http://127.0.0.1:${port}`;
   const processNext = spawn(process.execPath, [...(options.payments ? ["--import", "./integration/provider-preload.mjs"] : []), ...(options.reports ? ["--import", "./integration/sheets-preload.mjs"] : []), "node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", String(port)], {
-    env: { ...process.env, APP_ORIGIN: origin, SUPABASE_URL: `http://127.0.0.1:${backendPort}`, SUPABASE_ANON_KEY: "fixture-anon", SUPABASE_SERVICE_ROLE_KEY: "fixture-service", ADMIN_USER_ID: "fixture-admin-id", DEVICE_API_TOKEN: "fixture-device-token-at-least-32-characters", DEVICE_ID: "kasir-utama", NEXT_TELEMETRY_DISABLED: "1", ...(options.reports ? { FIXTURE_GOOGLE_ORIGIN: `http://127.0.0.1:${backendPort}`, GOOGLE_SHEETS_ID: "fixture_workbook_1234567890", GOOGLE_SERVICE_ACCOUNT_JSON: JSON.stringify({ type: "service_account", client_email: "fixture@fixture.iam.gserviceaccount.com", private_key: googleKey }), EXPORT_RUNNER_TOKEN: "fixture-runner-token-with-at-least-32-characters" } : {}), ...(options.payments ? { FIXTURE_PROVIDER_ORIGIN: `http://127.0.0.1:${backendPort}`, MIDTRANS_SERVER_KEY: "fixture-midtrans-key", MIDTRANS_MERCHANT_ID: "fixture-merchant", MIDTRANS_ENV: "sandbox" } : {}) }, stdio: ["ignore", "pipe", "pipe"]
+    env: { ...process.env, DEVICE_API_TOKEN_PREVIOUS: "fixture-previous-token-at-least-32-characters", DEVICE_TOKEN_PREVIOUS_UNTIL: options.previousUntil ?? new Date(Date.now()+60000).toISOString(), APP_ORIGIN: origin, SUPABASE_URL: `http://127.0.0.1:${backendPort}`, SUPABASE_ANON_KEY: "fixture-anon", SUPABASE_SERVICE_ROLE_KEY: "fixture-service", ADMIN_USER_ID: "fixture-admin-id", DEVICE_API_TOKEN: "fixture-device-token-at-least-32-characters", DEVICE_ID: "kasir-utama", NEXT_TELEMETRY_DISABLED: "1", ...(options.reports ? { FIXTURE_GOOGLE_ORIGIN: `http://127.0.0.1:${backendPort}`, GOOGLE_SHEETS_ID: "fixture_workbook_1234567890", GOOGLE_SERVICE_ACCOUNT_JSON: JSON.stringify({ type: "service_account", client_email: "fixture@fixture.iam.gserviceaccount.com", private_key: googleKey }), EXPORT_RUNNER_TOKEN: "fixture-runner-token-with-at-least-32-characters" } : {}), ...(options.payments ? { FIXTURE_PROVIDER_ORIGIN: `http://127.0.0.1:${backendPort}`, MIDTRANS_SERVER_KEY: "fixture-midtrans-key", MIDTRANS_MERCHANT_ID: "fixture-merchant", MIDTRANS_ENV: "sandbox" } : {}) }, stdio: ["ignore", "pipe", "pipe"]
   });
   let logs = ""; processNext.stdout.on("data", chunk => logs += chunk); processNext.stderr.on("data", chunk => logs += chunk);
   const stop = async () => { processNext.kill(); backend.closeAllConnections(); await new Promise<void>(resolve => backend.close(() => resolve())); };
