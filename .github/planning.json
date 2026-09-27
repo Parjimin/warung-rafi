@@ -171,7 +171,7 @@
         {
           "id": "release",
           "title": "M6: UAT, backup/restore, dan distribusi",
-          "body": "Kode operasional M6 diselesaikan lebih dahulu sesuai arahan pengguna: installer/update, pengaturan terlindungi, backup/restore, pembatas login serta rotasi token. Suite otomatis dan paket pemasangan ditambahkan ke CI. Panduan: docs/M6-SETUP-RECOVERY.md. Validasi akun Google/Midtrans/Supabase, printer OKAY 58D, touchscreen dan UAT pemilik tetap terbuka; paket tetap untuk persiapan/UAT sampai finalisasi selesai.",
+          "body": "Kode operasional M6 diselesaikan lebih dahulu sesuai arahan pengguna: installer/update, pengaturan terlindungi, backup/restore, pembatas login serta rotasi token. CI 52ff711 lulus: 383 pemeriksaan Windows (termasuk installer dan peluncuran paket asli), 32 unit admin, 18 skenario API, tiga alur browser, tujuh suite PostgreSQL 17 serta audit dependency. Panduan: docs/M6-SETUP-RECOVERY.md. Validasi akun Google/Midtrans/Supabase, printer OKAY 58D, touchscreen dan UAT pemilik tetap terbuka; paket tetap untuk persiapan/UAT sampai finalisasi selesai.",
           "acceptance": [
             "Uji sentuhan pada perangkat touchscreen nyata: ukuran/jarak target, scroll, keypad, dan tidak salah tekan",
             "UI terverifikasi pada resolusi/skala laptop kasir dan penjual awam dapat menyelesaikan alur utama",

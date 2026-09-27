@@ -77,4 +77,15 @@ Pada laptop pengganti: pasang program, buka Pemulihan, buat PIN lokal, isi alama
 
 ## Bukti pengujian
 
+[CI `52ff711` — seluruh job lulus](https://github.com/Parjimin/warung-rafi/actions/runs/36273095782): 383 pemeriksaan Windows, 32 unit admin, 18 skenario API (21 hasil dengan pembungkus), tiga alur browser, tujuh suite PostgreSQL 17 dan audit dependency. [Paket Windows teruji](https://github.com/Parjimin/warung-rafi/actions/runs/36273095782/artifacts/10915539501).
+
+Layar kecil tetap menyediakan gulir dan status tetap terlihat:
+
+![Pengaturan pada area kecil](images/m6-settings-small.png)
+
+Review backup sebelum database diganti:
+
+![Pemeriksaan sebelum pemulihan](images/m6-restore-review.png)
+
+
 Suite `BackupChecks` menguji arsip rusak, kata sandi, metadata, pemeriksaan sebelum restore, database rusak, salinan sebelum penggantian dan ikatan cloud. `OperationsChecks` menguji DPAPI/PIN, pengaturan, layar kecil serta alur restore Windows. `SyncChecks`, API integration dan `database/tests/operations.sql` menguji gate cloud, setup, limiter dan masa token. `Test-WindowsPackage.ps1` memeriksa pemasangan terputus, update, hash, path, uninstall dan pemasangan ulang dengan data di luar folder aplikasi tetap utuh. `Test-InstalledPackage.ps1` berjalan hanya di akun CI kosong, memasang paket asli, memeriksa pintasan, membuka kasir/pemulihan dengan runtime bawaan dan memastikan database tetap ada setelah uninstall. CI menghasilkan screenshot **WarungRafi-M6-review** dan paket **WarungRafi-Windows-install**. Lihat [STATUS](STATUS.md) untuk hasil run terakhir; build lokal saja tidak membuktikan UI Windows atau perangkat fisik.

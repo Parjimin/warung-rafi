@@ -1,6 +1,6 @@
-# Status implementasi — checkpoint M6
+# Status implementasi — checkpoint 27 September 2026
 
-**M6 aktif: kode installer, pengaturan terlindungi, backup/restore dan hardening sudah tersedia; verifikasi Windows/CI checkpoint ini sedang dijalankan.** [Panduan M6](M6-SETUP-RECOVERY.md). Uji akun/perangkat nyata tetap terbuka.
+**M6 bagian perangkat lunak operasional sudah terverifikasi.** [CI `52ff711`](https://github.com/Parjimin/warung-rafi/actions/runs/36273095782) lulus **383 pemeriksaan Windows** (371 domain/storage/sync/UI/security + 8 installer/update + 4 peluncuran paket terpasang), 32 tes unit admin, 18 skenario API (21 hasil termasuk pembungkus), tiga alur browser dan tujuh suite SQL PostgreSQL 17. Audit dependency .NET dan npm produksi lulus. [Panduan M6](M6-SETUP-RECOVERY.md). **M6 tetap terbuka untuk pemasangan akun nyata, printer/touchscreen dan UAT pemilik.**
 
 **M5 tahap laporan/CSV/Sheets sudah terverifikasi pada tingkat software.** [CI `5c2b7f7`](https://github.com/Parjimin/warung-rafi/actions/runs/36244233885) lulus **306 pemeriksaan Windows**, 32 tes unit admin, 14 skenario API (16 hasil termasuk pembungkus), tiga alur browser dan enam suite SQL PostgreSQL 17. Laporan tetap per sesi atau tanggal WIB memuat 14 bagian, CSV dan antrean Sheets dengan retry serta verifikasi baca ulang. [Panduan tahap 1](M5-CASH-REFUNDS.md) · [Tahap 2](M5-RECONCILIATION.md) · [Tahap 3 dan screenshot](M5-REPORTS-SHEETS.md). **M5 tetap terbuka untuk koneksi Google nyata dan scheduler.** M2 menunggu review laptop, M3 menunggu integrasi cloud, dan uji merchant/perangkat tetap M6.
 
@@ -12,7 +12,20 @@
 | M3 — aktif | Login, tambah/edit menu, unggah/normalisasi foto, konflik draf, publikasi, monitor antrean/versi/konflik perangkat, cache katalog/foto offline | 13 tes unit admin, 5 skenario API melalui Next hasil build, alur browser, 15 pemeriksaan sync/cache Windows dan SQL lulus; setup dan uji Supabase/Storage/Vercel nyata masih terbuka |
 | M4 — selesai (software) | Polling terpisah, validasi inbox atomik, deduplikasi ketat, kebijakan popup 60 detik, simulasi berlabel dengan database terpisah | 31 pemeriksaan inbox SQLite, 84 layout/interaksi WPF, 21 sinkronisasi/cache, 14 unit admin dan 11 skenario API lulus; SQL, build/publish Windows serta screenshot terverifikasi. Merchant nyata tetap M6. [Rincian M4](M4-QRIS.md) |
 | M5 — aktif | Kas/refund, rekonsiliasi, biaya/pencairan/mutasi bank, audit, snapshot laporan per sesi/tanggal, CSV dan antrean Sheets | 306 Windows, 32 unit admin, 14 skenario API, tiga alur browser dan enam suite PostgreSQL 17 lulus. Screenshot ditinjau. Koneksi Google nyata/scheduler belum diaktifkan; biaya/pencairan masih manual berreferensi |
-| M6 — aktif | Installer/update per pengguna, PIN/DPAPI, backup terenkripsi, restore dengan gate cloud, limiter login dan rotasi token | Verifikasi checkpoint berlangsung; akun nyata, printer/touchscreen dan UAT pemilik tetap terbuka |
+| M6 — aktif | Installer/update per pengguna, PIN/DPAPI, backup terenkripsi, restore dengan gate cloud, limiter login dan rotasi token | 383 pemeriksaan Windows, admin/API/browser, tujuh suite SQL dan audit dependency lulus; akun nyata, printer/touchscreen dan UAT pemilik tetap terbuka |
+
+## Verifikasi M6
+
+- Kode yang diuji: `52ff7117dde9a52f9edbd8a2a5909427ccd5b8a2`. [Run lengkap](https://github.com/Parjimin/warung-rafi/actions/runs/36273095782); seluruh job lulus.
+- Windows: 23 core + 60 recovery/integritas + 31 inbox QRIS + 50 keuangan + 34 backup/restore + 30 sync/cache + 116 UI kasir + 27 pengaturan/security = 371. Ditambah 8 installer/update dan 4 smoke test paket asli = **383**.
+- Paket asli dipasang menggunakan Windows PowerShell 5.1, membuat pintasan, membuka kasir dan pemulihan dengan runtime bawaan, lalu di-uninstall. Database tetap utuh. Paket **WarungRafi-Windows-install** tersedia pada run tersebut; belum bertanda tangan.
+- Backup: arsip rusak/salah password/berubah setelah review ditolak; data sebelum restore disimpan; backup offline lama tidak melupakan ikatan cloud saat ini; konflik cloud menahan kelanjutan pemulihan.
+- UI pengaturan: DPAPI, PIN/cooldown persisten, koneksi, printer, jadwal backup, konfirmasi restore dan gate pemulihan lulus Windows. Empat screenshot hasil render ditinjau; tab kembali ke awal formulir dan layar kecil dapat digulir.
+- Admin: 32 unit dan 18 skenario API lulus; limiter login menolak saat penyimpanan gagal, endpoint setup/recovery terlindungi, token lama hanya diterima pada masa pergantian. Tiga alur browser sebelumnya tetap lulus.
+- PostgreSQL 17: migrasi 001–006 dan tujuh suite SQL lulus. Rate limit per akun/global, kedaluwarsa jendela, hak akses, pagination recovery dan perubahan sumber diuji.
+- Audit npm dependency produksi serta NuGet langsung/transitif lulus pada tanggal pengujian; bukan jaminan tidak muncul advisory baru.
+
+Bukti ini memakai akun CI, database sementara dan layanan fixture. Google/Midtrans/Supabase/Vercel nyata, printer OKAY 58D, DPI/sentuhan laptop dan persetujuan penjual tetap perlu diuji sebelum usaha menerima transaksi produksi.
 
 ## Pengerjaan per milestone
 
