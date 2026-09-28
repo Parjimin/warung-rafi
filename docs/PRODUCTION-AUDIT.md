@@ -22,10 +22,13 @@ Ringkasan harian lokal sekarang membaca pembayaran selesai untuk menyaring waktu
 ## Verifikasi sesi ini
 
 - Baseline: 32 unit admin, typecheck, production build, 21 hasil Node API integration dan `npm audit --omit=dev --audit-level=high` lulus (0 kerentanan dilaporkan).
-- Perubahan: 33 unit admin termasuk regresi header Supabase, typecheck, production build dan 22 hasil Node API integration lulus. CI Windows/browser/PostgreSQL 17 untuk perubahan masih menunggu.
+- Perubahan pada commit `12b78c0420121f338f304460111332bf1f35880c`: dua run CI lengkap lulus, [push 36451037522](https://github.com/Parjimin/warung-rafi/actions/runs/36451037522) dan [PR 36451087084](https://github.com/Parjimin/warung-rafi/actions/runs/36451087084). Keduanya meluluskan job admin, database dan desktop. Pembaruan laporan sesudah commit ini hanya mendokumentasikan bukti tersebut.
+- Admin: 33 unit, 22 hasil Node API integration, typecheck, production build serta tiga alur browser (katalog/monitor, rekonsiliasi, laporan/Sheets retry) lulus. Audit npm melaporkan 0 kerentanan.
+- Windows: 386 pemeriksaan lulus: domain 23, recovery 61, payment 31, finance 50, backup 34, sync/cache 32, WPF 116, operations/security 27, installer/update 8, smoke paket terpasang 4. Build WPF, audit dependensi .NET, packaging dan startup dengan bundled runtime lulus. Paket unsigned tersedia pada artefak run.
+- Database CI: migrasi 001–006 dan tujuh suite SQL lulus pada PostgreSQL 17 dengan simulasi role managed database.
 - SQL lokal: migrasi 001–006 serta tujuh suite (`operations`, `assertions`, `sync_monitor`, `payments`, `finance`, `reconciliation`, `reports`) lulus di PostgreSQL 18.3 WASM / PGlite 0.5.8. Directive psql `\\copy` hanya diganti dengan insert fixture JSON identik dalam runner sementara. Ini bukan bukti proyek Supabase nyata atau PostgreSQL 17 CI.
 - Percobaan .NET lokal: SDK 10.0.401 tersedia, tetapi build MSBuild berhenti pada project-reference evaluation tanpa diagnostik compiler (0 error terlapor, exit gagal). Tidak dihitung lulus.
-- Percobaan browser lokal: unduhan Chromium Playwright gagal karena arsip unduhan tidak valid. Tidak dihitung lulus. Pengujian Windows dan browser harus diverifikasi melalui CI untuk commit perubahan.
+- Percobaan browser lokal: unduhan Chromium Playwright gagal karena arsip unduhan tidak valid. Tidak dihitung lulus lokal; bukti Windows dan browser berasal dari CI di atas.
 
 Tidak ada akun merchant/cloud pengguna, credential produksi, printer, speaker atau laptop touchscreen yang diakses dalam audit ini.
 
