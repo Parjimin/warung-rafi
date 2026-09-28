@@ -44,6 +44,12 @@ Pada audit kode awal tidak ada akun cloud pengguna yang diakses. Pemeriksaan lin
 
 ## Syarat produksi yang masih terbuka
 
+### Hasil pemeriksaan ulang setelah redeploy pemilik
+
+Pada 28 September 2026 sekitar 23.58–23.59 WIB, dua blocker web sebelumnya sudah teratasi secara perilaku: POST login dengan Origin yang benar dan body kosong menghasilkan 400 validasi input, bukan 403 origin; GET setup perangkat tanpa token menghasilkan 401, bukan 404. Login browser akun pengelola berhasil. Halaman katalog, sinkronisasi, keuangan dan laporan berhasil dimuat dengan sesi tersebut. Ini tidak mengidentifikasi SHA deployment atau membuktikan seluruh perbaikan PR #22 telah dipasang.
+
+Keadaan UJI yang terlihat: katalog berisi 0 menu, versi terbit 0; belum ada laporan laptop; ringkasan keuangan periode yang dibuka kosong dan memperingatkan data laptop belum lengkap; belum ada salinan laporan; halaman laporan menyatakan Google Sheets belum terhubung. Pemeriksaan ini hanya membaca halaman, tidak menerbitkan menu, membuat laporan, mengubah transaksi, atau mengaktifkan integrasi. Langkah berikutnya adalah menu final, pemasangan/koneksi kasir, serta konfigurasi Sheets sebelum UAT transaksi dan perangkat.
+
 | Syarat | Bukti yang diperlukan sebelum disetujui |
 | --- | --- |
 | Rilis yang akan dipasang | CI Windows/admin/PostgreSQL 17 lulus untuk commit yang persis akan dirilis; installer dari run tersebut. Paket masih unsigned. |
