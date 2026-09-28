@@ -1,9 +1,9 @@
 import { HttpError, required } from "./http.ts";
+import { serviceHeaders } from "./supabase.ts";
 export async function database(path: string, init: RequestInit = {}): Promise<unknown> {
-  const key = required("SUPABASE_SERVICE_ROLE_KEY");
   const response = await fetch(`${required("SUPABASE_URL")}/rest/v1/${path}`, {
-    ...init, cache: "no-store", signal: AbortSignal.timeout(12_000),
-    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", ...init.headers }
+    ...init, cache: "no-store", redirect: "error", signal: AbortSignal.timeout(12_000),
+    headers: { ...serviceHeaders(), "Content-Type": "application/json", ...init.headers }
   });
   if (!response.ok) {
     const failure = await response.json().catch(() => null) as { code?: string } | null;

@@ -1,6 +1,7 @@
 import sharp from "sharp";
 import { randomUUID } from "node:crypto";
 import { bytes, HttpError, required } from "./http.ts";
+import { serviceHeaders } from "./supabase.ts";
 
 export const PHOTO_MAX_BYTES = 3_000_000;
 export const PHOTO_BUCKET = "menu-photos";
@@ -22,11 +23,10 @@ export async function preparePhoto(request: Request): Promise<Buffer> {
 
 export async function uploadPhoto(data: Buffer): Promise<string> {
   const base = required("SUPABASE_URL").replace(/\/$/, "");
-  const key = required("SUPABASE_SERVICE_ROLE_KEY");
   const path = `menu/${randomUUID()}.jpg`;
   const response = await fetch(`${base}/storage/v1/object/${PHOTO_BUCKET}/${path}`, {
-    method: "POST", body: new Uint8Array(data), signal: AbortSignal.timeout(15_000),
-    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "image/jpeg", "x-upsert": "false", "cache-control": "max-age=31536000" }
+    method: "POST", body: new Uint8Array(data), redirect: "error", signal: AbortSignal.timeout(15_000),
+    headers: { ...serviceHeaders(), "Content-Type": "image/jpeg", "x-upsert": "false", "cache-control": "max-age=31536000" }
   });
   if (!response.ok) throw new HttpError(503, "Foto belum berhasil diunggah. Periksa layanan penyimpanan lalu coba kembali.");
   return `${base}/storage/v1/object/public/${PHOTO_BUCKET}/${path}`;

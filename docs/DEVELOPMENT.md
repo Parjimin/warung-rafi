@@ -46,7 +46,7 @@ Jangan memakai PDF printer sebagai printer kasir. Preview menggunakan driver/spo
 
 ## Database cloud
 
-1. Buat proyek Supabase khusus uji. Jalankan `database/001_foundation.sql`, lalu `database/002_sync_monitor.sql`, `database/003_finance.sql`, `database/004_reconciliation.sql` dan `database/005_reports.sql` satu kali lewat SQL Editor. Buat bucket foto dengan `database/storage/menu_photos.sql`. Jangan menjalankan migration awal berulang pada database yang sudah terisi; migration selanjutnya harus berupa file baru.
+1. Buat proyek Supabase khusus uji. Jalankan `database/001_foundation.sql`, lalu `database/002_sync_monitor.sql`, `database/003_finance.sql`, `database/004_reconciliation.sql`, `database/005_reports.sql`, lalu **`database/006_operations.sql`** satu kali lewat SQL Editor. Buat bucket foto dengan `database/storage/menu_photos.sql`. Jangan menjalankan migration awal berulang pada database yang sudah terisi; migration selanjutnya harus berupa file baru.
 2. Buat satu user melalui Supabase Auth. Nonaktifkan public signup bila tidak digunakan. Catat user UUID untuk `ADMIN_USER_ID`.
 3. RLS aktif; anon dan authenticated tidak punya akses tabel langsung. Server saja memakai service role. Jangan masukkan service role ke environment desktop atau variabel `NEXT_PUBLIC_*`.
 4. Tes SQL otomatis menggunakan PostgreSQL sementara dengan role tiruan. Tes ini memverifikasi dedupe, atomic batch, konflik, regresi refund, dan hak akses. Uji layanan Supabase aktual tetap diperlukan.
@@ -62,7 +62,7 @@ npm run typecheck
 npm run dev
 ```
 
-Isi `.env.local` sesuai contoh. `APP_ORIGIN` harus sama persis dengan origin browser, tanpa trailing slash. Lokal: `http://localhost:3000`; produksi: `https://domain-yang-dipakai`. Semua key hanya dibaca server. Login memakai email/password user Supabase yang UUID-nya tercantum di `ADMIN_USER_ID`.
+Isi `.env.local` sesuai contoh. `SUPABASE_ANON_KEY` menerima publishable key atau JWT anon legacy; `SUPABASE_SERVICE_ROLE_KEY` menerima secret key `sb_secret_...` atau JWT service_role legacy. Nama variabel dipertahankan untuk kompatibilitas. Jangan memasukkan publishable key sebagai kunci backend; uji login, database dan unggah foto sebelum menonaktifkan key lama. `APP_ORIGIN` harus sama persis dengan origin browser, tanpa trailing slash. Lokal: `http://localhost:3000`; produksi: `https://domain-yang-dipakai`. Semua key hanya dibaca server. Login memakai email/password user Supabase yang UUID-nya tercantum di `ADMIN_USER_ID`.
 
 Di admin: Tambah menu → Terapkan ke draf → Simpan draf → Terbitkan ke kasir. Draf memakai kontrol versi untuk menolak penimpaan perubahan dari tab lama. Penonaktifan menu memakai kotak Tersedia, bukan menghapus riwayat item. URL foto harus HTTPS; gunakan foto milik warung. Unggah foto langsung tersedia: JPG/PNG/WebP maksimal 3 MB; server mengubahnya menjadi JPEG untuk kasir Windows. Lihat [alur M3](M3-ADMIN-SYNC.md).
 

@@ -54,12 +54,24 @@ internal sealed class RemoteSync(LocalStore store,HttpClient http) : IDisposable
         var outgoing=await store.PendingAsync();
         if(outgoing.Length>0)
         {
+            // The API limits bytes as well as event count. Large offline snapshots must
+            // drain in ordered prefixes instead of retrying the same oversized batch.
             var body=outgoing.Select(e=>new { id=e.Id,aggregateId=e.AggregateId,version=e.Version,payload=JsonSerializer.Deserialize<JsonElement>(e.Payload) }).ToArray();
-            using var response=await http.PostAsJsonAsync("api/device/sync",new { events=body },token);
+            var count=body.Length;byte[] encoded;
+            while(true)
+            {
+                encoded=JsonSerializer.SerializeToUtf8Bytes(new { events=body.Take(count) },new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                if(encoded.Length<=256_000)break;
+                if(count==1)throw new InvalidDataException("Satu perubahan pesanan melebihi batas server. Data tetap tersimpan; hubungi pengelola.");
+                count=Math.Max(1,count/2);
+            }
+            using var content=new ByteArrayContent(encoded);
+            content.Headers.ContentType=new MediaTypeHeaderValue("application/json");
+            using var response=await http.PostAsync("api/device/sync",content,token);
             response.EnsureSuccessStatusCode();
             var ack=await response.Content.ReadFromJsonAsync<Acknowledgement>(cancellationToken:token);
             if(ack?.Accepted is null)throw new InvalidDataException("Konfirmasi server kosong.");
-            var known=outgoing.Select(x=>x.Id).ToHashSet();
+            var known=outgoing.Take(count).Select(x=>x.Id).ToHashSet();
             await store.AcknowledgeAsync(ack.Accepted.Where(known.Contains).ToArray());
         }
     }

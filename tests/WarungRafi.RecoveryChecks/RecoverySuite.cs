@@ -164,6 +164,15 @@ internal sealed class RecoverySuite
         }
         var day=await db.Store.DailySalesAsync(new DateTime(2026,9,24));
         Check(day.Count==2 && day.Cash==8000 && day.Qris==8000,"WIB: include local midnight and exclude next midnight regardless of OS timezone");
+        using(var connection=db.Connect())
+        using(var tx=connection.BeginTransaction())
+        {
+            var paid=DateTimeOffset.Parse("2026-09-24T23:59:59.9999999+07:00");
+            var order=OrderRules.Add(Order.New(),TestDatabase.Product) with {Version=2,Status=OrderStatus.Completed,UpdatedAt=paid.AddTicks(1)};
+            InsertSale(connection,tx,order,new Payment(order.Id,PaymentMethod.Cash,8000,8000,0,paid));tx.Commit();
+        }
+        day=await db.Store.DailySalesAsync(new DateTime(2026,9,24));
+        Check(day.Count==3&&day.Cash==16000,"WIB: payment before midnight stays on its paid day when order commit crosses midnight");
     }
     private async Task InvalidInput()
     {
