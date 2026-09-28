@@ -30,7 +30,17 @@ Ringkasan harian lokal sekarang membaca pembayaran selesai untuk menyaring waktu
 - Percobaan .NET lokal: SDK 10.0.401 tersedia, tetapi build MSBuild berhenti pada project-reference evaluation tanpa diagnostik compiler (0 error terlapor, exit gagal). Tidak dihitung lulus.
 - Percobaan browser lokal: unduhan Chromium Playwright gagal karena arsip unduhan tidak valid. Tidak dihitung lulus lokal; bukti Windows dan browser berasal dari CI di atas.
 
-Tidak ada akun merchant/cloud pengguna, credential produksi, printer, speaker atau laptop touchscreen yang diakses dalam audit ini.
+Pada audit kode awal tidak ada akun cloud pengguna yang diakses. Pemeriksaan lingkungan UJI berikut dilakukan setelah pemilik memberikan akses; tidak ada transaksi, migrasi, atau konfigurasi cloud yang diubah. Akun merchant, printer, speaker dan laptop touchscreen belum diuji.
+
+## Pemeriksaan lingkungan UJI — 28 September 2026, lanjutan
+
+- Situs UJI merespons HTTPS dan mengarahkan root ke login. Empat GET API admin (catalog, devices, finance, reports) tanpa sesi mengembalikan 401; GET katalog perangkat tanpa token juga 401.
+- Login melalui browser menampilkan `Asal permintaan tidak diizinkan.` Kode memeriksa kesamaan persis header Origin dengan `APP_ORIGIN` sebelum memanggil Supabase Auth. Periksa environment deployment aktif: origin harus sama persis dengan domain HTTPS yang dibuka, tanpa trailing slash. Nilai environment aktual belum dapat dibaca; password belum tervalidasi melalui aplikasi.
+- GET `/api/device/setup` pada deployment mengembalikan 404, sedangkan kode M6 yang diaudit menyediakan route GET tersebut. Ini menunjukkan ketidaksesuaian deployment/routing; SHA deployment aktif belum diketahui. Pastikan root project `apps/admin`, sumber rilis yang tepat, kemudian deploy ulang lingkungan UJI dan periksa endpoint kembali.
+- Pembacaan API Supabase berhasil. UUID akun pengelola cocok dengan email yang diberikan pemilik, dan email sudah terkonfirmasi. Metadata REST menampilkan fungsi `reserve_login_attempt`, `device_recovery_page`, `device_setup` serta tabel/fungsi keuangan dan laporan. Keberadaan metadata bukan pembuktian isi definisi migrasi, RLS, atau keberhasilan semua operasi.
+- Bucket `menu-photos` tersedia, public, batas 3.000.000 byte, MIME `image/jpeg`. Unggah foto belum diuji melalui aplikasi.
+- Kunci backend dan password dibagikan melalui chat oleh pemilik: rotasi sebelum produksi, perbarui konfigurasi server yang bergantung padanya, lalu uji ulang. Nilai credential tidak disimpan dalam repository atau laporan ini.
+- Belum dilakukan perubahan environment, deployment, data transaksi atau percobaan login berulang. Diperlukan akses pengaturan hosting atau perbaikan oleh pemilik untuk melanjutkan uji admin.
 
 ## Syarat produksi yang masih terbuka
 
