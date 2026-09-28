@@ -38,6 +38,9 @@ try {
  page.on('dialog',d=>d.accept());await page.getByRole('button',{name:'Muat ulang draf'}).click();await page.getByText('Draf terbaru berhasil dimuat.').waitFor();
  app.control.devices=[{device_id:'kasir-utama',pending_count:18,catalog_version:1,last_seen_at:new Date().toISOString(),last_report_at:new Date().toISOString(),last_sync_at:new Date(Date.now()-300000).toISOString(),conflict_at:new Date().toISOString(),conflict_events:['0123456789abcdef0123456789abcdef:3']}];
  await page.goto(app.origin+'/sinkronisasi');await page.getByText('18 perubahan',{exact:true}).waitFor();
+ await page.getByRole('heading',{name:'Kesiapan layanan',exact:true}).waitFor();
+ await page.getByText('Koneksi dan fungsi setup versi 6 berhasil diperiksa.',{exact:false}).waitFor();
+ assert.equal(await page.getByText('Konfigurasi spreadsheet atau akun layanan belum valid.',{exact:false}).count(),1);
  await page.screenshot({path:'../../artifacts/M3-review/sync-monitor.png',fullPage:true});
  await page.setViewportSize({width:390,height:844});await page.screenshot({path:'../../artifacts/M3-review/sync-mobile.png',fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false);

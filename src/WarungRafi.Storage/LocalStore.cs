@@ -137,12 +137,14 @@ public sealed partial class LocalStore
     {
         var start=new DateTimeOffset(DateTime.SpecifyKind(dateInWib.Date,DateTimeKind.Unspecified),TimeSpan.FromHours(7)).ToUniversalTime();
         using var connection=Open();
-        using var command=Command(connection,null,"SELECT p.payload FROM payments p JOIN orders o ON o.id=p.order_id WHERE o.status=2 AND o.updated_at >= $start AND o.updated_at < $end",
-            ("$start",start.ToString("O")),("$end",start.AddDays(1).ToString("O")));
+        // Payment time is authoritative, just like the cloud report. A commit may
+        // update the order after midnight, and historical timestamps may use offsets.
+        using var command=Command(connection,null,"SELECT p.payload FROM payments p JOIN orders o ON o.id=p.order_id WHERE o.status=2");
         using var reader=command.ExecuteReader();long cash=0,qris=0,count=0;
         while(reader.Read())
         {
             var payment=JsonSerializer.Deserialize<Payment>(reader.GetString(0),Json)!;
+            if(payment.PaidAt<start||payment.PaidAt>=start.AddDays(1))continue;
             if(payment.Method==PaymentMethod.Cash)cash=checked(cash+payment.Amount);else qris=checked(qris+payment.Amount);
             count++;
         }

@@ -1,6 +1,19 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { startHarness } from "./harness.ts";
+import sharp from "sharp";
+
+test("modern Supabase keys support built login, database and Storage routes", async t => {
+ const app=await startHarness({modernKeys:true});t.after(app.stop);
+ const login=await fetch(app.origin+"/api/auth/login",{method:"POST",headers:{origin:app.origin,"Content-Type":"application/json"},body:JSON.stringify({email:"owner@fixture.test",password:"fixture"})});
+ assert.equal(login.status,200);
+ const headers={origin:app.origin,cookie:"warung_admin=fixture-admin"};
+ assert.equal((await fetch(app.origin+"/api/admin/catalog",{headers})).status,200);
+ assert.equal((await fetch(app.origin+"/api/device/setup",{headers:{authorization:"Bearer fixture-device-token-at-least-32-characters"}})).status,200);
+ const photo=await sharp({create:{width:2,height:2,channels:3,background:"white"}}).png().toBuffer();
+ const upload=await fetch(app.origin+"/api/admin/photos",{method:"POST",headers:{...headers,"Content-Type":"image/png"},body:photo});
+ assert.equal(upload.status,201);assert.ok(app.control.uploaded.length>0);
+});
 
 test("M6 protected operations through the built server", async t => {
  const app=await startHarness();t.after(app.stop);

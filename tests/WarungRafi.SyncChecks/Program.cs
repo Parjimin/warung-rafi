@@ -72,6 +72,23 @@ try
         return JsonContentResponse(new { accepted=new[]{"open-"+cashSession.Id} });
     };
     await sync.SendFinanceAsync(default);Check(await store.PendingFinanceCountAsync()==0&&(await store.ActiveCashAsync())!.Expected==50000,"acknowledgement leaves local drawer history intact");
+    // A reconnect must drain large historical snapshots under the actual API byte limit.
+    var large=Order.New() with {Lines=Enumerable.Range(0,300).Select(i=>new OrderLine("large-"+i,new string('飯',60),"Nasi",5000,1)).ToArray()};
+    for(var i=0;i<50;i++)large=await store.SaveAsync(large);
+    var sentIds=new List<string>();var requests=0;
+    handler.Reply=async request=>
+    {
+        var bytes=await request.Content!.ReadAsByteArrayAsync();
+        if(bytes.Length>256_000)return new HttpResponseMessage(HttpStatusCode.RequestEntityTooLarge);
+        using var document=JsonDocument.Parse(bytes);
+        var ids=document.RootElement.GetProperty("events").EnumerateArray().Select(e=>e.GetProperty("id").GetString()!).ToArray();
+        requests++;sentIds.AddRange(ids);
+        // An acknowledgement for a queued but unsent event must not discard it.
+        return JsonContentResponse(new {accepted=ids.Append(large.Id+":50").ToArray()});
+    };
+    for(var attempt=0;attempt<50&&await store.PendingCountAsync()>0;attempt++)await sync.SendOutboxAsync(default);
+    Check(requests>1&&await store.PendingCountAsync()==0,"large offline snapshots drain within server byte limit");
+    Check(sentIds.SequenceEqual(Enumerable.Range(1,50).Select(i=>large.Id+":"+i)),"byte batching preserves every version and ignores unsent acknowledgements");
     // Restore review must retain its gate on any interrupted or inconsistent response.
     using(var connection=new SqliteConnection("Data Source="+path)){connection.Open();using var cmd=connection.CreateCommand();cmd.CommandText="INSERT INTO settings VALUES('recovery_required','1'),('sync_recheck','1')";cmd.ExecuteNonQuery();}
     var recoveryRequests=0;var recoveryState=new string('a',32);var changed=false;
