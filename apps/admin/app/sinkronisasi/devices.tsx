@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import type { DeviceStatus } from "../../lib/device-status.ts";
+import ReadinessPanel from "./readiness.tsx";
 const time = (value: string | null) => value ? new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "medium", timeZone: "Asia/Jakarta" }).format(new Date(value)) + " WIB" : "Belum ada laporan";
 export default function Devices() {
   const [devices, setDevices] = useState<DeviceStatus[] | null>(null);
@@ -33,5 +34,6 @@ export default function Devices() {
     })}</section>
     {devices?.length === 0 && <section className="empty"><h2>Belum ada laporan laptop.</h2><p>Buka aplikasi kasir yang sudah terhubung ke layanan ini, lalu periksa kembali.</p></section>}
     <p className="sync-note">Angka adalah laporan terakhir, bukan kondisi langsung saat laptop offline. Antrean menghitung perubahan data, bukan jumlah transaksi. Status diperiksa otomatis setiap 15 detik.</p>
+    <ReadinessPanel />
   </main>;
 }

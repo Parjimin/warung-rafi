@@ -64,6 +64,15 @@ Keadaan UJI yang terlihat: katalog berisi 0 menu, versi terbit 0; belum ada lapo
 | Lingkungan produksi bersih | Pisahkan transaksi latihan, akun/key/workbook dan data usaha; jangan menghapus ledger atau memulihkan backup UJI ke produksi. Paket hosting harus mengizinkan bisnis. |
 | Persetujuan pemilik | UAT alur jualan, buka/tutup kas, pengembalian, kehilangan koneksi, prosedur gangguan dan penanggung jawab operasional. |
 
+## Audit lanjutan — 29 September 2026
+
+- Seluruh 20 tabel aplikasi yang diperiksa lewat REST menggunakan role anon menolak SELECT (HTTP 401, PostgreSQL 42501): catalog_state, order_snapshots, device_events, device_sync_status, provider_payments, payment_notifications, finance_events, cash_sessions, refunds, finance_admin_events, finance_admin_state, qris_costs, qris_fee_profiles, qris_matches, qris_payouts, qris_payout_items, report_jobs, report_attempts, login_windows, audit_log. Request memakai limit=0 dan tidak membaca isi transaksi. Ini membuktikan penolakan SELECT anon pada jalur tersebut, bukan seluruh hak akses semua role/operasi.
+- Deployment menolak API admin tanpa sesi, recovery/payment/sync/finance perangkat tanpa token, serta runner ekspor tanpa token (401). Origin asing pada login ditolak (403). Pengujian tidak mengirim credential palsu atau membuat transaksi.
+- Temuan A05: endpoint setup sebelumnya menandai QRIS/Sheets terkonfigurasi hanya dari keberadaan nilai environment. Perbaikan memvalidasi lingkungan Midtrans dan memakai validator akun layanan/ID spreadsheet yang sama dengan exporter. Nilai terisi tetapi tidak valid tidak lagi dilaporkan siap.
+- Implementasi tambahan: panel Kesiapan layanan pada Sinkronisasi dan GET `/api/admin/readiness`, khusus pengelola, no-store. Memeriksa RPC setup database, format origin, konfigurasi perangkat, QRIS, Sheets, runner; identitas commit hanya ditampilkan bila hosting menyediakan SHA valid. Tidak mengembalikan nilai key, token, email akun layanan, ID spreadsheet, atau error provider. Status konfigurasi selalu dibedakan dari koneksi yang telah diuji; tidak ada label keseluruhan 'aman/siap produksi'.
+- Verifikasi lokal perubahan: 33 unit, typecheck, build dan 24 hasil API integration lulus; tambahan tes meliputi penolakan anon/perangkat/non-owner, cache, redaksi, database gagal, dan konfigurasi cacat. Build awal mengalami cache Turbopack rusak; build bersih berhasil. CI/browser untuk perubahan ini perlu ditautkan setelah selesai.
+- Masih memerlukan data/akses nyata: menu dan harga final, laptop kasir, printer, konfigurasi dan hak akses workbook Google, aktivasi merchant/webhook QRIS, backup/UAT, rotasi credential yang dibagikan, serta kecocokan commit deployment dengan hasil CI. Audit tidak mengisi menu fiktif, membuat transaksi uang nyata, atau menganggap credential provider tersedia.
+
 ## Rujukan perubahan kompatibilitas
 
 Dokumentasi resmi Supabase diperiksa pada sesi audit: https://supabase.com/docs/guides/getting-started/api-keys — kunci publishable/secret bukan JWT; gunakan header `apikey`. Dukungan request ini telah diuji memakai fixture, tetapi konfigurasi proyek Supabase pengguna tetap wajib diuji nyata.
