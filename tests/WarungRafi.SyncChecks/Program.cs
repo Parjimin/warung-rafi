@@ -15,6 +15,24 @@ async Task Fails(Func<Task> action){try{await action();}catch(HttpRequestExcepti
 using var handler=new FakeHandler();using var http=new HttpClient(handler){BaseAddress=new Uri("https://fixture.invalid/")};var sync=new RemoteSync(store,http);
 try
 {
+    var direct=new DirectSheets(Path.Combine(folder,"missing-runtime"));
+    Check((await direct.RefreshAsync("",default)).Contains("Hubungkan Sheets"),"direct Sheets requires owner provisioning, not server fallback");
+    Check((await direct.RefreshAsync("{}",default)).Contains("paket tidak lengkap"),"missing bundled runtime is reported truthfully");
+    var node=(Environment.GetEnvironmentVariable("PATH")??"").Split(Path.PathSeparator).Select(p=>Path.Combine(p,"node.exe")).FirstOrDefault(File.Exists);
+    if(node is null)throw new Exception("Node 24 required for process lifetime check");
+    var engine=Path.Combine(folder,"worker");Directory.CreateDirectory(engine);File.Copy(node,Path.Combine(engine,"node.exe"));
+    await File.WriteAllTextAsync(Path.Combine(engine,"worker.mjs"),"import fs from 'node:fs'; fs.writeFileSync('worker.pid',String(process.pid)); process.stdin.resume(); setInterval(()=>{},1000);");
+    using(var cancel=new CancellationTokenSource()){
+        var task=new DirectSheets(engine).RefreshAsync("{}",cancel.Token);
+        var pidFile=Path.Combine(engine,"worker.pid");
+        for(var i=0;i<100&&!File.Exists(pidFile);i++)await Task.Delay(50);
+        Check(File.Exists(pidFile),"bundled worker starts without a console");
+        var pid=int.Parse(await File.ReadAllTextAsync(pidFile));cancel.Cancel();
+        try{await task;throw new Exception("Worker ignored cancellation");}catch(OperationCanceledException){}
+        await Task.Delay(150);
+        var exited=false;try{using var child=System.Diagnostics.Process.GetProcessById(pid);exited=child.HasExited;}catch(ArgumentException){exited=true;}
+        Check(exited,"closing the application terminates its Sheets worker");
+    }
     handler.Reply=request=>{Check(request.RequestUri!.AbsolutePath=="/api/device/sheets"&&request.Method==HttpMethod.Post,"live Sheets uses authenticated device endpoint");return Task.FromResult(JsonContentResponse(new {state="verified"}));};
     Check(await sync.RefreshSheetsAsync(default)=="Sheets tersinkron","Sheets success is surfaced independently");
     handler.Reply=_=>throw new HttpRequestException("offline");await Fails(()=>sync.RefreshSheetsAsync(default));

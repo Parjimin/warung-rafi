@@ -1,3 +1,4 @@
+import { sheetsConfig } from "../../../../lib/sheets.ts";
 import { authUser } from "../../../../lib/auth.ts";
 import { reserveLogin } from "../../../../lib/login-limit.ts";
 import { body, handled, HttpError, json, object, required } from "../../../../lib/http.ts";
@@ -14,6 +15,12 @@ export async function POST(request: Request) {
   const result = await response.json(); await authUser(result.access_token);
   const deviceToken = required("DEVICE_API_TOKEN"), deviceId = required("DEVICE_ID");
   if (deviceToken.length < 32 || deviceToken.length > 512 || /\s/.test(deviceToken) || !deviceId || deviceId.length > 80) throw new HttpError(503, "Koneksi kasir belum disiapkan pengelola.");
+  if(input.directSheets===true){
+   // Only the verified owner can provision their single trusted cashier laptop.
+   // Device-token authentication alone must never reveal these credentials.
+   const directSheets={supabaseUrl:required("SUPABASE_URL"),serviceKey:required("SUPABASE_SERVICE_ROLE_KEY"),google:sheetsConfig()};
+   return json({deviceToken,deviceId,directSheets});
+  }
   return json({ deviceToken, deviceId });
  });
 }

@@ -63,7 +63,7 @@ public partial class MainWindow : Window
             if(drafts.Length>0)SetCurrent(drafts[0]);
             ready=true;RenderSelling();await UpdateStatus();
         });
-        if(ready&&!isolatedPreview){_=ConnectAsync(closing.Token);_=BackupLoopAsync(closing.Token);}
+        if(ready&&!isolatedPreview){_=ConnectAsync(closing.Token);_=BackupLoopAsync(closing.Token);_=SyncSheetsAsync(closing.Token);}
     }
     private async Task Run(Func<Task> action)
     {
@@ -145,7 +145,7 @@ public partial class MainWindow : Window
                     await Task.Delay(TimeSpan.FromSeconds(15),token);
                 }
             }
-            token.ThrowIfCancellationRequested();await Task.WhenAll(PollPaymentsAsync(sync,token),SyncDataAsync(sync,token),SyncSheetsAsync(sync,token));
+            token.ThrowIfCancellationRequested();await Task.WhenAll(PollPaymentsAsync(sync,token),SyncDataAsync(sync,token));
         }
         catch(OperationCanceledException) when(token.IsCancellationRequested) { }
         catch(Exception) {StatusText.Text="Sinkronisasi ditahan · Periksa koneksi/pemulihan pada Pengaturan";}
@@ -176,15 +176,16 @@ public partial class MainWindow : Window
             try{await Task.Delay(TimeSpan.FromMinutes(5),token);}catch(OperationCanceledException){break;}
         }
     }
-    private async Task SyncSheetsAsync(RemoteSync sync,CancellationToken token)
+    private async Task SyncSheetsAsync(CancellationToken token)
     {
-        // Separate loop: a slow Google response never stalls local sales or the outbox.
+        var direct=new DirectSheets();
+        // Desktop owns the worker lifetime; closing the app cancels and kills the process.
         while(!token.IsCancellationRequested)
         {
             try
             {
                 if(await store.PendingCountAsync()+await store.PendingFinanceCountAsync()==0)
-                    SheetsStatus.Text=await sync.RefreshSheetsAsync(token);
+                    SheetsStatus.Text=await direct.RefreshAsync(settingsFile?.Load().DirectSheetsJson??"",token);
                 else SheetsStatus.Text="Sheets menunggu pengiriman transaksi";
             }
             catch(OperationCanceledException) when(token.IsCancellationRequested){break;}

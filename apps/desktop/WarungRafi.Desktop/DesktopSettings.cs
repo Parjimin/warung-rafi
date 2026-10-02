@@ -6,7 +6,7 @@ using WarungRafi.Storage;
 
 namespace WarungRafi.Desktop;
 
-internal sealed record DesktopSettings(string ApiOrigin="",string DeviceToken="",string PrinterName="",string ManagerPinHash="",string BackupFolder="",string BackupPassword="",DateTimeOffset? LastBackup=null,int PinFailures=0,DateTimeOffset? PinBlockedUntil=null);
+internal sealed record DesktopSettings(string ApiOrigin="",string DeviceToken="",string PrinterName="",string ManagerPinHash="",string BackupFolder="",string BackupPassword="",DateTimeOffset? LastBackup=null,int PinFailures=0,DateTimeOffset? PinBlockedUntil=null,string DirectSheetsJson="");
 internal sealed class SettingsFile(string path)
 {
     private static readonly byte[] Entropy=Encoding.UTF8.GetBytes("WarungRafi.Settings.v1");

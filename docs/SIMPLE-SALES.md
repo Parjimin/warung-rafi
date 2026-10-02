@@ -12,4 +12,4 @@ Tab otomatis lama WR_live_* disembunyikan setelah kedua tab baru selesai ditulis
 
 Aplikasi mempertahankan Jualan, Ditunda, Riwayat, Kas, refund, cetak ulang, dan backup/pemulihan. Pengaturan rutin menampilkan printer dan PIN; alamat server/token/pemeriksaan koneksi dipindahkan ke Koneksi lanjutan. Refund dilakukan dari Riwayat > rincian > Pengembalian; status berhasil hanya dicatat setelah uang benar-benar diserahkan dan PIN pengelola diverifikasi.
 
-Penerapan memerlukan deployment server dari commit ini dan aplikasi Windows hasil build commit ini. Ini tidak memindahkan pemrosesan Sheets dari server ke laptop. Kesuksesan CI bukan verifikasi spreadsheet produksi.
+Penerapan memerlukan deployment server dari commit ini dan aplikasi Windows hasil build commit ini. Paket terbaru menjalankan pemrosesan Sheets langsung dari laptop; lihat DIRECT-SHEETS.md. Kesuksesan CI bukan verifikasi spreadsheet produksi.

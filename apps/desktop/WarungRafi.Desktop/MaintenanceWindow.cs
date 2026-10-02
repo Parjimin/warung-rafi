@@ -91,6 +91,11 @@ internal sealed class MaintenanceWindow : Window
             settings=draft;file.Save(settings);token.Clear();pin.Clear();confirm.Clear();Say("Pengaturan tersimpan terlindungi. Tutup dan buka ulang kasir untuk menerapkannya.");
         });
         Text("Nama printer disimpan tanpa mencetak. Setelah perangkat tersedia, uji struk asli, kertas habis dan kabel terputus sebelum dipakai berjualan.");
+        Button("Hubungkan Sheets langsung","ConnectDirectSheets",()=>{
+            var activation=new ActivationWindow(file,true){Owner=this};
+            if(activation.ShowDialog()==true){settings=file.Load();Say("Sheets terhubung. Tutup pengaturan; pembaruan berjalan dari laptop setiap satu menit.");}
+            return Task.CompletedTask;
+        });
         // Routine settings stay short; connection repair is available when needed.
         var advancedContent=new StackPanel();
         for(var i=0;i<6;i++){var child=content.Children[0];content.Children.RemoveAt(0);advancedContent.Children.Add(child);}

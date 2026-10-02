@@ -36,9 +36,10 @@ internal static class Program
     private static async Task Verify()
     {
         Directory.CreateDirectory(directory);Directory.CreateDirectory(artifacts);
-        var file=new SettingsFile(Path.Combine(directory,"settings.protected"));var profile=new DesktopSettings(ManagerPinHash:ManagerPin.Hash("654321"),DeviceToken:"fixture-token-at-least-thirty-two-characters",BackupPassword:"fixture-password-no-real-secret");file.Save(profile);
+        var file=new SettingsFile(Path.Combine(directory,"settings.protected"));var profile=new DesktopSettings(ManagerPinHash:ManagerPin.Hash("654321"),DeviceToken:"fixture-token-at-least-thirty-two-characters",BackupPassword:"fixture-password-no-real-secret",DirectSheetsJson:"{\"serviceKey\":\"fixture-direct-secret\"}");file.Save(profile);
         Check(new SettingsFile(file.FilePath).Load()==profile,"protected settings survive process-style reload");
         Check(!System.Text.Encoding.UTF8.GetString(File.ReadAllBytes(file.FilePath)).Contains(profile.DeviceToken),"credentials are not stored as plaintext");
+        Check(!System.Text.Encoding.UTF8.GetString(File.ReadAllBytes(file.FilePath)).Contains("fixture-direct-secret"),"direct Sheets credentials are encrypted with Windows user protection");
         Reject(()=>file.Save(profile with {ApiOrigin="http://fixture.invalid/"}),"HTTP configuration cannot be saved");
         Reject(()=>file.Save(profile with {ApiOrigin="https://fixture.invalid/path"}),"path and token forwarding ambiguity is rejected");
         Check(file.Load()==profile,"invalid configuration preserves previous settings");

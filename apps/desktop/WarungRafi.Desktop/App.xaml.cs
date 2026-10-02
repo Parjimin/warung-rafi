@@ -23,7 +23,7 @@ public partial class App : Application
             }
             if(!demo&&!maintenance&&settings.ApiOrigin.Length==0)
             {
-                var activation=new ActivationWindow(file);
+                var activation=new ActivationWindow(file,true);
                 if(activation.ShowDialog()!=true&&!activation.ContinueOffline){Shutdown();return;}
                 settings=file.Load();storage=new LocalStore(path,settings.ManagerPinHash);
             }

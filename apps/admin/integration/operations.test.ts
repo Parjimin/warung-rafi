@@ -65,3 +65,12 @@ test("device automatically captures, exports and skips unchanged reports without
  const writes=app.control.googleWrites;
  const second=await send();assert.equal((await second.json()).state,"unchanged");assert.equal(app.control.googleWrites,writes);assert.equal(app.control.googleSheets.length,2);
 });
+
+test("direct Sheets secrets require fresh owner authentication and explicit opt-in",async t=>{
+ const app=await startHarness({reports:true});t.after(app.stop);
+ const activate=(email:string,directSheets:boolean)=>fetch(app.origin+"/api/device/activate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password:"fixture",directSheets})});
+ const denied=await activate("other@fixture.test",true);assert.equal(denied.status,403);assert.ok(!(await denied.text()).includes("privateKey"));
+ const regular=await activate("owner@fixture.test",false);assert.equal((await regular.json()).directSheets,undefined);
+ const owner=await activate("owner@fixture.test",true);assert.equal(owner.status,200);assert.equal(owner.headers.get("cache-control"),"no-store");
+ const body=await owner.json();assert.ok(body.directSheets.serviceKey);assert.ok(body.directSheets.google.privateKey);assert.equal(typeof body.directSheets.google.target,"string");
+});

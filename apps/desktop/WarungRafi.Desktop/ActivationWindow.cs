@@ -11,7 +11,7 @@ internal sealed class ActivationWindow : Window
     internal bool ContinueOffline {get;private set;}
     internal const string DefaultOrigin="https://d2fydw5nlxjhzmk.mpksmakaduta.web.id/";
     private readonly CancellationTokenSource closing=new();
-    internal ActivationWindow(SettingsFile file)
+    internal ActivationWindow(SettingsFile file,bool directSheets=false)
     {
         Title="Hubungkan Warung Rafi";Width=450;Height=570;MinWidth=380;MinHeight=480;WindowStartupLocation=WindowStartupLocation.CenterScreen;
         var panel=new StackPanel {Margin=new Thickness(28)};
@@ -33,11 +33,15 @@ internal sealed class ActivationWindow : Window
             {
                 if(needsPin&&(pin.Password.Length!=6||pin.Password.Any(c=>c<'0'||c>'9')||pin.Password!=confirm.Password))throw new InvalidOperationException("Isi PIN 6 angka dan ulangi dengan nilai yang sama.");
                 using var http=new HttpClient(new HttpClientHandler{AllowAutoRedirect=false}){BaseAddress=new Uri(DefaultOrigin),Timeout=TimeSpan.FromSeconds(45)};
-                using var response=await http.PostAsJsonAsync("api/device/activate",new{email=email.Text.Trim(),password=password.Password},closing.Token);
+                using var response=await http.PostAsJsonAsync("api/device/activate",new{email=email.Text.Trim(),password=password.Password,directSheets},closing.Token);
                 password.Clear();
                 if(!response.IsSuccessStatusCode)throw new InvalidOperationException(response.StatusCode==System.Net.HttpStatusCode.Unauthorized?"Email atau kata sandi belum sesuai.":"Belum dapat terhubung. Periksa internet atau kesiapan server, lalu coba lagi.");
                 var result=await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken:closing.Token);
                 var settings=file.Load() with {ApiOrigin=DefaultOrigin,DeviceToken=result.GetProperty("deviceToken").GetString()??""};
+                if(directSheets){
+                    if(!result.TryGetProperty("directSheets",out var connection)||connection.ValueKind!=JsonValueKind.Object)throw new InvalidOperationException("Server perlu diperbarui untuk koneksi Sheets langsung.");
+                    settings=settings with {DirectSheetsJson=connection.GetRawText()};
+                }
                 if(needsPin)settings=settings with {ManagerPinHash=ManagerPin.Hash(pin.Password)};
                 SettingsFile.Validate(settings);closing.Token.ThrowIfCancellationRequested();
                 file.Save(settings);pin.Clear();confirm.Clear();DialogResult=true;
