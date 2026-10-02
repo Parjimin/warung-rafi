@@ -8,6 +8,7 @@ namespace WarungRafi.Desktop;
 
 internal sealed class ActivationWindow : Window
 {
+    internal bool ContinueOffline {get;private set;}
     internal const string DefaultOrigin="https://d2fydw5nlxjhzmk.mpksmakaduta.web.id/";
     private readonly CancellationTokenSource closing=new();
     internal ActivationWindow(SettingsFile file)
@@ -24,7 +25,7 @@ internal sealed class ActivationWindow : Window
         var status=new TextBlock{TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,8,0,8)};panel.Children.Add(status);
         var connect=new Button{Content="Masuk & hubungkan",Margin=new Thickness(0,4,0,8),MinHeight=38};panel.Children.Add(connect);
         var offline=new Button{Content="Lewati, buka offline",MinHeight=32};panel.Children.Add(offline);
-        offline.Click+=(_,_)=>Close();Closed+=(_,_)=>closing.Cancel();
+        offline.Click+=(_,_)=>{ContinueOffline=true;Close();};Closed+=(_,_)=>closing.Cancel();
         connect.Click+=async(_,_)=>
         {
             connect.IsEnabled=false;status.Text="Menghubungkan…";

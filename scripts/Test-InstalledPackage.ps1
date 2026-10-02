@@ -5,6 +5,8 @@ $data=Join-Path $env:LOCALAPPDATA 'WarungRafi\warung-rafi.db'
 if(Test-Path -LiteralPath $data){throw 'Run this smoke test only in a fresh CI account; a cashier database already exists.'}
 $root=Join-Path ([IO.Path]::GetTempPath()) ('WarungRafi-installed-check-'+[Guid]::NewGuid().ToString('N'))
 $owned=$null
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
 function Open-Installed([string]$mode){
  & (Join-Path $root 'Start-WarungRafi.ps1') -Mode $mode
  $release=(Get-Content (Join-Path $root 'Current.json') -Raw|ConvertFrom-Json).release
@@ -16,10 +18,21 @@ function Open-Installed([string]$mode){
   Start-Sleep -Milliseconds 100
  }while([DateTime]::UtcNow -lt $deadline)
  if(!$script:owned -or $script:owned.MainWindowHandle -eq 0){throw 'Installed application did not open a window.'}
+ if($mode -eq 'cashier' -and $script:owned.MainWindowTitle -eq 'Hubungkan Warung Rafi'){
+  $element=[System.Windows.Automation.AutomationElement]::FromHandle($script:owned.MainWindowHandle)
+  $condition=New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty,'Lewati, buka offline')
+  $button=$element.FindFirst([System.Windows.Automation.TreeScope]::Descendants,$condition)
+  if(!$button){throw 'First-run sign-in does not offer offline cashier.'}
+  $invoke=$button.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
+  $invoke.Invoke()
+  $deadline=[DateTime]::UtcNow.AddSeconds(10)
+  do {$script:owned.Refresh();if($script:owned.MainWindowTitle -like '*Kasir'){break};Start-Sleep -Milliseconds 100}while([DateTime]::UtcNow -lt $deadline)
+  if($script:owned.MainWindowTitle -notlike '*Kasir'){throw 'Skipping activation did not open the cashier.'}
+ }
  if($mode -eq 'maintenance' -and $script:owned.MainWindowTitle -notlike '*Pengaturan*'){throw 'Recovery shortcut did not open maintenance.'}
  $null=$script:owned.Handle
  $closeDeadline=[DateTime]::UtcNow.AddSeconds(10)
- do {$null=$script:owned.CloseMainWindow();if($script:owned.WaitForExit(100)){break}}while([DateTime]::UtcNow -lt $closeDeadline)
+ do {$script:owned.Refresh();$null=$script:owned.CloseMainWindow();if($script:owned.WaitForExit(100)){break}}while([DateTime]::UtcNow -lt $closeDeadline)
  if(!$script:owned.HasExited){throw 'Installed application did not close cleanly.'}
  if($script:owned.ExitCode -ne 0){throw 'Installed application returned an error.'}
  $script:owned=$null
