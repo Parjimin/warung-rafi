@@ -64,7 +64,7 @@ internal sealed class MaintenanceWindow : Window
     }
     private void RenderNavigation()
     {
-        navigation.Children.Clear();Button("Koneksi & printer","SettingsConnection",()=>{RenderConnection();return Task.CompletedTask;},navigation);Button("Backup","SettingsBackup",()=>{RenderBackup();return Task.CompletedTask;},navigation);Button("Pemulihan","SettingsRestore",()=>{RenderRestore();return Task.CompletedTask;},navigation);
+        navigation.Children.Clear();Button("Printer & PIN","SettingsConnection",()=>{RenderConnection();return Task.CompletedTask;},navigation);Button("Backup","SettingsBackup",()=>{RenderBackup();return Task.CompletedTask;},navigation);Button("Pemulihan","SettingsRestore",()=>{RenderRestore();return Task.CompletedTask;},navigation);
     }
     private void RenderConnection()
     {
@@ -91,6 +91,13 @@ internal sealed class MaintenanceWindow : Window
             settings=draft;file.Save(settings);token.Clear();pin.Clear();confirm.Clear();Say("Pengaturan tersimpan terlindungi. Tutup dan buka ulang kasir untuk menerapkannya.");
         });
         Text("Nama printer disimpan tanpa mencetak. Setelah perangkat tersedia, uji struk asli, kertas habis dan kabel terputus sebelum dipakai berjualan.");
+        // Routine settings stay short; connection repair is available when needed.
+        var advancedContent=new StackPanel();
+        for(var i=0;i<6;i++){var child=content.Children[0];content.Children.RemoveAt(0);advancedContent.Children.Add(child);}
+        var check=content.Children.OfType<Button>().First(b=>AutomationProperties.GetAutomationId(b)=="CheckServer");
+        content.Children.Remove(check);advancedContent.Children.Add(check);
+        content.Children.Add(Id(new Expander {Header="Koneksi lanjutan",Content=advancedContent,IsExpanded=settings.DeviceToken.Length==0,Margin=new Thickness(0,18,0,0)},"AdvancedConnection"));
+
     }
     private void RenderBackup()
     {

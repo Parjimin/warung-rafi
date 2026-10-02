@@ -102,14 +102,20 @@ internal sealed class RemoteSync(LocalStore store,HttpClient http) : IDisposable
     public async Task<string> RefreshSheetsAsync(CancellationToken token)
     {
         using var response=await http.PostAsync("api/device/sheets",null,token);
-        response.EnsureSuccessStatusCode();
+        if(!response.IsSuccessStatusCode)return (int)response.StatusCode switch {
+            404=>"Sheets: server perlu diperbarui",
+            401 or 403=>"Sheets: akses ditolak · periksa koneksi di Pengaturan",
+            409=>"Sheets: proses sebelumnya berubah · mencoba lagi",
+            503=>"Sheets: layanan belum siap · periksa konfigurasi/migrasi server",
+            _=>$"Sheets gagal · kode {(int)response.StatusCode}"
+        };
         var result=await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken:token);
         var state=result.GetProperty("state").GetString();
         return state switch {
             "verified" or "unchanged"=>"Sheets tersinkron",
             "waiting"=>"Sheets menunggu pemeriksaan berikutnya",
             "unavailable"=>"Sheets belum dikonfigurasi",
-            _=>"Sheets belum tersinkron · mencoba kembali"
+            _=>"Sheets belum tersinkron · periksa akses Google dan konfigurasi server"
         };
     }
     public async Task ReportStatusAsync(CancellationToken token)

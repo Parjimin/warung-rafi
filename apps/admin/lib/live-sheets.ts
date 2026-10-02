@@ -1,19 +1,13 @@
+import { simpleSalesReport } from "./simple-sales.ts";
 import { createHash, randomUUID } from "node:crypto";
 import { rpc } from "./db.ts";
-import { buildReport, type Report, type ReportSource } from "./reports.ts";
+import { type Report, type ReportSource } from "./reports.ts";
 import { exportSheets, ExportError, sheetsConfig } from "./sheets.ts";
 export function liveReport(source: ReportSource): Report {
- const report = buildReport("0".repeat(32), source);
- const info = report.tables.find(t => t.name === "Info_Laporan")!;
- for (const row of info.rows) {
-  if (row[0] === "catatan") row[1] = "Laporan bulan berjalan, diperbarui saat kasir terbuka dan online. Riwayat lengkap tetap di database. Jangan menjumlahkan omzet + QRIS provider + pencairan.";
-  if (row[0] === "status_sheets") row[1] = "Periksa indikator Sheets pada aplikasi kasir. Waktu snapshot bukan jaminan semua data laptop telah terkirim.";
- }
- return report;
+ return simpleSalesReport("0".repeat(32), source);
 }
 export function liveHash(report: Report): string {
- // Exclude capture time only; period, accounting and completeness warnings remain significant.
- return createHash("sha256").update(JSON.stringify(report.tables.map(t => t.name === "Info_Laporan" ? { ...t, rows: t.rows.filter(r => r[0] !== "snapshot_wib") } : t))).digest("hex");
+ return createHash("sha256").update(JSON.stringify(report.tables)).digest("hex");
 }
 type Claim = { claimed: boolean; source?: ReportSource; hash?: string; verifiedAt: string | null; code: string | null };
 export async function refreshLiveSheets() {

@@ -23,7 +23,7 @@ export function signedAssertion(config: SheetsConfig, now = Math.floor(Date.now(
 }
 export type SheetPlan = { id: number; title: string; table: ReportTable };
 export function sheetPlans(report: Report): SheetPlan[] {
- const result = report.tables.map(table => ({ id: createHash("sha256").update(report.id + "/" + table.name).digest().readUInt32BE(0) & 0x7fffffff, title: `WR_${report.id}_${table.name}`, table }));
+ const result = report.tables.map(table => ({ id: createHash("sha256").update(report.id + "/" + table.name).digest().readUInt32BE(0) & 0x7fffffff, title: report.id === "live" ? table.name : `WR_${report.id}_${table.name}`, table }));
  if (new Set(result.map(p => p.id)).size !== result.length) throw new ExportError("target_changed"); return result;
 }
 const cell = (v: Cell) => v == null || v === "" ? {} : { userEnteredValue: typeof v === "number" ? { numberValue: v } : { stringValue: v } };
@@ -111,5 +111,15 @@ export async function exportSheets(report: Report, target: string, config = shee
  for (const p of plans) query.append("ranges", `'${p.title}'`);
  const persisted: SheetResponse = await call(base + "?" + query, { headers });
  if (!verifySheets(plans, persisted)) throw new ExportError("verification", true);
+ // Retire only the old auto-generated live tabs after the new view has passed read-back.
+ // Preserve their contents and leave manual snapshots / user-created sheets alone.
+ if (live) {
+  const legacyNames = new Set(["Ringkasan_Harian","Transaksi","Detail_Penjualan","Rekap_Produk","Pembayaran_QRIS","Pencairan_Dana","Detail_Pencairan","Pengembalian","Kas_Harian","Pergerakan_Kas","Pengeluaran","Pemeriksaan_Data","Aktivitas","Info_Laporan"]);
+  const retired = (metadata.sheets ?? []).filter(s => {
+   const name=s.properties.title.replace(/^WR_live_/, "");
+   return s.properties.title === "WR_live_"+name && legacyNames.has(name) && s.properties.sheetId === (createHash("sha256").update("live/"+name).digest().readUInt32BE(0)&0x7fffffff);
+  });
+  if(retired.length) await call(base+":batchUpdate",{method:"POST",headers,body:JSON.stringify({requests:retired.map(s=>({updateSheetProperties:{properties:{sheetId:s.properties.sheetId,hidden:true},fields:"hidden"}}))})});
+ }
  return reportHash(report);
 }

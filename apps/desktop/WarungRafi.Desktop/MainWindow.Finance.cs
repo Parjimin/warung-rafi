@@ -46,7 +46,7 @@ public partial class MainWindow
             Place(left,Scroll(balance,"CashBalanceViewport"));Place(left,actions,1);Place(columns,Surface(left));
             var right=Rows(Star,Auto);var sales=new StackPanel();sales.Children.Add(Text("Penjualan tercatat",22,true));
             CashLine(sales,$"{position.SaleCount} pesanan dalam sesi ini",position.Gross,true);CashLine(sales,"Di antaranya QRIS",position.QrisSales);
-            var detail=Text("QRIS dicatat kasir dan tidak menambah uang di laci. Angka ini belum menunjukkan pencairan atau biaya provider.",17,false,"#65766E");detail.Margin=new Thickness(0,12,0,16);sales.Children.Add(detail);
+            var detail=Text("Pembayaran QRIS tidak menambah uang tunai di laci.",17,false,"#65766E");detail.Margin=new Thickness(0,12,0,16);sales.Children.Add(detail);
             CashLine(sales,"Pengembalian berhasil di sesi ini",position.SalesRefunds);
             sales.Children.Add(Text("Pengembalian dapat berasal dari penjualan pada sesi sebelumnya.",15,false,"#65766E"));
             Place(right,Scroll(sales));var close=ActionButton("Hitung & tutup kas",()=>{RenderCloseCash(position);return Task.CompletedTask;},true,"CloseCash");close.Margin=new Thickness(0,18,0,0);Place(right,close,1);
@@ -143,7 +143,7 @@ public partial class MainWindow
     private void RenderResolveRefund(Order order,Refund refund)
     {
         var root=FinancePage("Catat hasil pengembalian",Money.Format(refund.Amount)+" · "+(refund.Channel==RefundChannel.Cash?"Uang tunai dari laci":"Transfer / provider"),()=>RenderRefunds(order),"← Pengembalian");
-        var form=new StackPanel { MaxWidth=680,HorizontalAlignment=HorizontalAlignment.Center };form.Children.Add(Text("Khusus pengelola",24,true));form.Children.Add(Text("Aplikasi mencatat hasil pengembalian. Transfer atau refund melalui provider perlu dilakukan terlebih dahulu.",18,false,"#65766E"));
+        var form=new StackPanel { MaxWidth=680,HorizontalAlignment=HorizontalAlignment.Center };form.Children.Add(Text("Khusus pengelola",24,true));form.Children.Add(Text("Kembalikan uang terlebih dahulu, lalu catat hasilnya. Refund berhasil otomatis mengurangi rekap spreadsheet; jumlah pcs menu tetap.",18,false,"#65766E"));
         var reference=FinanceInput(form,refund.Channel==RefundChannel.Cash?"Keterangan penyerahan / alasan tidak terlaksana":"Referensi transfer / provider atau alasan tidak terlaksana","RefundReference");
         var label=Text("PIN pengelola",17);label.Margin=new Thickness(0,14,0,6);form.Children.Add(label);var pin=Identify(new PasswordBox { MaxLength=12,FontSize=24,MinHeight=48,Padding=new Thickness(12) },"ManagerPin","PIN pengelola");form.Children.Add(pin);
         var confirmed=Identify(new CheckBox { Content="Uang sudah dikembalikan kepada pelanggan",FontSize=18,MinHeight=48,Margin=new Thickness(0,12,0,8) },"RefundReturned");form.Children.Add(confirmed);

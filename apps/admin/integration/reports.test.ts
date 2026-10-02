@@ -20,7 +20,7 @@ test("built report APIs protect snapshots/CSV, recover creation and verify Sheet
   const status = JSON.stringify(await (await fetch(h.origin + "/api/admin/reports", { headers })).json()); assert.ok(!status.includes("private_key") && !status.includes("snapshot"));
   await post({ id, action: "queue" }); h.control.googleLostWrite = true;
   const lost = await (await post({ id, action: "run" })).json(); assert.equal(lost.verified, false); assert.equal(h.control.reportJobs[0].state, "failed"); assert.equal(h.control.reportJobs[0].verified_at, null);
-  h.control.googleLostWrite = false; await post({ id, action: "queue" }); const retry = await (await post({ id, action: "run" })).json(); assert.equal(retry.verified, true); assert.equal(h.control.googleSheets.length, 14);
+  h.control.googleLostWrite = false; await post({ id, action: "queue" }); const retry = await (await post({ id, action: "run" })).json(); assert.equal(retry.verified, true); assert.equal(h.control.googleSheets.length, 2);
   assert.equal((await fetch(h.origin + "/api/jobs/sheets", { method: "POST", headers: { Authorization: "Bearer fixture-device-token-at-least-32-characters" } })).status, 401);
   await post({ id, action: "queue" }); h.control.googleCorrupt = true;
   const runner = await fetch(h.origin + "/api/jobs/sheets", { method: "POST", headers: { Authorization: "Bearer fixture-runner-token-with-at-least-32-characters" } }); assert.equal(runner.status, 200); assert.equal((await runner.json()).verified, false); assert.equal(h.control.reportJobs[0].error_code, "verification");

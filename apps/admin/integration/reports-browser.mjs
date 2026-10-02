@@ -25,9 +25,9 @@ try {
  await page.getByRole('button', { name: 'Antrekan ke Sheets' }).click(); await page.getByRole('button', { name: 'Proses sekarang' }).waitFor(); h.control.googleStatus = 429;
  await page.getByRole('button', { name: 'Proses sekarang' }).click(); await page.getByRole('button', { name: 'Jadwalkan ulang' }).waitFor(); assert.equal(h.control.reportJobs[0].state, 'failed'); assert.equal(h.control.reportJobs[0].verified_at, null); await shot('sheets-pending');
  h.control.googleStatus = 200; h.control.googleLostWrite = true;
- await page.getByRole('button', { name: 'Jadwalkan ulang' }).click(); await page.getByRole('button', { name: 'Proses sekarang' }).click(); await page.getByRole('button', { name: 'Jadwalkan ulang' }).waitFor(); assert.equal(h.control.googleSheets.length, 14);
+ await page.getByRole('button', { name: 'Jadwalkan ulang' }).click(); await page.getByRole('button', { name: 'Proses sekarang' }).click(); await page.getByRole('button', { name: 'Jadwalkan ulang' }).waitFor(); assert.equal(h.control.googleSheets.length, 2);
  h.control.googleLostWrite = false; await page.getByRole('button', { name: 'Jadwalkan ulang' }).click(); await page.getByRole('button', { name: 'Proses sekarang' }).click(); await page.getByRole('link', { name: 'Buka Google Sheets' }).waitFor();
- assert.equal(h.control.googleSheets.length, 14); assert.equal(h.control.reportJobs[0].state, 'succeeded'); await shot('sheets-verified');
+ assert.equal(h.control.googleSheets.length, 2); assert.equal(h.control.reportJobs[0].state, 'succeeded'); await shot('sheets-verified');
  await page.setViewportSize({ width: 390, height: 844 }); await page.getByLabel('Bagian laporan').selectOption('Kas_Harian');
  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false); await shot('report-mobile');
  assert.deepEqual(errors, []); console.log('Report browser passed: invalid period recovery, lost creation + reload retry, CSV download, quota, lost Sheets write, verified retry without duplicate tabs, mobile overflow.');

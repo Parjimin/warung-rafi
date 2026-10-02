@@ -56,18 +56,18 @@ test("typed strings never become formulas and requests stay within batch budget"
  const f = googleFixture(); assert.equal(await exportSheets(clone, config.target, config, f.fetcher), reportHash(clone));
 });
 
-test("live export grows and shrinks the same 14 tabs without touching manual snapshots", async () => {
+test("live export grows and shrinks the same two tabs without touching manual snapshots", async () => {
  const f=googleFixture(); await exportSheets(report,config.target,config,f.fetcher);
  const manual=structuredClone(f.sheets);
  const first=liveReport(source);await exportSheets(first,config.target,config,f.fetcher,true);
- assert.equal(f.sheets.length,28);
+ assert.equal(f.sheets.length,16);
  const next=structuredClone(first);next.tables[0].rows.push([...next.tables[0].rows[0]]);
- await exportSheets(next,config.target,config,f.fetcher,true);assert.equal(f.sheets.length,28);
+ await exportSheets(next,config.target,config,f.fetcher,true);assert.equal(f.sheets.length,16);
  const small=structuredClone(first);for(const t of small.tables)t.rows=[];
  f.control.lostWrite=true;await assert.rejects(exportSheets(small,config.target,config,f.fetcher,true));
  f.control.lostWrite=false;await exportSheets(small,config.target,config,f.fetcher,true);
- assert.equal(f.sheets.length,28);assert.deepEqual(f.sheets.slice(0,14),manual);
- for(const s of f.sheets.slice(14)){assert.equal(s.properties.gridProperties.rowCount,2);assert.ok(s.properties.title.startsWith("WR_live_"));assert.ok(s.data[0].rowData[1].values.every((v:any)=>!v.userEnteredValue));}
+ assert.equal(f.sheets.length,16);assert.deepEqual(f.sheets.slice(0,14),manual);
+ for(const s of f.sheets.slice(14)){assert.equal(s.properties.gridProperties.rowCount,2);assert.ok(["Riwayat Penjualan","Rekap Penjualan"].includes(s.properties.title));assert.ok(s.data[0].rowData[1].values.every((v:any)=>!v.userEnteredValue));}
 });
 test("live change detection ignores capture time but includes completeness and source changes",()=>{
  const first=liveReport(source),next=structuredClone(source);next.capturedAt=new Date(Date.parse(source.capturedAt)+1000).toISOString();
