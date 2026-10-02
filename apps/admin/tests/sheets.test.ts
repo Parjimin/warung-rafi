@@ -19,13 +19,13 @@ function googleFixture() {
    const body = JSON.parse(String(init.body)); control.requests.push(body); let created = false, wrote = false;
    for (const r of body.requests) {
     if (r.addSheet) { assert.ok(!sheets.some(s => s.properties.sheetId === r.addSheet.properties.sheetId)); sheets.push({ properties: r.addSheet.properties, data: [{ rowData: [] }] }); created = true; }
-    if (r.updateSheetProperties) { const v=r.updateSheetProperties.properties, s=sheets.find(s=>s.properties.sheetId===v.sheetId); s.properties.gridProperties={...s.properties.gridProperties,...v.gridProperties}; s.data[0].rowData=s.data[0].rowData.slice(0,v.gridProperties.rowCount); }
+    if (r.updateSheetProperties) { const v=r.updateSheetProperties.properties, s=sheets.find(s=>s.properties.sheetId===v.sheetId); if(v.hidden!==undefined)s.properties.hidden=v.hidden; if(v.gridProperties){s.properties.gridProperties={...s.properties.gridProperties,...v.gridProperties}; s.data[0].rowData=s.data[0].rowData.slice(0,v.gridProperties.rowCount);} }
     if (r.updateCells) { const v = r.updateCells, s = sheets.find(s => s.properties.sheetId === v.range.sheetId); v.rows.forEach((row: unknown, i: number) => s.data[0].rowData[v.range.startRowIndex + i] = row); control.writes++; wrote = true; }
    }
    if ((control.lostCreate && created) || (control.lostWrite && wrote)) throw new Error("response lost after commit"); return Response.json({});
   }
   const response = structuredClone(sheets);
-  if (u.includes("includeGridData") && control.corrupt) response[0].data[0].rowData[1].values[0] = { userEnteredValue: { formulaValue: "=1" } };
+  if (u.includes("includeGridData") && control.corrupt) response.find(s=>new URL(u).searchParams.getAll("ranges").includes("\'"+s.properties.title+"\'"))!.data[0].rowData[1].values[0] = { userEnteredValue: { formulaValue: "=1" } };
   return Response.json({ sheets: response });
  };
  return { sheets, control, fetcher };
@@ -73,4 +73,13 @@ test("live change detection ignores capture time but includes completeness and s
  const first=liveReport(source),next=structuredClone(source);next.capturedAt=new Date(Date.parse(source.capturedAt)+1000).toISOString();
  assert.equal(liveHash(first),liveHash(liveReport(next)));
  const changed=structuredClone(first);changed.tables[0].rows[0][1]="different";assert.notEqual(liveHash(first),liveHash(changed));
+});
+
+test("old automatic tabs are hidden only after successful verification",async()=>{
+ const f=googleFixture();
+ for(const p of sheetPlans({...report,id:"live"})){f.sheets.push({properties:{sheetId:p.id,title:"WR_live_"+p.table.name,gridProperties:{rowCount:2,columnCount:2}},data:[{rowData:[{values:[]},{values:[{}]}]}]});}
+ f.control.corrupt=true;await assert.rejects(exportSheets(liveReport(source),config.target,config,f.fetcher,true));
+ assert.ok(f.sheets.slice(0,14).every(s=>!s.properties.hidden));
+ f.control.corrupt=false;await exportSheets(liveReport(source),config.target,config,f.fetcher,true);
+ assert.ok(f.sheets.slice(0,14).every(s=>s.properties.hidden));assert.equal(f.sheets.length,16);
 });

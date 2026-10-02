@@ -61,7 +61,7 @@ test("device automatically captures, exports and skips unchanged reports without
  const app=await startHarness({reports:true});t.after(app.stop);
  const send=()=>fetch(app.origin+"/api/device/sheets",{method:"POST",headers:{authorization:"Bearer fixture-device-token-at-least-32-characters"}});
  const first=await send();assert.equal(first.status,200);assert.equal((await first.json()).state,"verified");
- assert.equal(app.control.googleSheets.length,14);assert.equal(app.control.reportJobs.length,0);
+ assert.equal(app.control.googleSheets.length,2);assert.equal(app.control.reportJobs.length,0);
  const writes=app.control.googleWrites;
- const second=await send();assert.equal((await second.json()).state,"unchanged");assert.equal(app.control.googleWrites,writes);assert.equal(app.control.googleSheets.length,14);
+ const second=await send();assert.equal((await second.json()).state,"unchanged");assert.equal(app.control.googleWrites,writes);assert.equal(app.control.googleSheets.length,2);
 });
