@@ -145,7 +145,7 @@ public partial class MainWindow : Window
                     await Task.Delay(TimeSpan.FromSeconds(15),token);
                 }
             }
-            token.ThrowIfCancellationRequested();await Task.WhenAll(PollPaymentsAsync(sync,token),SyncDataAsync(sync,token));
+            token.ThrowIfCancellationRequested();await Task.WhenAll(PollPaymentsAsync(sync,token),SyncDataAsync(sync,token),SyncSheetsAsync(sync,token));
         }
         catch(OperationCanceledException) when(token.IsCancellationRequested) { }
         catch(Exception) {StatusText.Text="Sinkronisasi ditahan · Periksa koneksi/pemulihan pada Pengaturan";}
@@ -174,6 +174,22 @@ public partial class MainWindow : Window
             }
             catch(Exception) {if(!busy)StatusText.Text="Data lokal tersimpan · Backup otomatis belum berhasil; periksa folder pada Pengaturan";}
             try{await Task.Delay(TimeSpan.FromMinutes(5),token);}catch(OperationCanceledException){break;}
+        }
+    }
+    private async Task SyncSheetsAsync(RemoteSync sync,CancellationToken token)
+    {
+        // Separate loop: a slow Google response never stalls local sales or the outbox.
+        while(!token.IsCancellationRequested)
+        {
+            try
+            {
+                if(await store.PendingCountAsync()+await store.PendingFinanceCountAsync()==0)
+                    SheetsStatus.Text=await sync.RefreshSheetsAsync(token);
+                else SheetsStatus.Text="Sheets menunggu pengiriman transaksi";
+            }
+            catch(OperationCanceledException) when(token.IsCancellationRequested){break;}
+            catch(Exception){SheetsStatus.Text="Sheets menunggu koneksi · data lokal tetap tersimpan";}
+            try{await Task.Delay(TimeSpan.FromMinutes(1),token);}catch(OperationCanceledException){break;}
         }
     }
     private async Task PollPaymentsAsync(RemoteSync sync,CancellationToken token)

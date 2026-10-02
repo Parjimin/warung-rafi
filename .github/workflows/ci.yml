@@ -53,6 +53,11 @@ jobs:
         run: ./scripts/Test-WindowsPackage.ps1
       - name: Package unsigned Windows preview
         run: dotnet publish apps/desktop/WarungRafi.Desktop -c Release -r win-x64 --self-contained true -o artifacts/Windows-preview
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WarungRafi-Windows-portable
+          path: artifacts/Windows-preview
+          retention-days: 14
       - name: Include manager setup and finance guide
         run: |
           Copy-Item scripts/Set-ManagerPin.ps1 artifacts/Windows-preview/
@@ -151,6 +156,8 @@ jobs:
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/004_reconciliation.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/005_reports.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/006_operations.sql
+          psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/007_live_sheets.sql
+          psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/live_sheets.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/operations.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/assertions.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/sync_monitor.sql

@@ -1,3 +1,5 @@
+> Kasir satu laptop: paket portable, login sekali, dan Sheets otomatis bulan berjalan. Lihat [panduan penggunaan dan aktivasi rilis](docs/SIMPLE-CASHIER.md).
+
 # Warung Rafi
 
 Aplikasi kasir Windows untuk satu kedai: menu besar, pesanan ditunda, tunai, QRIS statis, dan pencatatan lokal. Web admin/API dirancang untuk Vercel dengan PostgreSQL terkelola.

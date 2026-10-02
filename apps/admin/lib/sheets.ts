@@ -45,11 +45,11 @@ export function writeBatches(plans: SheetPlan[], maxBytes = 1500000): object[][]
 export function reportHash(report: Report) { return createHash("sha256").update(JSON.stringify(report.tables)).digest("hex"); }
 type GridValue = { stringValue?: string; numberValue?: number; formulaValue?: string; boolValue?: boolean };
 type SheetResponse = { sheets?: { properties: { sheetId: number; title: string; gridProperties: { rowCount: number; columnCount: number } }; data?: { startRow?: number; startColumn?: number; rowData?: { values?: { userEnteredValue?: GridValue }[] }[] }[] }[] };
-function existingPlans(plans: SheetPlan[], response: SheetResponse): SheetPlan[] {
+function existingPlans(plans: SheetPlan[], response: SheetResponse, mutable = false): SheetPlan[] {
  return plans.filter(p => {
   const byId = response.sheets?.find(s => s.properties.sheetId === p.id), byTitle = response.sheets?.find(s => s.properties.title === p.title);
   if (!byId && !byTitle) return false;
-  if (!byId || !byTitle || byId !== byTitle || byId.properties.gridProperties.rowCount !== Math.max(2, p.table.rows.length + 1) || byId.properties.gridProperties.columnCount !== p.table.columns.length) throw new ExportError("target_changed");
+  if (!byId || !byTitle || byId !== byTitle || (!mutable && (byId.properties.gridProperties.rowCount !== Math.max(2, p.table.rows.length + 1) || byId.properties.gridProperties.columnCount !== p.table.columns.length))) throw new ExportError("target_changed");
   return true;
  });
 }
@@ -70,7 +70,7 @@ export function verifySheets(plans: SheetPlan[], response: SheetResponse): boole
   })).every(Boolean);
  });
 }
-export async function exportSheets(report: Report, target: string, config = sheetsConfig(), request: typeof fetch = fetch): Promise<string> {
+export async function exportSheets(report: Report, target: string, config = sheetsConfig(), request: typeof fetch = fetch, live = false): Promise<string> {
  if (config.target !== target) throw new ExportError("target_changed");
  const overall = AbortSignal.timeout(35000);
  async function call(url: string, init: RequestInit = {}) {
@@ -88,15 +88,23 @@ export async function exportSheets(report: Report, target: string, config = shee
  const token = await call(TOKEN_URL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: signedAssertion(config) }) });
  if (typeof token.access_token !== "string" || token.access_token.length < 1) throw new ExportError("permission");
  const headers = { Authorization: `Bearer ${token.access_token}`, "Content-Type": "application/json" }; const base = API + target;
- const plans = sheetPlans(report);
+ const plans = sheetPlans(live ? { ...report, id: "live" } : report);
  const metadata: SheetResponse = await call(base + "?fields=sheets(properties(sheetId,title,gridProperties))", { headers });
- const existing = new Set(existingPlans(plans, metadata).map(p => p.id));
+ const existing = new Set(existingPlans(plans, metadata, live).map(p => p.id));
  const add = plans.filter(p => !existing.has(p.id)).flatMap(p => [
   { addSheet: { properties: { sheetId: p.id, title: p.title, gridProperties: { rowCount: Math.max(2, p.table.rows.length + 1), columnCount: p.table.columns.length, frozenRowCount: 1 } } } },
   { addProtectedRange: { protectedRange: { range: { sheetId: p.id }, description: "Salinan laporan Warung Rafi; analisis bebas gunakan tab lain.", warningOnly: false, editors: { users: [config.email] } } } },
   { repeatCell: { range: { sheetId: p.id, startRowIndex: 0, endRowIndex: 1 }, cell: { userEnteredFormat: { backgroundColor: { red: 0.13, green: 0.3, blue: 0.24 }, textFormat: { bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } } } }, fields: "userEnteredFormat" } }
  ]);
  if (add.length) await call(base + ":batchUpdate", { method: "POST", headers, body: JSON.stringify({ requests: add }) });
+ if (live && existing.size) {
+  // Resize to the exact new bounds: shrinking removes stale rows on month rollover.
+  const requests = plans.filter(p => existing.has(p.id)).map(p => ({ updateSheetProperties: {
+   properties: { sheetId: p.id, gridProperties: { rowCount: Math.max(2, p.table.rows.length + 1), columnCount: p.table.columns.length } },
+   fields: "gridProperties.rowCount,gridProperties.columnCount"
+  } }));
+  await call(base + ":batchUpdate", { method: "POST", headers, body: JSON.stringify({ requests }) });
+ }
  // Every retry writes the same values to the same ranges, never append. Jobs use disjoint tabs.
  for (const requests of writeBatches(plans)) await call(base + ":batchUpdate", { method: "POST", headers, body: JSON.stringify({ requests }) });
  const query = new URLSearchParams({ includeGridData: "true", fields: "sheets(properties(sheetId,title,gridProperties),data(startRow,startColumn,rowData(values(userEnteredValue))))" });

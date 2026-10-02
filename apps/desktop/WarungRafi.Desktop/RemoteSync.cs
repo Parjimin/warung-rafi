@@ -17,7 +17,7 @@ internal sealed class RemoteSync(LocalStore store,HttpClient http) : IDisposable
     {
         if(settings.ApiOrigin.Length==0)return null;
         SettingsFile.Validate(settings);
-        var http=new HttpClient(new HttpClientHandler { AllowAutoRedirect=false }) { BaseAddress=new Uri(SettingsFile.NormalizeOrigin(settings.ApiOrigin)),Timeout=TimeSpan.FromSeconds(15) };
+        var http=new HttpClient(new HttpClientHandler { AllowAutoRedirect=false }) { BaseAddress=new Uri(SettingsFile.NormalizeOrigin(settings.ApiOrigin)),Timeout=TimeSpan.FromSeconds(55) };
         http.DefaultRequestHeaders.Authorization=new AuthenticationHeaderValue("Bearer",settings.DeviceToken);return new(store,http);
     }
     public void Dispose()=>http.Dispose();
@@ -98,6 +98,19 @@ internal sealed class RemoteSync(LocalStore store,HttpClient http) : IDisposable
         var snapshot=await http.GetFromJsonAsync<CatalogSnapshot>("api/device/catalog",token);
         if(snapshot is null)throw new InvalidDataException("Katalog kosong.");
         await store.ReceiveCatalogAsync(snapshot);
+    }
+    public async Task<string> RefreshSheetsAsync(CancellationToken token)
+    {
+        using var response=await http.PostAsync("api/device/sheets",null,token);
+        response.EnsureSuccessStatusCode();
+        var result=await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken:token);
+        var state=result.GetProperty("state").GetString();
+        return state switch {
+            "verified" or "unchanged"=>"Sheets tersinkron",
+            "waiting"=>"Sheets menunggu pemeriksaan berikutnya",
+            "unavailable"=>"Sheets belum dikonfigurasi",
+            _=>"Sheets belum tersinkron · mencoba kembali"
+        };
     }
     public async Task ReportStatusAsync(CancellationToken token)
     {

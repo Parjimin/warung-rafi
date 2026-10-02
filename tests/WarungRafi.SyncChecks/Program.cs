@@ -15,6 +15,9 @@ async Task Fails(Func<Task> action){try{await action();}catch(HttpRequestExcepti
 using var handler=new FakeHandler();using var http=new HttpClient(handler){BaseAddress=new Uri("https://fixture.invalid/")};var sync=new RemoteSync(store,http);
 try
 {
+    handler.Reply=request=>{Check(request.RequestUri!.AbsolutePath=="/api/device/sheets"&&request.Method==HttpMethod.Post,"live Sheets uses authenticated device endpoint");return Task.FromResult(JsonContentResponse(new {state="verified"}));};
+    Check(await sync.RefreshSheetsAsync(default)=="Sheets tersinkron","Sheets success is surfaced independently");
+    handler.Reply=_=>throw new HttpRequestException("offline");await Fails(()=>sync.RefreshSheetsAsync(default));
     var order=await store.SaveAsync(OrderRules.Add(Order.New(),new Product("p","Nasi","Nasi",5000)));
     handler.Reply=_=>Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
     await Fails(()=>sync.SendOutboxAsync(default));Check(await store.PendingCountAsync()==1,"server failure retains outbox");

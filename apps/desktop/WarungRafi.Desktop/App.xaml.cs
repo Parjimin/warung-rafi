@@ -13,7 +13,12 @@ public partial class App : Application
         {
             var demo=e.Args.Contains("--demo-qris",StringComparer.OrdinalIgnoreCase);var path=DataPath(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),demo);
             lease=DatabaseLease.Acquire(path);var file=new SettingsFile(Path.Combine(Path.GetDirectoryName(path)!,"settings.protected"));
-            var settings=demo?new DesktopSettings():file.ImportEnvironment();var storage=new LocalStore(path,settings.ManagerPinHash);
+            var settings=demo?new DesktopSettings():file.ImportEnvironment();
+            if(!demo&&!e.Args.Contains("--maintenance",StringComparer.OrdinalIgnoreCase)&&settings.ApiOrigin.Length==0)
+            {
+                new ActivationWindow(file).ShowDialog();settings=file.Load();
+            }
+            var storage=new LocalStore(path,settings.ManagerPinHash);
             var maintenance=!demo&&e.Args.Contains("--maintenance",StringComparer.OrdinalIgnoreCase);var notice="";
             if(!maintenance)
             {
