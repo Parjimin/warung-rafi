@@ -49,7 +49,7 @@ internal static class Program
         await Until(()=>Find<Button>("PayOrder") is not null);
         Layout();
         Check(!Get<Button>("PayOrder").IsEnabled,"Empty order cannot enter payment");Screenshot("01-empty");
-        VerifyFullMenu();
+        await VerifyFullMenu();
         foreach(var id in new[]{"NAS-001","NAS-002","NAS-003","NAS-004"})await Click("Product-"+id,()=>Get<ScrollViewer>("CartViewport").Content is StackPanel p&&p.Children.Count==Array.IndexOf(new[]{"NAS-001","NAS-002","NAS-003","NAS-004"},id)+1);
         foreach(var size in new[]{(1280d,720d),(1366d,768d),(1536d,864d),(1920d,1080d),(900d,620d)})
         {
@@ -205,7 +205,7 @@ internal static class Program
         await Click("ConfirmOpenCash",()=>Find<TextBox>("Tendered") is not null);
         Check((await demoStore.ActiveCashAsync())!.Expected==100000&&Get<TextBlock>("CartTotal").Text=="Rp5.000","opening cash returns to intact payment order");
     }
-    private static void VerifyFullMenu()
+    private static async Task VerifyFullMenu()
     {
         // Exercise the actual 32-item workload without changing the test database.
         const System.Reflection.BindingFlags flags=System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance;
@@ -227,6 +227,15 @@ internal static class Program
                 if(width>=1536)Check(rows==8,"Wide layout shows 32 menus in eight rows");
                 Check(cards.All(c=>c.ActualWidth>=170&&c.ActualHeight>=100),"Full menu retains usable touch targets");
                 Screenshot("21-full-menu-"+width+"x"+height);
+                var scroll=Get<ScrollViewer>("MenuViewport");
+                Check(scroll is SmoothScrollViewer,"Menu uses smooth scroll control");
+                var wheel=new MouseWheelEventArgs(Mouse.PrimaryDevice,Environment.TickCount,-120) { RoutedEvent=Mouse.MouseWheelEvent };
+                scroll.RaiseEvent(wheel);
+                await Task.Delay(330);Layout();
+                Check(scroll.VerticalOffset>0,"Wheel moves a full menu smoothly");
+                ((SmoothScrollViewer)scroll).StopMotion();
+                scroll.ScrollToVerticalOffset(0);Layout();
+                Check(scroll.VerticalOffset<1,"Touch or pointer can interrupt wheel motion");
             }
         }
         finally {field.SetValue(window,original);category.SetValue(window,originalCategory);width=1280;height=720;render.Invoke(window,null);Layout();}

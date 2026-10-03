@@ -23,7 +23,9 @@ public partial class MainWindow
         grid.SizeChanged+=(_,_)=>grid.ColumnDefinitions[2].Width=cartExpanded?Star:new GridLength(Math.Clamp(grid.ActualWidth*0.35,380,440));
         var left=Rows(Auto,Auto,Star);
         var heading=Columns(Star,new GridLength(200));heading.Margin=new Thickness(0,0,0,18);
-        var title=new StackPanel();title.Children.Add(Text("Menu hari ini",28,true,"#1F342D"));
+        var title=new StackPanel();
+        var eyebrow=Text("DARI DAPUR RAFI",10,true,"#778A80");eyebrow.Margin=new Thickness(0,0,0,3);title.Children.Add(eyebrow);
+        title.Children.Add(Text("Menu hari ini",28,true,"#1F342D"));
         productCount=Text("",13,false,"#68766A");productCount.Margin=new Thickness(0,4,0,0);title.Children.Add(productCount);Place(heading,title);
         var find=Identify(new TextBox { Text=search,ToolTip="Cari nama menu di semua kategori",MaxLength=60,VerticalAlignment=VerticalAlignment.Center,FontSize=16,MinHeight=44 },"MenuSearch","Cari menu");
         var searchBox=InputWithHint(find,"Cari menu…");searchBox.VerticalAlignment=VerticalAlignment.Center;Place(heading,searchBox,0,1);Place(left,heading);
@@ -32,7 +34,11 @@ public partial class MainWindow
         foreach(var name in new[]{"Nasi","Lauk","Sundukan","Minuman"})
         {
             var chosen=name;var tab=ActionButton(name,()=>{category=chosen;search="";RenderSelling();return Task.CompletedTask;},id:"Category-"+name);
-            tab.Tag=name;SelectTab(tab,category==name&&search.Length==0);tab.FontSize=16;tab.Padding=new Thickness(6,8,6,8);tab.Margin=new Thickness(0,0,6,0);tabs.Children.Add(tab);
+            tab.Tag=name;var selected=category==name&&search.Length==0;SelectTab(tab,selected);
+            var tabBody=new StackPanel { HorizontalAlignment=HorizontalAlignment.Center };
+            tabBody.Children.Add(Text(name,15,true,selected?"#FFFFFF":"#294B40"));
+            var count=Text($"{catalog.Count(p=>p.Category==name)} menu",10,false,selected?"#C7D7CE":"#72867B");count.HorizontalAlignment=HorizontalAlignment.Center;tabBody.Children.Add(count);
+            tab.Content=tabBody;tab.FontSize=16;tab.Padding=new Thickness(6,8,6,8);tab.Margin=new Thickness(0,0,6,0);tabs.Children.Add(tab);
         }
         Place(left,tabs,1);
         productCards=new WrapPanel();productScroll=Scroll(productCards,"MenuViewport");Place(left,productScroll,2);
@@ -79,7 +85,10 @@ public partial class MainWindow
             var plus=Text(product.Available?"+":"—",24,false,palette.Accent);plus.HorizontalAlignment=HorizontalAlignment.Center;
             Place(price,new Border { Child=plus,Width=34,Height=34,Background=Color("#DDE8E0"),CornerRadius=new CornerRadius(17) },0,1);Place(info,price,2);
             var button=ActionButton("",async()=>{await Save(OrderRules.Add(current,product));RefreshCart(product.Id);RefreshBadges();},id:"Product-"+product.Id);
-            button.Content=body;button.Width=180;button.Height=128;button.ToolTip=product.Name;button.Padding=new Thickness(0);button.Background=GlassBrush();button.Foreground=Color("#243D33");button.BorderBrush=Color(palette.Line);
+            var cardLayers=new Grid { ClipToBounds=true };
+            var motif=MenuSymbol(product.Category,"#294B40");motif.Width=64;motif.Height=64;motif.Opacity=0.055;motif.Margin=new Thickness(0,4,8,0);motif.HorizontalAlignment=HorizontalAlignment.Right;motif.VerticalAlignment=VerticalAlignment.Top;motif.IsHitTestVisible=false;
+            cardLayers.Children.Add(motif);cardLayers.Children.Add(body);
+            button.Content=cardLayers;button.Width=180;button.Height=128;button.ToolTip=product.Name;button.Padding=new Thickness(0);button.Background=GlassBrush();button.Foreground=Color("#243D33");button.BorderBrush=Color(palette.Line);
             button.HorizontalContentAlignment=HorizontalAlignment.Stretch;button.VerticalContentAlignment=VerticalAlignment.Stretch;button.Margin=new Thickness(0,0,10,10);button.IsEnabled=product.Available;button.Tag=product.Id;
             System.Windows.Automation.AutomationProperties.SetName(button,$"Tambah {product.Name}, {Money.Format(product.Price)}");productCards.Children.Add(button);
         }
@@ -184,7 +193,8 @@ public partial class MainWindow
         var viewport=Scroll(current.Lines.Length==0?Empty("Belum ada pesanan","Klik makanan atau minuman untuk menambahkannya di sini."):lines,editable?"CartViewport":"ReviewViewport");
         if(editable)cartScroll=viewport;Place(grid,viewport,1);
         var bottom=new StackPanel { Margin=new Thickness(0,8,0,0) };
-        var total=Columns(Star,Auto);total.Margin=new Thickness(0,0,0,8);Place(total,Text("Total pesanan",15,false,"#68766A"));Place(total,Identify(Text(current.TotalLabel,30,true,"#203F36"),"CartTotal"),0,1);bottom.Children.Add(total);
+        var total=Columns(Star,Auto);total.Margin=new Thickness(0,0,0,8);Place(total,Text("TOTAL BAYAR",11,true,"#68766A"));Place(total,Identify(Text(current.TotalLabel,30,true,"#203F36"),"CartTotal"),0,1);
+        bottom.Children.Add(new Border { Child=total,BorderBrush=Color("#BDD0C4"),BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(0) });
         if(editable)
         {
             var buttons=Columns(Star,new GridLength(10),new GridLength(1.2,GridUnitType.Star));
