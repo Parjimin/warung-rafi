@@ -69,7 +69,7 @@ public partial class MainWindow
     }
     private static ScrollViewer Scroll(UIElement child,string? id=null)
     {
-        var scroll=new SmoothScrollViewer { Content=child,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,PanningMode=PanningMode.VerticalOnly };
+        var scroll=new ScrollViewer { Content=child,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,PanningMode=PanningMode.VerticalOnly };
         if(id is not null)Identify(scroll,id);return scroll;
     }
     private static Border Surface(UIElement child,int padding=18)=>new()
