@@ -49,6 +49,7 @@ internal static class Program
         await Until(()=>Find<Button>("PayOrder") is not null);
         Layout();
         Check(!Get<Button>("PayOrder").IsEnabled,"Empty order cannot enter payment");Screenshot("01-empty");
+        VerifyFullMenu();
         foreach(var id in new[]{"NAS-001","NAS-002","NAS-003","NAS-004"})await Click("Product-"+id,()=>Get<ScrollViewer>("CartViewport").Content is StackPanel p&&p.Children.Count==Array.IndexOf(new[]{"NAS-001","NAS-002","NAS-003","NAS-004"},id)+1);
         foreach(var size in new[]{(1280d,720d),(1366d,768d),(1536d,864d),(1920d,1080d),(900d,620d)})
         {
@@ -203,6 +204,32 @@ internal static class Program
         Get<TextBox>("OpeningCash").Text="100000";
         await Click("ConfirmOpenCash",()=>Find<TextBox>("Tendered") is not null);
         Check((await demoStore.ActiveCashAsync())!.Expected==100000&&Get<TextBlock>("CartTotal").Text=="Rp5.000","opening cash returns to intact payment order");
+    }
+    private static void VerifyFullMenu()
+    {
+        // Exercise the actual 32-item workload without changing the test database.
+        const System.Reflection.BindingFlags flags=System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance;
+        var field=typeof(MainWindow).GetField("catalog",flags)!;
+        var category=typeof(MainWindow).GetField("category",flags)!;
+        var render=typeof(MainWindow).GetMethod("RenderSelling",flags)!;
+        var original=field.GetValue(window);var originalCategory=category.GetValue(window);
+        var names=new[]{"Bakso Balado","Ceker Bacem","Tahu Opor","Mie Goreng oseng","Oseng Mihun","Tumis Kangkung","Toge Tahu Oseng","Oseng Tempe","Trancam","Tempura Barbeque","Sosis Barbeque","Sayur Bayem","Sayur Sop","Sambel Goreng Kentang","Terong Balado","Telur Dadar","Telur balado","Pindang Balado","Rempelo Ati Ungkep","Telur Opor","Soto","Ayam Ungkep","Sayap Bacem","Paha Bacem","Ayam Opor","Tempe Mendoan","Tahu Goreng","Bakwan Goreng","Tahu Bacem","Tempe Bacem","Tahu Isi","Pisang Goreng"};
+        try
+        {
+            field.SetValue(window,names.Select((n,i)=>new Product("REVIEW-"+i,n,"Lauk",2000)).ToArray());
+            category.SetValue(window,"Lauk");render.Invoke(window,null);
+            foreach(var size in new[]{(1280d,720d),(1536d,864d)})
+            {
+                width=size.Item1;height=size.Item2;Layout();
+                var cards=Enumerable.Range(0,32).Select(i=>Get<Button>("Product-REVIEW-"+i)).ToArray();
+                var rows=cards.Select(c=>Math.Round(c.TransformToAncestor(root).Transform(new Point()).Y)).Distinct().Count();
+                Check(rows<=11,"32 menus fit in at most 11 rows at "+width);
+                if(width>=1536)Check(rows==8,"Wide layout shows 32 menus in eight rows");
+                Check(cards.All(c=>c.ActualWidth>=170&&c.ActualHeight>=100),"Full menu retains usable touch targets");
+                Screenshot("21-full-menu-"+width+"x"+height);
+            }
+        }
+        finally {field.SetValue(window,original);category.SetValue(window,originalCategory);width=1280;height=720;render.Invoke(window,null);Layout();}
     }
     private static void AttachReviewRoot()
     {

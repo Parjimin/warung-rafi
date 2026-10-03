@@ -1,22 +1,22 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <SolidColorBrush x:Key="Forest" Color="#087F70"/>
+    <SolidColorBrush x:Key="Forest" Color="#294B40"/>
     <SolidColorBrush x:Key="Ink" Color="#233E35"/>
     <SolidColorBrush x:Key="Muted" Color="#65766E"/>
     <SolidColorBrush x:Key="Line" Color="#DEE6DF"/>
-    <SolidColorBrush x:Key="Pale" Color="#E9F5F0"/>
+    <SolidColorBrush x:Key="Pale" Color="#E8EEEA"/>
     <Style TargetType="TextBlock">
       <Setter Property="FontSize" Value="18"/><Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
     <Style x:Key="FocusRing" TargetType="Control">
       <Setter Property="Template"><Setter.Value><ControlTemplate>
-        <Border Margin="-3" BorderThickness="2" BorderBrush="#E66B23" CornerRadius="12"/>
+        <Border Margin="-3" BorderThickness="2" BorderBrush="#426C58" CornerRadius="12"/>
       </ControlTemplate></Setter.Value></Setter>
     </Style>
     <Style TargetType="Button">
       <Setter Property="FontSize" Value="18"/><Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="MinHeight" Value="48"/><Setter Property="Padding" Value="16,10"/>
-      <Setter Property="Background" Value="#E9F5F0"/><Setter Property="Foreground" Value="#087F70"/>
-      <Setter Property="BorderBrush" Value="Transparent"/><Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Background" Value="#E8EEEA"/><Setter Property="Foreground" Value="#294B40"/>
+      <Setter Property="BorderBrush" Value="#90FFFFFF"/><Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Cursor" Value="Hand"/><Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
@@ -24,14 +24,15 @@
                 CornerRadius="12" RenderTransformOrigin="0.5,0.5">
           <Border.RenderTransform><ScaleTransform/></Border.RenderTransform>
           <Grid>
-            <Border x:Name="Hover" Background="#18205C49" CornerRadius="11" Opacity="0"/>
+            <Border BorderBrush="#35FFFFFF" BorderThickness="0,1,0,0" CornerRadius="11" IsHitTestVisible="False"/>
+            <Border x:Name="Hover" Background="#0C294B40" CornerRadius="11" Opacity="0"/>
             <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                               TextElement.Foreground="{TemplateBinding Foreground}" RecognizesAccessKey="False"/>
           </Grid>
         </Border>
         <ControlTemplate.Triggers>
-          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Hover" Property="Opacity" Value="1"/><Setter TargetName="Surface" Property="BorderBrush" Value="#087F70"/></Trigger>
-          <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="#E66B23"/></Trigger>
+          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Hover" Property="Opacity" Value="1"/><Setter TargetName="Surface" Property="BorderBrush" Value="#294B40"/></Trigger>
+          <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="#426C58"/></Trigger>
           <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Opacity" Value="0.8"/></Trigger>
           <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Surface" Property="Opacity" Value="0.45"/><Setter Property="Cursor" Value="Arrow"/></Trigger>
           <MultiDataTrigger>
@@ -53,7 +54,7 @@
     </Style>
     <Style TargetType="TextBox">
       <Setter Property="FontSize" Value="18"/><Setter Property="Padding" Value="12,8"/><Setter Property="MinHeight" Value="44"/>
-      <Setter Property="Background" Value="#FFFCF5"/><Setter Property="Foreground" Value="#233E35"/>
+      <Setter Property="Background" Value="#CFFFFFFF"/><Setter Property="Foreground" Value="#233E35"/>
       <Setter Property="BorderBrush" Value="#DEE6DF"/><Setter Property="BorderThickness" Value="1"/>
       <Setter Property="VerticalContentAlignment" Value="Center"/>
       <Setter Property="SelectionBrush" Value="#B3D4BB"/>
@@ -61,12 +62,12 @@
         <Border x:Name="Box" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10">
           <ScrollViewer x:Name="PART_ContentHost" Margin="0"/>
         </Border>
-        <ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="#087F70"/></Trigger></ControlTemplate.Triggers>
+        <ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="#294B40"/></Trigger></ControlTemplate.Triggers>
       </ControlTemplate></Setter.Value></Setter>
     </Style>
     <Style TargetType="PasswordBox">
       <Setter Property="FontSize" Value="18"/><Setter Property="Padding" Value="12,8"/><Setter Property="MinHeight" Value="48"/>
-      <Setter Property="Background" Value="#FFFCF5"/><Setter Property="Foreground" Value="#233E35"/>
+      <Setter Property="Background" Value="#CFFFFFFF"/><Setter Property="Foreground" Value="#233E35"/>
       <Setter Property="BorderBrush" Value="#DEE6DF"/><Setter Property="BorderThickness" Value="1"/>
       <Setter Property="VerticalContentAlignment" Value="Center"/>
       <Setter Property="SelectionBrush" Value="#B3D4BB"/>
@@ -74,7 +75,7 @@
         <Border x:Name="Box" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10">
           <ScrollViewer x:Name="PART_ContentHost" Margin="0"/>
         </Border>
-        <ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="#087F70"/></Trigger></ControlTemplate.Triggers>
+        <ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Box" Property="BorderBrush" Value="#294B40"/></Trigger></ControlTemplate.Triggers>
       </ControlTemplate></Setter.Value></Setter>
     </Style>
     <Style TargetType="ScrollViewer"><Setter Property="PanningMode" Value="VerticalOnly"/><Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/></Style>

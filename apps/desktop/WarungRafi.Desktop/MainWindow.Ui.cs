@@ -13,7 +13,7 @@ public partial class MainWindow
     private static Brush Color(string value)=>new SolidColorBrush((System.Windows.Media.Color)ColorConverter.ConvertFromString(value));
     private static TextBlock Text(string value,double size=18,bool bold=false,string? color=null)
     {
-        var text=new TextBlock { Text=value,FontSize=size,FontWeight=bold?FontWeights.Bold:FontWeights.Normal,TextWrapping=TextWrapping.Wrap,VerticalAlignment=VerticalAlignment.Center };
+        var text=new TextBlock { Text=value,FontSize=size,FontWeight=bold?FontWeights.SemiBold:FontWeights.Normal,TextWrapping=TextWrapping.Wrap,VerticalAlignment=VerticalAlignment.Center };
         if(color is not null)text.Foreground=Color(color);return text;
     }
     private static T Identify<T>(T element,string id,string? name=null) where T:DependencyObject
@@ -26,13 +26,13 @@ public partial class MainWindow
     }
     private static void Select(Button button,bool active)
     {
-        button.Background=Color(active?"#087F70":"#E9F5F0");button.Foreground=Color(active?"#FFFFFF":"#234F3F");
+        button.Background=Color(active?"#203F36":"#EAF0EC");button.Foreground=Color(active?"#FFFFFF":"#234F3F");
     }
     private static void SelectNavigation(Button button,bool active)
     {
-        button.Background=active?Color("#087F70"):Brushes.Transparent;
-        button.Foreground=Color(active?"#FFFFFF":"#54665E");
-        button.BorderBrush=active?Color("#087F70"):Brushes.Transparent;
+        button.Background=active?GlassBrush():Brushes.Transparent;
+        button.Foreground=Color(active?"#203F36":"#D0DED8");
+        button.BorderBrush=active?Color("#DFFFFFFF"):Brushes.Transparent;
     }
     private static void SelectTab(Button button,bool active)
     {
@@ -40,16 +40,24 @@ public partial class MainWindow
         button.Background=Color(active?palette.Accent:palette.Tint);
         button.Foreground=Color(active?"#FFFFFF":palette.Accent);
         button.BorderBrush=Color(active?palette.Accent:palette.Line);
-        button.FontWeight=FontWeights.Bold;
+        button.FontWeight=FontWeights.SemiBold;
     }
-    private static (string Accent,string Tint,string Line) MenuPalette(string category)=>category switch
+    private static (string Accent,string Tint,string Line) MenuPalette(string category)
+        => ("#294B40","#D9FFFFFF","#AFFFFFFF");
+    private static Brush GlassBrush(bool selected=false)=>new LinearGradientBrush(
+        (System.Windows.Media.Color)ColorConverter.ConvertFromString(selected?"#F5FFFFFF":"#EFFFFFFF"),
+        (System.Windows.Media.Color)ColorConverter.ConvertFromString(selected?"#E3E7F0E9":"#BFEFF4F1"),
+        new Point(0,0),new Point(1,1));
+    private static FrameworkElement MenuSymbol(string category,string stroke)
     {
-        "Nasi" => ("#A44C0B","#FFF3DC","#EBCFA3"),
-        "Lauk" => ("#087F70","#E8F7F1","#B5DED1"),
-        "Sundukan" => ("#B33D50","#FFF0F1","#F0C3CB"),
-        "Minuman" => ("#2365B0","#EBF4FF","#BED7F2"),
-        _ => ("#087F70","#E8F7F1","#B5DED1")
-    };
+        var geometry=category switch
+        {
+            "Minuman" => "M5,4 L19,4 L17,20 L7,20 Z M14,4 L16,0 M19,7 C26,7 24,14 18,14",
+            "Sundukan" => "M5,1 L5,23 M12,1 L12,23 M19,1 L19,23 M2,5 L8,5 M2,10 L8,10 M2,15 L8,15 M9,5 L15,5 M9,10 L15,10 M9,15 L15,15 M16,5 L22,5 M16,10 L22,10 M16,15 L22,15",
+            _ => "M2,11 L22,11 C21,23 3,23 2,11 Z M7,23 L17,23 M7,7 C4,4 10,3 7,0 M14,7 C11,4 17,3 14,0"
+        };
+        return new System.Windows.Shapes.Path { Data=Geometry.Parse(geometry),Stroke=Color(stroke),StrokeThickness=1.5,StrokeStartLineCap=PenLineCap.Round,StrokeEndLineCap=PenLineCap.Round,Stretch=Stretch.Uniform,Width=18,Height=18,Margin=new Thickness(0,0,7,0) };
+    }
     private static Grid InputWithHint(TextBox input,string hint)
     {
         var grid=new Grid();grid.Children.Add(input);
@@ -65,7 +73,8 @@ public partial class MainWindow
         if(id is not null)Identify(scroll,id);return scroll;
     }
     private static Border Surface(UIElement child,int padding=18)=>new()
-    { Child=child,Background=Brushes.White,BorderBrush=Color("#DFE5DC"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(18),Padding=new Thickness(padding) };
+    { Child=child,Background=GlassBrush(),BorderBrush=Color("#EFFFFFFF"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(22),Padding=new Thickness(padding),
+      Effect=new System.Windows.Media.Effects.DropShadowEffect { Color=System.Windows.Media.Color.FromRgb(37,62,51),BlurRadius=18,ShadowDepth=4,Opacity=0.09 } };
     private static Grid Rows(params GridLength[] heights)
     {
         var grid=new Grid();foreach(var height in heights)grid.RowDefinitions.Add(new RowDefinition{Height=height});return grid;

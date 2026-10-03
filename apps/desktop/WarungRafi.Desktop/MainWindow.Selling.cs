@@ -23,7 +23,7 @@ public partial class MainWindow
         grid.SizeChanged+=(_,_)=>grid.ColumnDefinitions[2].Width=cartExpanded?Star:new GridLength(Math.Clamp(grid.ActualWidth*0.35,380,440));
         var left=Rows(Auto,Auto,Star);
         var heading=Columns(Star,new GridLength(200));heading.Margin=new Thickness(0,0,0,18);
-        var title=new StackPanel();title.Children.Add(Text("Mau pesan apa?",27,true,"#153F38"));
+        var title=new StackPanel();title.Children.Add(Text("Menu hari ini",28,true,"#1F342D"));
         productCount=Text("",13,false,"#68766A");productCount.Margin=new Thickness(0,4,0,0);title.Children.Add(productCount);Place(heading,title);
         var find=Identify(new TextBox { Text=search,ToolTip="Cari nama menu di semua kategori",MaxLength=60,VerticalAlignment=VerticalAlignment.Center,FontSize=16,MinHeight=44 },"MenuSearch","Cari menu");
         var searchBox=InputWithHint(find,"Cari menu…");searchBox.VerticalAlignment=VerticalAlignment.Center;Place(heading,searchBox,0,1);Place(left,heading);
@@ -67,19 +67,19 @@ public partial class MainWindow
             var info=body;
             var top=Columns(Star,Auto);
             var categoryLabel=new StackPanel { Orientation=Orientation.Horizontal };
-            categoryLabel.Children.Add(new Border { Width=6,Height=6,CornerRadius=new CornerRadius(3),Background=Color(palette.Accent),Margin=new Thickness(0,0,5,0),VerticalAlignment=VerticalAlignment.Center });
-            categoryLabel.Children.Add(Text(product.Category.ToUpperInvariant(),10,true,palette.Accent));
+            categoryLabel.Children.Add(MenuSymbol(product.Category,"#74877D"));
+            categoryLabel.Children.Add(Text(product.Category.ToUpperInvariant(),9,true,"#74877D"));
             Place(top,categoryLabel);
             var badge=Text("",11,true,"#FFFFFF");
             var badgeBox=new Border { Child=badge,Background=Color(palette.Accent),CornerRadius=new CornerRadius(6),Padding=new Thickness(6,3,6,3),Visibility=Visibility.Collapsed };
             Place(top,badgeBox,0,1);productBadges[product.Id]=badge;Place(info,top);
-            var name=Text(product.Name,17,true,"#183D36");name.Margin=new Thickness(0,4,0,4);name.MaxHeight=46;name.TextTrimming=TextTrimming.CharacterEllipsis;Place(info,name,1);
+            var name=Text(product.Name,17,true,"#21362E");name.Margin=new Thickness(0,4,0,4);name.MaxHeight=46;name.TextTrimming=TextTrimming.CharacterEllipsis;Place(info,name,1);
             var price=Columns(Star,Auto);
             Place(price,Text(product.Available?Money.Format(product.Price):"Habis",19,true,product.Available?palette.Accent:"#857467"));
-            var plus=Text(product.Available?"+":"—",24,true,"#FFFFFF");plus.HorizontalAlignment=HorizontalAlignment.Center;
-            Place(price,new Border { Child=plus,Width=34,Height=34,Background=Color(palette.Accent),CornerRadius=new CornerRadius(10) },0,1);Place(info,price,2);
+            var plus=Text(product.Available?"+":"—",24,false,palette.Accent);plus.HorizontalAlignment=HorizontalAlignment.Center;
+            Place(price,new Border { Child=plus,Width=34,Height=34,Background=Color("#DDE8E0"),CornerRadius=new CornerRadius(17) },0,1);Place(info,price,2);
             var button=ActionButton("",async()=>{await Save(OrderRules.Add(current,product));RefreshCart(product.Id);RefreshBadges();},id:"Product-"+product.Id);
-            button.Content=body;button.Width=180;button.Height=128;button.ToolTip=product.Name;button.Padding=new Thickness(0);button.Background=Color(palette.Tint);button.Foreground=Color("#243D33");button.BorderBrush=Color(palette.Line);
+            button.Content=body;button.Width=180;button.Height=128;button.ToolTip=product.Name;button.Padding=new Thickness(0);button.Background=GlassBrush();button.Foreground=Color("#243D33");button.BorderBrush=Color(palette.Line);
             button.HorizontalContentAlignment=HorizontalAlignment.Stretch;button.VerticalContentAlignment=VerticalAlignment.Stretch;button.Margin=new Thickness(0,0,10,10);button.IsEnabled=product.Available;button.Tag=product.Id;
             System.Windows.Automation.AutomationProperties.SetName(button,$"Tambah {product.Name}, {Money.Format(product.Price)}");productCards.Children.Add(button);
         }
@@ -97,7 +97,7 @@ public partial class MainWindow
                 var palette=MenuPalette(catalog.FirstOrDefault(p=>p.Id==id)?.Category??"");
                 card.BorderBrush=Color(quantity>0?palette.Accent:palette.Line);
                 card.BorderThickness=new Thickness(quantity>0?2:1);
-                card.Background=Color(quantity>0?"#FFFFFF":palette.Tint);
+                card.Background=GlassBrush(quantity>0);
             }
         }
     }
@@ -137,7 +137,7 @@ public partial class MainWindow
     {
         var grid=Rows(Auto,Star,Auto);
         var header=new StackPanel { Margin=new Thickness(0,0,0,10) };
-        var heading=Columns(Star,Auto);var title=new StackPanel();title.Children.Add(Text(editable?"Pesanan kamu":"Rincian pesanan",24,true,"#153F38"));
+        var heading=Columns(Star,Auto);var title=new StackPanel();title.Children.Add(Text(editable?"Pesanan":"Rincian pesanan",24,true,"#1F342D"));
         title.Children.Add(Text($"{current.Lines.Sum(x=>x.Quantity)} item · #{current.Number[^8..]}",12,false,"#68766A"));Place(heading,title);
         if(editable)
         {
@@ -184,7 +184,7 @@ public partial class MainWindow
         var viewport=Scroll(current.Lines.Length==0?Empty("Belum ada pesanan","Klik makanan atau minuman untuk menambahkannya di sini."):lines,editable?"CartViewport":"ReviewViewport");
         if(editable)cartScroll=viewport;Place(grid,viewport,1);
         var bottom=new StackPanel { Margin=new Thickness(0,8,0,0) };
-        var total=Columns(Star,Auto);total.Margin=new Thickness(0,0,0,8);Place(total,Text("Total pesanan",15,false,"#68766A"));Place(total,Identify(Text(current.TotalLabel,30,true,"#087F70"),"CartTotal"),0,1);bottom.Children.Add(total);
+        var total=Columns(Star,Auto);total.Margin=new Thickness(0,0,0,8);Place(total,Text("Total pesanan",15,false,"#68766A"));Place(total,Identify(Text(current.TotalLabel,30,true,"#203F36"),"CartTotal"),0,1);bottom.Children.Add(total);
         if(editable)
         {
             var buttons=Columns(Star,new GridLength(10),new GridLength(1.2,GridUnitType.Star));
