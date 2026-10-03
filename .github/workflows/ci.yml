@@ -168,3 +168,19 @@ jobs:
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/finance.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/reconciliation.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/reports.sql
+  design-prototype:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+        working-directory: apps/admin
+      - run: node design-prototype/verify.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: WarungRafi-design-review
+          path: artifacts/design-review
+          retention-days: 14
