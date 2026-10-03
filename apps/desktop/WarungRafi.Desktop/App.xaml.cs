@@ -15,10 +15,13 @@ public partial class App : Application
             lease=DatabaseLease.Acquire(path);var file=new SettingsFile(Path.Combine(Path.GetDirectoryName(path)!,"settings.protected"));
             var settings=demo?new DesktopSettings():file.ImportEnvironment();
             var storage=new LocalStore(path,settings.ManagerPinHash);
-            await storage.InitializeAsync();
-            if(await storage.SettingAsync("recovery_required")=="1"||await storage.SettingAsync("sync_recheck")=="1")
-                throw new InvalidDataException("Database ini masih menunggu pemeriksaan hasil pemulihan versi lama. Selesaikan pemeriksaan melalui versi sebelumnya sebelum memakai aplikasi ini; data tidak diubah.");
             var maintenance=!demo&&e.Args.Contains("--maintenance",StringComparer.OrdinalIgnoreCase);
+            if(!maintenance)
+            {
+                await storage.InitializeAsync();
+                if(await storage.SettingAsync("recovery_required")=="1"||await storage.SettingAsync("sync_recheck")=="1")
+                    throw new InvalidDataException("Database ini masih menunggu pemeriksaan hasil pemulihan versi lama. Selesaikan pemeriksaan melalui versi sebelumnya sebelum memakai aplikasi ini; data tidak diubah.");
+            }
             if(!demo&&!maintenance&&settings.ApiOrigin.Length==0)
             {
                 var activation=new ActivationWindow(file,true);

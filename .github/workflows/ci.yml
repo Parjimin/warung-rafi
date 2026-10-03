@@ -65,11 +65,10 @@ jobs:
       - name: Include manager setup and finance guide
         run: |
           Copy-Item scripts/Set-ManagerPin.ps1 artifacts/Windows-preview/
-          Copy-Item docs/M5-CASH-REFUNDS.md artifacts/Windows-preview/
       - name: Build verified per-user installation package
         shell: powershell
         run: ./scripts/Build-WindowsPackage.ps1 -Release $env:GITHUB_SHA
-      - name: Launch installed cashier and recovery with bundled runtime
+      - name: Launch installed cashier and settings with bundled runtime
         shell: powershell
         timeout-minutes: 2
         run: ./scripts/Test-InstalledPackage.ps1
