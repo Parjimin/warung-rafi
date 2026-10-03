@@ -47,13 +47,12 @@ public partial class MainWindow
     private void SizeCards()
     {
         if(productCards is null||productScroll is null)return;
-        var available=Math.Max(240,productScroll.ViewportWidth>0?productScroll.ViewportWidth:productScroll.ActualWidth-18);
-        var columns=Math.Clamp((int)(available/300),1,4);
-        var count=productCards.Children.Count;
-        // Four menu choices form a balanced 2x2 grid instead of a stranded 3+1 row.
-        if(count>columns&&count%columns==1&&columns>2)columns--;
-        var width=Math.Floor(available/columns)-12;
-        foreach(FrameworkElement card in productCards.Children)card.Width=Math.Max(228,width);
+        // Compact touch targets: 3 columns at 570px, 4 at 760px.
+        var available=Math.Max(1,productScroll.ViewportWidth>0?productScroll.ViewportWidth:productScroll.ActualWidth-18);
+        var columns=Math.Clamp((int)(available/190),1,4);
+        productCards.Width=available;
+        var width=Math.Max(1,Math.Floor(available/columns)-10);
+        foreach(FrameworkElement card in productCards.Children)card.Width=width;
     }
     private void RefreshProducts()
     {
@@ -63,29 +62,20 @@ public partial class MainWindow
         if(productCount is not null)productCount.Text=string.IsNullOrWhiteSpace(search)?$"{category} · {products.Length} menu":$"{products.Length} menu ditemukan";
         foreach(var product in products)
         {
-            var body=Columns(new GridLength(112),Star);body.Margin=new Thickness(12);
-            var art=new Grid { ClipToBounds=true };
-            var drawing=Illustration(product.Category,product.Id);drawing.Height=92;art.Children.Add(drawing);
-            var artwork=new Border { Child=art,CornerRadius=new CornerRadius(12),Background=Color(product.Category=="Minuman"?"#E5EDE5":"#EEECE0"),Margin=new Thickness(0,0,14,0) };
-            if(product.ImageUrl is not null)
-            {
-                var photo=new Image { Stretch=Stretch.UniformToFill,Visibility=Visibility.Hidden };
-                art.Children.Add(photo);_=LoadPhoto(photo,product.ImageUrl);
-            }
-            Place(body,artwork);
-            var info=Rows(Auto,Star,Auto);info.Margin=new Thickness(0,3,2,3);
+            var body=Rows(Auto,Star,Auto);body.Margin=new Thickness(12,8,12,8);
+            var info=body;
             var top=Columns(Star,Auto);Place(top,Text(product.Category.ToUpperInvariant(),10,true,"#748170"));
             var badge=Text("",11,true,"#FFFFFF");
             var badgeBox=new Border { Child=badge,Background=Color("#234F3F"),CornerRadius=new CornerRadius(6),Padding=new Thickness(6,3,6,3),Visibility=Visibility.Collapsed };
             Place(top,badgeBox,0,1);productBadges[product.Id]=badge;Place(info,top);
-            var name=Text(product.Name,20,true);name.Margin=new Thickness(0,8,0,10);Place(info,name,1);
+            var name=Text(product.Name,16,true);name.Margin=new Thickness(0,4,0,4);name.MaxHeight=46;name.TextTrimming=TextTrimming.CharacterEllipsis;Place(info,name,1);
             var price=Columns(Star,Auto);
-            Place(price,Text(product.Available?Money.Format(product.Price):"Habis",20,true,product.Available?"#234F3F":"#857467"));
+            Place(price,Text(product.Available?Money.Format(product.Price):"Habis",18,true,product.Available?"#234F3F":"#857467"));
             var plus=Text(product.Available?"+":"—",24,false,"#234F3F");plus.HorizontalAlignment=HorizontalAlignment.Center;
-            Place(price,new Border { Child=plus,Width=34,Height=34,Background=Color("#E8EFE5"),CornerRadius=new CornerRadius(10) },0,1);Place(info,price,2);Place(body,info,0,1);
+            Place(price,new Border { Child=plus,Width=34,Height=34,Background=Color("#E8EFE5"),CornerRadius=new CornerRadius(10) },0,1);Place(info,price,2);
             var button=ActionButton("",async()=>{await Save(OrderRules.Add(current,product));RefreshCart(product.Id);RefreshBadges();},id:"Product-"+product.Id);
-            button.Content=body;button.Width=342;button.Height=172;button.Padding=new Thickness(0);button.Background=Color("#FAFBF8");button.Foreground=Color("#243D33");button.BorderBrush=Color("#E1E7DC");
-            button.HorizontalContentAlignment=HorizontalAlignment.Stretch;button.VerticalContentAlignment=VerticalAlignment.Stretch;button.Margin=new Thickness(0,0,12,12);button.IsEnabled=product.Available;button.Tag=product.Id;
+            button.Content=body;button.Width=180;button.Height=128;button.ToolTip=product.Name;button.Padding=new Thickness(0);button.Background=Color("#FAFBF8");button.Foreground=Color("#243D33");button.BorderBrush=Color("#E1E7DC");
+            button.HorizontalContentAlignment=HorizontalAlignment.Stretch;button.VerticalContentAlignment=VerticalAlignment.Stretch;button.Margin=new Thickness(0,0,10,10);button.IsEnabled=product.Available;button.Tag=product.Id;
             System.Windows.Automation.AutomationProperties.SetName(button,$"Tambah {product.Name}, {Money.Format(product.Price)}");productCards.Children.Add(button);
         }
         if(products.Length==0)productCards.Children.Add(Empty("Menu belum ditemukan","Coba nama lain atau kosongkan pencarian."));
