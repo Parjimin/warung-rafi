@@ -13,7 +13,7 @@ public partial class MainWindow
     private static Brush Color(string value)=>new SolidColorBrush((System.Windows.Media.Color)ColorConverter.ConvertFromString(value));
     private static TextBlock Text(string value,double size=18,bool bold=false,string? color=null)
     {
-        var text=new TextBlock { Text=value,FontSize=size,FontWeight=bold?FontWeights.SemiBold:FontWeights.Normal,TextWrapping=TextWrapping.Wrap,VerticalAlignment=VerticalAlignment.Center };
+        var text=new TextBlock { Text=value,FontSize=size,FontWeight=bold?FontWeights.Bold:FontWeights.Normal,TextWrapping=TextWrapping.Wrap,VerticalAlignment=VerticalAlignment.Center };
         if(color is not null)text.Foreground=Color(color);return text;
     }
     private static T Identify<T>(T element,string id,string? name=null) where T:DependencyObject
@@ -26,20 +26,30 @@ public partial class MainWindow
     }
     private static void Select(Button button,bool active)
     {
-        button.Background=Color(active?"#234F3F":"#F0F3EC");button.Foreground=Color(active?"#FFFFFF":"#234F3F");
+        button.Background=Color(active?"#087F70":"#E9F5F0");button.Foreground=Color(active?"#FFFFFF":"#234F3F");
     }
     private static void SelectNavigation(Button button,bool active)
     {
-        button.Background=active?Brushes.White:Brushes.Transparent;
-        button.Foreground=Color(active?"#234F3F":"#627066");
-        button.BorderBrush=active?Color("#DBE3D8"):Brushes.Transparent;
+        button.Background=active?Color("#087F70"):Brushes.Transparent;
+        button.Foreground=Color(active?"#FFFFFF":"#54665E");
+        button.BorderBrush=active?Color("#087F70"):Brushes.Transparent;
     }
     private static void SelectTab(Button button,bool active)
     {
-        button.Background=Color(active?"#E7EFE7":"#FAFBF8");
-        button.Foreground=Color(active?"#234F3F":"#627066");
-        button.BorderBrush=Color(active?"#AFC5B1":"#E2E7DF");
+        var palette=MenuPalette(button.Tag as string ?? "Nasi");
+        button.Background=Color(active?palette.Accent:palette.Tint);
+        button.Foreground=Color(active?"#FFFFFF":palette.Accent);
+        button.BorderBrush=Color(active?palette.Accent:palette.Line);
+        button.FontWeight=FontWeights.Bold;
     }
+    private static (string Accent,string Tint,string Line) MenuPalette(string category)=>category switch
+    {
+        "Nasi" => ("#A44C0B","#FFF3DC","#EBCFA3"),
+        "Lauk" => ("#087F70","#E8F7F1","#B5DED1"),
+        "Sundukan" => ("#B33D50","#FFF0F1","#F0C3CB"),
+        "Minuman" => ("#2365B0","#EBF4FF","#BED7F2"),
+        _ => ("#087F70","#E8F7F1","#B5DED1")
+    };
     private static Grid InputWithHint(TextBox input,string hint)
     {
         var grid=new Grid();grid.Children.Add(input);
