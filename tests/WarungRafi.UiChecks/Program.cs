@@ -40,6 +40,25 @@ internal static class Program
         };
         return app.Run();
     }
+    private static void VerifyReceiptDesign()
+    {
+        var now=new DateTimeOffset(2026,10,3,15,46,0,TimeSpan.Zero);
+        var order=Order.New("12345678abcdef",now) with { Status=OrderStatus.Completed,Lines=[
+            new("rice","Nasi Putih","Nasi",3000,2),new("chicken","Ayam Ungkep","Lauk",7000,2),new("tea","Teh","Minuman",3000,2)] };
+        var sale=new CompletedSale(order,new Payment(order.Id,PaymentMethod.Cash,26000,30000,4000,now));
+        const double mm=96d/25.4;
+        var doc=ReceiptPrinter.CreateDocument(sale,true,58*mm,1000,ReceiptPrinter.SafePadding(58*mm,1000,0,0,58*mm,1000));
+        var content=new System.Windows.Documents.TextRange(doc.ContentStart,doc.ContentEnd).Text;
+        foreach(var expected in new[]{"WEDANGAN","MURAH","SALINAN","Rp26.000","Rp4.000","+62 851-5650-4119","@muh_rafi875"})
+            Check(content.Contains(expected),"Designed receipt retains "+expected);
+        var paginator=((System.Windows.Documents.IDocumentPaginatorSource)doc).DocumentPaginator;
+        paginator.ComputePageCount();Check(paginator.PageCount==1,"Three-item receipt fits one thermal page");
+        var page=paginator.GetPage(0);
+        var bitmap=new RenderTargetBitmap((int)Math.Ceiling(58*mm*2),2000,192,192,PixelFormats.Pbgra32);
+        bitmap.Render(page.Visual);
+        var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var output=File.Create(Path.Combine(artifacts,"22-receipt-design.png"));encoder.Save(output);
+    }
     private static void VerifyReceiptMargins()
     {
         const double mm=96d/25.4;
@@ -59,6 +78,7 @@ internal static class Program
     {
         VerifyReceiptMargins();
         Directory.CreateDirectory(artifacts);
+        VerifyReceiptDesign();
         var store=new LocalStore(Path.Combine(directory,"test.db"),ManagerPin.Hash("728491"));await store.InitializeAsync();await store.OpenCashAsync(Guid.NewGuid().ToString("N"),0);
         window=new MainWindow(store,true) { Width=1320,Height=850,ShowInTaskbar=false };
         window.Show();AttachReviewRoot();
