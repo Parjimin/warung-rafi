@@ -67,7 +67,8 @@ internal static class Program
         var first=Get<Button>("Product-NAS-001").TransformToAncestor(root).Transform(new Point());
         var second=Get<Button>("Product-NAS-002").TransformToAncestor(root).Transform(new Point());
         var third=Get<Button>("Product-NAS-003").TransformToAncestor(root).Transform(new Point());
-        Check(Math.Abs(first.Y-second.Y)<1&&third.Y>first.Y,"Four-menu category forms balanced two by two layout");
+        Check(Math.Abs(first.Y-second.Y)<1&&Math.Abs(first.Y-third.Y)<1&&third.X>second.X,"Menu grid fits at least three columns at 1280x720");
+        Check(Get<Button>("Product-NAS-001").ActualWidth>=170&&Get<Button>("Product-NAS-001").ActualHeight>=100,"Compact menu cards retain large touch targets");
         Check(Get<ScrollViewer>("MenuViewport").ScrollableHeight<1,"Four menu cards fit the catalog at 1280x720");
         var name=Get<TextBox>("CustomerName");name.Text="Bu Rini";
         // Clicking while a name edit is pending must save the label before replacing the cart.
