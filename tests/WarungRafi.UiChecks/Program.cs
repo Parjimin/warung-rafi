@@ -40,8 +40,24 @@ internal static class Program
         };
         return app.Run();
     }
+    private static void VerifyReceiptMargins()
+    {
+        const double mm=96d/25.4;
+        foreach(var area in new[]{(0d,58d),(5d,48d),(7d,44d)})
+        {
+            var margin=ReceiptPrinter.SafePadding(58*mm,1000,area.Item1*mm,0,area.Item2*mm,1000);
+            Check(margin.Left>=5*mm&&margin.Left>=area.Item1*mm+mm,"Receipt starts beyond left hardware margin");
+            Check(58*mm-margin.Right<=(area.Item1+area.Item2)*mm-mm+0.001,"Receipt ends before right hardware margin");
+            Check(58*mm-margin.Left-margin.Right<=48*mm+0.001,"58 mm receipt uses at most 48 mm of text");
+        }
+        var rejected=false;
+        try { ReceiptPrinter.SafePadding(58*mm,1000,0,0,15*mm,1000); }
+        catch(InvalidOperationException) { rejected=true; }
+        Check(rejected,"Unusable printer media rejected instead of clipping the sale");
+    }
     private static async Task Verify()
     {
+        VerifyReceiptMargins();
         Directory.CreateDirectory(artifacts);
         var store=new LocalStore(Path.Combine(directory,"test.db"),ManagerPin.Hash("728491"));await store.InitializeAsync();await store.OpenCashAsync(Guid.NewGuid().ToString("N"),0);
         window=new MainWindow(store,true) { Width=1320,Height=850,ShowInTaskbar=false };
