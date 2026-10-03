@@ -29,7 +29,7 @@ function Open-Installed([string]$mode){
   do {$script:owned.Refresh();if($script:owned.MainWindowTitle -like '*Kasir'){break};Start-Sleep -Milliseconds 100}while([DateTime]::UtcNow -lt $deadline)
   if($script:owned.MainWindowTitle -notlike '*Kasir'){throw 'Skipping activation did not open the cashier.'}
  }
- if($mode -eq 'maintenance' -and $script:owned.MainWindowTitle -notlike '*Pengaturan*'){throw 'Recovery shortcut did not open maintenance.'}
+ if($mode -eq 'maintenance' -and $script:owned.MainWindowTitle -notlike '*Pengaturan*'){throw 'Settings shortcut did not open maintenance.'}
  $null=$script:owned.Handle
  $closeDeadline=[DateTime]::UtcNow.AddSeconds(10)
  do {$script:owned.Refresh();$null=$script:owned.CloseMainWindow();if($script:owned.WaitForExit(100)){break}}while([DateTime]::UtcNow -lt $closeDeadline)
@@ -39,7 +39,7 @@ function Open-Installed([string]$mode){
 }
 try {
  & (Join-Path $PackagePath 'Install-WarungRafi.ps1') -PackagePath $PackagePath -InstallRoot $root
- foreach($name in @('Warung Rafi.lnk','Pemulihan Warung Rafi.lnk')){if(!(Test-Path (Join-Path ([Environment]::GetFolderPath('Programs')) ('Warung Rafi\'+$name)))){throw 'Start menu shortcut missing.'}}
+ foreach($name in @('Warung Rafi.lnk','Pengaturan Warung Rafi.lnk')){if(!(Test-Path (Join-Path ([Environment]::GetFolderPath('Programs')) ('Warung Rafi\'+$name)))){throw 'Start menu shortcut missing.'}}
  Open-Installed 'cashier'
  if(!(Test-Path -LiteralPath $data)){throw 'Installed cashier did not initialize its database.'}
  $before=(Get-FileHash -LiteralPath $data -Algorithm SHA256).Hash

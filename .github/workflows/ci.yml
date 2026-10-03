@@ -25,8 +25,6 @@ jobs:
         run: dotnet run --project tests/WarungRafi.PaymentChecks -c Release
       - name: Verify cash sessions, refunds and immutable finance journal
         run: dotnet run --project tests/WarungRafi.FinanceChecks -c Release
-      - name: Verify encrypted backup and guarded restore
-        run: dotnet run --project tests/WarungRafi.BackupChecks -c Release
       - name: Build Windows touchscreen application
         run: dotnet build apps/desktop/WarungRafi.Desktop -c Release
       - name: Verify sync transport and offline photo cache

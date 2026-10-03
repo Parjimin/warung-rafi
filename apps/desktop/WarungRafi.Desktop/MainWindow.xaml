@@ -24,7 +24,6 @@
             <Button x:Name="SellNav" Content="Jualan" Click="ShowSelling" FontSize="16" MinHeight="44" Padding="16,8" Margin="0,0,4,0"/>
             <Button x:Name="HeldNav" Content="Ditunda" Click="ShowHeld" FontSize="16" MinHeight="44" Padding="16,8" Margin="0,0,4,0"/>
             <Button x:Name="HistoryNav" Content="Riwayat" Click="ShowHistory" FontSize="16" MinHeight="44" Padding="16,8" Margin="0,0,4,0"/>
-            <Button x:Name="CashNav" Content="Kas hari ini" Click="ShowCash" FontSize="16" MinHeight="44" Padding="16,8"/>
           </StackPanel>
         </Border>
         <StackPanel x:Name="HeaderDate" Grid.Column="2" VerticalAlignment="Center" Margin="18,0,0,0">

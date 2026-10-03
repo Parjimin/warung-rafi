@@ -80,19 +80,21 @@ try
         return Task.FromResult(JsonContentResponse(new { payments=new[]{proof} }));
     };
     Check((await sync.FetchPaymentsAsync(default)).Length==0,"replayed HTTP response creates no second alert");
-    var cashSession=await store.OpenCashAsync(Guid.NewGuid().ToString("N"),50000);
+    var saleOrder=await store.SaveAsync(OrderRules.Add(Order.New(),new Product("sync-sale","Nasi","Nasi",50000)));
+    await store.CompleteAsync(saleOrder.Id,saleOrder.Version,PaymentMethod.Cash,50000);
     handler.Reply=_=>Task.FromResult(new HttpResponseMessage(HttpStatusCode.Conflict));
-    await Fails(()=>sync.SendFinanceAsync(default));Check(await store.PendingFinanceCountAsync()==1,"finance conflict keeps local event queued");
+    await Fails(()=>sync.SendFinanceAsync(default));Check(await store.PendingFinanceCountAsync()==2,"finance conflict keeps local event queued");
     handler.Reply=_=>Task.FromResult(JsonContentResponse(new { accepted=new[]{"unknown-finance"} }));
-    await Fails(()=>sync.SendFinanceAsync(default));Check(await store.PendingFinanceCountAsync()==1,"unknown finance acknowledgement cannot discard queued entry");
+    await Fails(()=>sync.SendFinanceAsync(default));Check(await store.PendingFinanceCountAsync()==2,"unknown finance acknowledgement cannot discard queued entry");
     handler.Reply=async request=>
     {
         Check(request.RequestUri!.AbsolutePath=="/api/device/finance","finance uses separate ordered journal endpoint");
         var doc=await request.Content!.ReadFromJsonAsync<JsonElement>();
-        Check(doc.GetProperty("events")[0].GetProperty("amount").GetInt64()==50000,"finance transport preserves whole-rupiah opening cash");
-        return JsonContentResponse(new { accepted=new[]{"open-"+cashSession.Id} });
+        Check(doc.GetProperty("events")[1].GetProperty("amount").GetInt64()==50000,"finance transport preserves whole-rupiah sale amount");
+        return JsonContentResponse(new { accepted=doc.GetProperty("events").EnumerateArray().Select(e=>e.GetProperty("id").GetString()).ToArray() });
     };
-    await sync.SendFinanceAsync(default);Check(await store.PendingFinanceCountAsync()==0&&(await store.ActiveCashAsync())!.Expected==50000,"acknowledgement leaves local drawer history intact");
+    await sync.SendFinanceAsync(default);Check(await store.PendingFinanceCountAsync()==0&&(await store.SaleAsync(saleOrder.Id))!.Payment.Amount==50000,"acknowledgement leaves local drawer history intact");
+    await store.AcknowledgeAsync((await store.PendingAsync()).Select(e=>e.Id).ToArray());
     // A reconnect must drain large historical snapshots under the actual API byte limit.
     var large=Order.New() with {Lines=Enumerable.Range(0,300).Select(i=>new OrderLine("large-"+i,new string('飯',60),"Nasi",5000,1)).ToArray()};
     for(var i=0;i<50;i++)large=await store.SaveAsync(large);
@@ -110,21 +112,6 @@ try
     for(var attempt=0;attempt<50&&await store.PendingCountAsync()>0;attempt++)await sync.SendOutboxAsync(default);
     Check(requests>1&&await store.PendingCountAsync()==0,"large offline snapshots drain within server byte limit");
     Check(sentIds.SequenceEqual(Enumerable.Range(1,50).Select(i=>large.Id+":"+i)),"byte batching preserves every version and ignores unsent acknowledgements");
-    // Restore review must retain its gate on any interrupted or inconsistent response.
-    using(var connection=new SqliteConnection("Data Source="+path)){connection.Open();using var cmd=connection.CreateCommand();cmd.CommandText="INSERT INTO settings VALUES('recovery_required','1'),('sync_recheck','1')";cmd.ExecuteNonQuery();}
-    var recoveryRequests=0;var recoveryState=new string('a',32);var changed=false;
-    handler.Reply=request=>
-    {
-        if(request.RequestUri!.AbsolutePath.EndsWith("setup"))return Task.FromResult(JsonContentResponse(new {schema=6,deviceId="fixture-device"}));
-        recoveryRequests++;
-        return Task.FromResult(JsonContentResponse(new {state=changed&&recoveryRequests==2?new string('b',32):recoveryState,deviceId="fixture-device",orders=Array.Empty<object>(),finance=(object?)null,next=(string?)null}));
-    };
-    changed=true;await Fails(()=>sync.VerifyRecoveryAsync(default));
-    Check(await store.SettingAsync("recovery_required")=="1","changed final recovery response cannot clear cashier gate");
-    recoveryRequests=0;changed=false;await sync.VerifyRecoveryAsync(default);
-    Check(recoveryRequests==2&&await store.SettingAsync("recovery_required") is null&&await store.SettingAsync("sync_recheck") is null,"stable server review rechecks source then unlocks recovered database");
-    Check(await store.SettingAsync("cloud_device")=="fixture-device","recovery persists server device identity");
-    handler.Reply=_=>Task.FromResult(JsonContentResponse(new{schema=5,deviceId="fixture-device"}));await Fails(()=>sync.CheckSetupAsync(default));Check(true,"older server migration is rejected before recovery");
     // Real WPF image decoder: fixture is a tiny PNG generated as test data, no external image request.
     var png=Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGNU8LFjYGBgYmBgYGBgAAAIBACuE8zpaAAAAABJRU5ErkJggg==");
     handler.Reply=_=>Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new ByteArrayContent(png)});

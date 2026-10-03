@@ -34,10 +34,7 @@ public sealed partial class LocalStore
             var previous=Convert.ToInt32(version.ExecuteScalar());
             if(previous > 2)
                 throw new InvalidDataException("Database dibuat oleh versi aplikasi yang lebih baru. Gunakan aplikasi terbaru; jangan hapus database.");
-            if(previous==1)
-            {
-                using var backup=new SqliteConnection(new SqliteConnectionStringBuilder {DataSource=databasePath+".before-v2-"+Guid.NewGuid().ToString("N")+".db",Pooling=false}.ToString());backup.Open();connection.BackupDatabase(backup);
-            }
+
         }
         using(var mode = connection.CreateCommand())
         {
@@ -108,7 +105,7 @@ public sealed partial class LocalStore
         }
         if (current.Version != expectedVersion) throw new InvalidOperationException("Pesanan telah berubah. Buka kembali pesanan.");
         var sale = OrderRules.Complete(current, method, tendered);
-        var session=ActiveSession(connection,tx)??throw new InvalidOperationException("Buka kas terlebih dahulu sebelum menyelesaikan pesanan.");
+        var session=EnsureJournalSession(connection,tx);
         var stored = Write(connection, tx, sale.Order, sale.Payment);
         using var payment = Command(connection, tx, "INSERT INTO payments(order_id,payload) VALUES($id,$payload)",
             ("$id", id), ("$payload", JsonSerializer.Serialize(sale.Payment, Json)));

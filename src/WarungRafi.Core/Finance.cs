@@ -8,11 +8,6 @@ public sealed record CashSession(string Id,DateTimeOffset OpenedAt,long OpeningC
 {
     public long? Difference=>CountedCash-ExpectedAtClose;
 }
-public sealed record CashPosition(CashSession Session,long CashSales,long QrisSales,long CashIn,long CashOut,long CashRefunds,long SalesRefunds,long SaleCount)
-{
-    public long Expected=>checked(Session.OpeningCash+CashSales+CashIn-CashOut-CashRefunds);
-    public long Gross=>checked(CashSales+QrisSales);
-}
 public enum RefundState { Requested,Completed,Failed }
 public enum RefundChannel { Cash,External }
 public sealed record Refund(string Id,string OrderId,long Amount,RefundChannel Channel,string Reason,

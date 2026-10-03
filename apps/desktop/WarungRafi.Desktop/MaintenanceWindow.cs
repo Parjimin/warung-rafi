@@ -4,7 +4,6 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media;
-using Microsoft.Win32;
 using WarungRafi.Core;
 using WarungRafi.Storage;
 
@@ -12,19 +11,19 @@ namespace WarungRafi.Desktop;
 
 internal sealed class MaintenanceWindow : Window
 {
-    private readonly LocalStore store;private readonly SettingsFile file;private readonly DatabaseLease? lease;
-    private readonly bool standalone;private DesktopSettings settings;private bool busy,unlocked;
+    private readonly LocalStore store;private readonly SettingsFile file;
+    private DesktopSettings settings;private bool busy,unlocked;
     private readonly StackPanel content=new() {MaxWidth=740,Margin=new Thickness(22,8,22,22)};
     private readonly TextBlock status=new() {TextWrapping=TextWrapping.Wrap,Margin=new Thickness(22,12,22,16),FontSize=14};
     private readonly StackPanel navigation=new() {Orientation=Orientation.Horizontal,Margin=new Thickness(22,12,22,6)};
-    private readonly string startupMessage;private ScrollViewer viewport=null!;
-    internal MaintenanceWindow(LocalStore store,SettingsFile file,DatabaseLease? lease=null,string message="")
+    private ScrollViewer viewport=null!;
+    internal MaintenanceWindow(LocalStore store,SettingsFile file)
     {
-        this.store=store;this.file=file;this.lease=lease;standalone=lease is not null;settings=file.Load();startupMessage=message;
-        Title="Warung Rafi — Pengaturan & Pemulihan";Width=850;Height=760;MinWidth=580;MinHeight=500;
+        this.store=store;this.file=file;settings=file.Load();
+        Title="Warung Rafi — Pengaturan";Width=850;Height=760;MinWidth=580;MinHeight=500;
         Background=new SolidColorBrush(Color.FromRgb(242,244,239));Foreground=new SolidColorBrush(Color.FromRgb(36,61,51));FontFamily=new FontFamily("Segoe UI");FontSize=17;WindowStartupLocation=WindowStartupLocation.CenterScreen;
         var root=new Grid {Background=Background};foreach(var size in new[]{GridLength.Auto,GridLength.Auto,new GridLength(1,GridUnitType.Star),GridLength.Auto})root.RowDefinitions.Add(new RowDefinition{Height=size});
-        var title=new TextBlock {Text="Pengaturan & pemulihan",FontSize=28,FontWeight=FontWeights.SemiBold,Margin=new Thickness(22,20,22,4)};root.Children.Add(title);
+        var title=new TextBlock {Text="Pengaturan",FontSize=28,FontWeight=FontWeights.SemiBold,Margin=new Thickness(22,20,22,4)};root.Children.Add(title);
         root.Children.Add(navigation);Grid.SetRow(navigation,1);
         var scroll=viewport=new ScrollViewer {Content=content,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled};root.Children.Add(scroll);Grid.SetRow(scroll,2);
         root.Children.Add(status);Grid.SetRow(status,3);Content=root;Closing+=OnClosing;Loaded+=(_,_)=>RenderUnlock();
@@ -48,7 +47,7 @@ internal sealed class MaintenanceWindow : Window
     }
     private void RenderUnlock()
     {
-        ClearContent();navigation.Children.Clear();Text(startupMessage.Length>0?startupMessage:"Pengaturan disimpan untuk akun Windows ini. Rahasia tidak disertakan dalam backup transaksi.");
+        ClearContent();navigation.Children.Clear();Text("Pengaturan disimpan untuk akun Windows ini.");
         if(settings.ManagerPinHash.Length==0)
         {
             Text("Buat PIN pengelola",true);Text("PIN 6–12 angka diperlukan untuk mengubah pengaturan dan menyetujui pengembalian uang.");
@@ -64,7 +63,7 @@ internal sealed class MaintenanceWindow : Window
     }
     private void RenderNavigation()
     {
-        navigation.Children.Clear();Button("Printer & PIN","SettingsConnection",()=>{RenderConnection();return Task.CompletedTask;},navigation);Button("Backup","SettingsBackup",()=>{RenderBackup();return Task.CompletedTask;},navigation);Button("Pemulihan","SettingsRestore",()=>{RenderRestore();return Task.CompletedTask;},navigation);
+        navigation.Children.Clear();Button("Printer & PIN","SettingsConnection",()=>{RenderConnection();return Task.CompletedTask;},navigation);
     }
     private void RenderConnection()
     {
@@ -103,63 +102,5 @@ internal sealed class MaintenanceWindow : Window
         content.Children.Remove(check);advancedContent.Children.Add(check);
         content.Children.Add(Id(new Expander {Header="Koneksi lanjutan",Content=advancedContent,IsExpanded=settings.DeviceToken.Length==0,Margin=new Thickness(0,18,0,0)},"AdvancedConnection"));
 
-    }
-    private void RenderBackup()
-    {
-        ClearContent();Text("Backup transaksi",true);Text("Backup mencakup pesanan, kas/refund, antrean, katalog dan bukti QRIS. Foto cache dan kredensial tidak ikut. Kata sandi backup berbeda dari PIN pengelola dan diperlukan saat laptop diganti.");
-        var folder=Input("Folder backup otomatis · kosong untuk nonaktif","BackupFolder",settings.BackupFolder);
-        Button("Pilih folder","ChooseBackupFolder",()=>{var dialog=new OpenFolderDialog();if(dialog.ShowDialog(this)==true)folder.Text=dialog.FolderName;return Task.CompletedTask;});
-        var password=Secret("Kata sandi backup baru · minimal 12 karakter","BackupPassword");var confirm=Secret("Ulangi kata sandi baru","BackupPasswordConfirm");
-        Text("Backup otomatis berjalan saat aplikasi terbuka, maksimal sekali per 24 jam, saat layar pembayaran tidak aktif. Simpan salinan di media lain. Tidak ada backup lama yang dihapus otomatis.");
-        Button("Simpan jadwal backup","SaveBackupSettings",()=>
-        {
-            var secret=password.Password.Length==0?settings.BackupPassword:password.Password;
-            if(password.Password.Length>0&&password.Password!=confirm.Password)throw new ArgumentException("Kedua kata sandi backup belum sama.");
-            settings=settings with {BackupFolder=folder.Text.Trim(),BackupPassword=folder.Text.Trim().Length==0?"":secret,LastBackup=null};file.Save(settings);password.Clear();confirm.Clear();Say("Pengaturan backup tersimpan. Buka ulang kasir untuk menjalankan jadwal.");return Task.CompletedTask;
-        });
-        Button("Buat backup sekarang","BackupNow",async()=>
-        {
-            if(settings.BackupPassword.Length==0)throw new InvalidOperationException("Simpan folder dan kata sandi backup dahulu.");
-            var dialog=new SaveFileDialog {Filter="Backup Warung Rafi|*.wrbackup",DefaultExt=".wrbackup",FileName="WarungRafi-"+DateTime.Now.ToString("yyyyMMdd-HHmmss")+".wrbackup",InitialDirectory=settings.BackupFolder,OverwritePrompt=true};
-            if(dialog.ShowDialog(this)!=true){Say("Backup dibatalkan.");return;}
-            var result=await store.BackupAsync(dialog.FileName,settings.BackupPassword);Say($"Backup terverifikasi: {result.Orders} pesanan, {result.Payments} pembayaran, {result.FinanceEvents} jurnal. Simpan kata sandinya secara terpisah.");
-        });
-        Text(settings.LastBackup is null?"Belum ada backup otomatis yang tercatat.":"Backup otomatis terakhir: "+settings.LastBackup.Value.ToLocalTime().ToString("g"));
-    }
-    private void RenderRestore()
-    {
-        ClearContent();Text("Pulihkan backup",true);
-        if(!standalone){Text("Tutup kasir, lalu buka pintasan Pemulihan Warung Rafi. Pemulihan hanya dapat dilakukan saat kasir berhenti agar transaksi baru tidak tertimpa.");return;}
-        Text("Pemulihan mengganti database dengan isi backup yang dipilih. Data sesudah waktu backup tidak ikut dipulihkan. Salinan kondisi saat ini disimpan sebelum penggantian.");
-        var path=Input("File backup","RestoreFile");Button("Pilih backup","ChooseRestoreFile",()=>{var dialog=new OpenFileDialog{Filter="Backup Warung Rafi|*.wrbackup"};if(dialog.ShowDialog(this)==true)path.Text=dialog.FileName;return Task.CompletedTask;});
-        var password=Secret("Kata sandi file backup","RestorePassword");
-        Button("Periksa isi backup","InspectRestore",async()=>
-        {
-            var selected=path.Text;var secret=password.Password;var info=await BackupArchive.InspectAsync(selected,secret);ClearContent();
-            Text("Periksa sebelum memulihkan",true);Text($"Dibuat {info.CreatedAt.ToOffset(TimeSpan.FromHours(7)):dd MMM yyyy HH:mm} WIB\n{info.Orders} pesanan · {info.Payments} pembayaran · {info.FinanceEvents} jurnal kas\n{info.Pending} perubahan belum diakui server saat backup dibuat.");
-            var corrupt=Id(new CheckBox {Content=new TextBlock{Text="Database saat ini rusak/tidak bisa dibuka; simpan berkas aslinya lalu pulihkan",TextWrapping=TextWrapping.Wrap},Margin=new Thickness(0,14,0,10)},"RestoreCorrupt");content.Children.Add(corrupt);
-            Text("Berkas asli database rusak atau salinan rollback tersimpan lokal tanpa enkripsi di folder data. Jaga akses akun Windows. Jangan menghapusnya sebelum pemulihan dipastikan benar.");
-            var confirm=Input("Ketik PULIHKAN untuk menyetujui penggantian","RestoreConfirm");
-            Button("Pulihkan database","ConfirmRestore",async()=>
-            {
-                if(confirm.Text!="PULIHKAN")throw new InvalidOperationException("Ketik PULIHKAN setelah memeriksa tanggal dan jumlah data.");
-                await BackupArchive.RestoreAsync(selected,secret,store.DatabasePath,lease!,Path.Combine(Path.GetDirectoryName(store.DatabasePath)!,"RecoverySafety"),corrupt.IsChecked==true,info.ArchiveHash);
-                RenderRecoveryReview();Say("Database dipulihkan. Periksa kecocokan cloud sebelum membuka kasir.");
-            });
-            Button("Batal","CancelRestore",()=>{RenderRestore();Say("Database belum diganti.");return Task.CompletedTask;});
-            Say("Kata sandi, seluruh isi terenkripsi, struktur database dan integritas telah diperiksa.");
-        });
-        Button("Lanjutkan pemeriksaan pemulihan sebelumnya","ReviewRestored",()=>{RenderRecoveryReview();return Task.CompletedTask;});
-    }
-    private void RenderRecoveryReview()
-    {
-        ClearContent();Text("Pemeriksaan sebelum berjualan",true);Text("Jika backup pernah terhubung cloud, isi pesanan dan jurnal harus cocok dengan server. Backup yang lebih lama dari cloud tidak boleh digunakan untuk membuat jurnal baru.");
-        Button("Periksa kecocokan cloud","VerifyRestoredCloud",async()=>
-        {
-            settings=file.Load();using var sync=RemoteSync.FromSettings(store,settings)??throw new InvalidOperationException("Simpan alamat server dan token pada tab Koneksi terlebih dahulu.");
-            using var timeout=new CancellationTokenSource(TimeSpan.FromMinutes(3));await sync.VerifyRecoveryAsync(timeout.Token);Say("Data cloud cocok. Tutup Pemulihan lalu buka kasir. Antrean dikirim ulang dengan identitas lama tanpa menggandakan catatan.");
-        });
-        Button("Gunakan database yang belum pernah terhubung cloud","ResumeOffline",async()=>
-        {await store.CompleteOfflineRecoveryAsync();Say("Pemeriksaan offline selesai. Tutup Pemulihan lalu buka kasir.");});
     }
 }

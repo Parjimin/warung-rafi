@@ -95,7 +95,7 @@ public partial class MainWindow
     private void Present(string next,FrameworkElement view)
     {
         var changed=page!=next||MainContent.Content is null;page=next;MainContent.Content=view;
-        SelectNavigation(SellNav,next is "sell" or "payment" or "success");SelectNavigation(HeldNav,next=="held");SelectNavigation(HistoryNav,next=="history");SelectNavigation(CashNav,next=="cash");
+        SelectNavigation(SellNav,next is "sell" or "payment" or "success");SelectNavigation(HeldNav,next=="held");SelectNavigation(HistoryNav,next=="history");
         if(changed)Reveal(view);
     }
     private static FrameworkElement Empty(string title,string description)

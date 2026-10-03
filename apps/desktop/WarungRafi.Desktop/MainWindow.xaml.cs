@@ -63,7 +63,7 @@ public partial class MainWindow : Window
             if(drafts.Length>0)SetCurrent(drafts[0]);
             ready=true;RenderSelling();await UpdateStatus();
         });
-        if(ready&&!isolatedPreview){_=ConnectAsync(closing.Token);_=BackupLoopAsync(closing.Token);_=SyncSheetsAsync(closing.Token);}
+        if(ready&&!isolatedPreview){_=ConnectAsync(closing.Token);_=SyncSheetsAsync(closing.Token);}
     }
     private async Task Run(Func<Task> action)
     {
@@ -123,7 +123,6 @@ public partial class MainWindow : Window
     });
     private async void ShowHeld(object sender,RoutedEventArgs e)=>await Run(()=>RenderOrders(true));
     private async void ShowHistory(object sender,RoutedEventArgs e)=>await Run(()=>RenderOrders(false));
-    private async void ShowCash(object sender,RoutedEventArgs e)=>await Run(RenderCash);
 
     private async Task ConnectAsync(CancellationToken token)
     {
@@ -136,7 +135,6 @@ public partial class MainWindow : Window
                 try
                 {
                     await store.BindDeviceAsync(await sync.CheckSetupAsync(token));
-                    if(await store.SettingAsync("sync_recheck")=="1")await sync.VerifyRecoveryAsync(token);
                     break;
                 }
                 catch(Exception error) when(error is System.Net.Http.HttpRequestException or TaskCanceledException)
@@ -148,7 +146,7 @@ public partial class MainWindow : Window
             token.ThrowIfCancellationRequested();await Task.WhenAll(PollPaymentsAsync(sync,token),SyncDataAsync(sync,token));
         }
         catch(OperationCanceledException) when(token.IsCancellationRequested) { }
-        catch(Exception) {StatusText.Text="Sinkronisasi ditahan · Periksa koneksi/pemulihan pada Pengaturan";}
+        catch(Exception) {StatusText.Text="Sinkronisasi ditahan · Periksa koneksi pada Pengaturan";}
 
     }
     private async void OpenSettings(object sender,RoutedEventArgs e)=>await Run(()=>
@@ -156,26 +154,6 @@ public partial class MainWindow : Window
         if(settingsFile is not null)new MaintenanceWindow(store,settingsFile){Owner=this,WindowStartupLocation=WindowStartupLocation.CenterOwner}.ShowDialog();
         return Task.CompletedTask;
     });
-    private async Task BackupLoopAsync(CancellationToken token)
-    {
-        if(settingsFile is null)return;
-        while(!token.IsCancellationRequested)
-        {
-            try
-            {
-                var currentSettings=settingsFile.Load();
-                if(!busy&&page!="payment"&&currentSettings.BackupFolder.Length>0&&(currentSettings.LastBackup is null||currentSettings.LastBackup<DateTimeOffset.UtcNow.AddDays(-1)))
-                {
-                    var id=await store.SettingAsync("database_id");
-                    var destination=Path.Combine(currentSettings.BackupFolder,"auto-"+id+"-"+DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")+"-"+Guid.NewGuid().ToString("N")+".wrbackup");
-                    await store.BackupAsync(destination,currentSettings.BackupPassword);
-                    if(!token.IsCancellationRequested){var latest=settingsFile.Load();if(latest.BackupFolder==currentSettings.BackupFolder&&latest.BackupPassword==currentSettings.BackupPassword)settingsFile.Save(latest with {LastBackup=DateTimeOffset.UtcNow});}
-                }
-            }
-            catch(Exception) {if(!busy)StatusText.Text="Data lokal tersimpan · Backup otomatis belum berhasil; periksa folder pada Pengaturan";}
-            try{await Task.Delay(TimeSpan.FromMinutes(5),token);}catch(OperationCanceledException){break;}
-        }
-    }
     private async Task SyncSheetsAsync(CancellationToken token)
     {
         var direct=new DirectSheets();

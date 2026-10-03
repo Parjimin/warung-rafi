@@ -41,7 +41,8 @@ try {
  if(!$NoShortcuts){
   $shell=New-Object -ComObject WScript.Shell
   $menu=Join-Path ([Environment]::GetFolderPath('Programs')) 'Warung Rafi';New-Item -ItemType Directory -Path $menu -Force | Out-Null
-  foreach($link in @(@{Name='Warung Rafi';Mode='cashier'},@{Name='Pemulihan Warung Rafi';Mode='maintenance'})){
+  Remove-Item -LiteralPath (Join-Path $menu 'Pemulihan Warung Rafi.lnk') -ErrorAction SilentlyContinue
+  foreach($link in @(@{Name='Warung Rafi';Mode='cashier'},@{Name='Pengaturan Warung Rafi';Mode='maintenance'})){
    $shortcut=$shell.CreateShortcut((Join-Path $menu ($link.Name+'.lnk')));$shortcut.TargetPath=Join-Path $PSHOME 'powershell.exe';$shortcut.Arguments='-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "'+(Join-Path $InstallRoot 'Start-WarungRafi.ps1')+'" -Mode '+$link.Mode;$shortcut.WorkingDirectory=$InstallRoot;$shortcut.IconLocation=(Join-Path $release 'WarungRafi.exe');$shortcut.Save()
   }
   $shortcut=$shell.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'Warung Rafi.lnk'));$shortcut.TargetPath=Join-Path $PSHOME 'powershell.exe';$shortcut.Arguments='-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "'+(Join-Path $InstallRoot 'Start-WarungRafi.ps1')+'"';$shortcut.WorkingDirectory=$InstallRoot;$shortcut.IconLocation=Join-Path $release 'WarungRafi.exe';$shortcut.Save()
