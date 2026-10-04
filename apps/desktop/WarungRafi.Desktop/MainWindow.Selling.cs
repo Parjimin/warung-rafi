@@ -208,7 +208,7 @@ public partial class MainWindow
         grid.SizeChanged+=(_,_)=>
         {
             var compact=grid.ActualHeight<480;
-            header.Margin=compact?new Thickness(18,8,18,6):new Thickness(18,10,18,8);
+            header.Margin=compact?new Thickness(18,6,18,4):new Thickness(18,10,18,8);
             bottom.Margin=new Thickness(0,compact?0:4,0,0);
             total.Margin=new Thickness(0,0,0,compact?4:8);
             ((TextBlock)total.Children[1]).FontSize=compact?26:30;
