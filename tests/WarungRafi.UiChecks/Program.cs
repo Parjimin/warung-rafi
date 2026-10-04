@@ -40,16 +40,58 @@ internal static class Program
         };
         return app.Run();
     }
+    private static void VerifyReceiptDesign()
+    {
+        var now=new DateTimeOffset(2026,10,3,15,46,0,TimeSpan.Zero);
+        var order=Order.New("12345678abcdef",now) with { Status=OrderStatus.Completed,Lines=[
+            new("rice","Nasi Putih","Nasi",3000,2),new("chicken","Ayam Ungkep","Lauk",7000,2),new("tea","Teh","Minuman",3000,2)] };
+        var sale=new CompletedSale(order,new Payment(order.Id,PaymentMethod.Cash,26000,30000,4000,now));
+        const double mm=96d/25.4;
+        var doc=ReceiptPrinter.CreateDocument(sale,true,58*mm,1000,ReceiptPrinter.SafePadding(58*mm,1000,0,0,58*mm,1000));
+        var content=new System.Windows.Documents.TextRange(doc.ContentStart,doc.ContentEnd).Text;
+        foreach(var expected in new[]{"WARUNG RAFI","Nasi Sayur Murah","SALINAN","Rp26.000","Rp4.000","+62 851-5650-4119","@asoyyy_group"})
+            Check(content.Contains(expected),"Designed receipt retains "+expected);
+        var paginator=((System.Windows.Documents.IDocumentPaginatorSource)doc).DocumentPaginator;
+        paginator.ComputePageCount();Check(paginator.PageCount==1,"Three-item receipt fits one thermal page");
+        var page=paginator.GetPage(0);
+        var bitmap=new RenderTargetBitmap((int)Math.Ceiling(58*mm*2),2000,192,192,PixelFormats.Pbgra32);
+        bitmap.Render(page.Visual);
+        var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using var output=File.Create(Path.Combine(artifacts,"22-receipt-design.png"));encoder.Save(output);
+    }
+    private static void VerifyReceiptMargins()
+    {
+        const double mm=96d/25.4;
+        foreach(var area in new[]{(0d,58d),(5d,48d),(7d,44d)})
+        {
+            var margin=ReceiptPrinter.SafePadding(58*mm,1000,area.Item1*mm,0,area.Item2*mm,1000);
+            Check(margin.Left>=5*mm&&margin.Left>=area.Item1*mm+mm,"Receipt starts beyond left hardware margin");
+            Check(58*mm-margin.Right<=(area.Item1+area.Item2)*mm-mm+0.001,"Receipt ends before right hardware margin");
+            Check(58*mm-margin.Left-margin.Right<=48*mm+0.001,"58 mm receipt uses at most 48 mm of text");
+        }
+        var rejected=false;
+        try { ReceiptPrinter.SafePadding(58*mm,1000,0,0,15*mm,1000); }
+        catch(InvalidOperationException) { rejected=true; }
+        Check(rejected,"Unusable printer media rejected instead of clipping the sale");
+    }
     private static async Task Verify()
     {
+        VerifyReceiptMargins();
         Directory.CreateDirectory(artifacts);
-        var store=new LocalStore(Path.Combine(directory,"test.db"),ManagerPin.Hash("728491"));await store.InitializeAsync();await store.OpenCashAsync(Guid.NewGuid().ToString("N"),0);
+        VerifyReceiptDesign();
+        var store=new LocalStore(Path.Combine(directory,"test.db"),ManagerPin.Hash("728491"));await store.InitializeAsync();
         window=new MainWindow(store,true) { Width=1320,Height=850,ShowInTaskbar=false };
         window.Show();AttachReviewRoot();
         await Until(()=>Find<Button>("PayOrder") is not null);
         Layout();
         Check(!Get<Button>("PayOrder").IsEnabled,"Empty order cannot enter payment");Screenshot("01-empty");
+        VerifyFullMenu();
+        Check(window.PreviewNotice.Visibility==Visibility.Collapsed,"Normal cashier has no preview label");
+        Check(Get<Image>("BrandLogo").Source is not null,"Application logo is bundled");
+        Check(window.SellNav.TransformToAncestor(root).Transform(new Point()).Y<80,"Cashier navigation is at top");
+        var originalProductButton=Get<Button>("Product-NAS-001");
         foreach(var id in new[]{"NAS-001","NAS-002","NAS-003","NAS-004"})await Click("Product-"+id,()=>Get<ScrollViewer>("CartViewport").Content is StackPanel p&&p.Children.Count==Array.IndexOf(new[]{"NAS-001","NAS-002","NAS-003","NAS-004"},id)+1);
+        Check(ReferenceEquals(originalProductButton,Get<Button>("Product-NAS-001")),"adding products does not rebuild the product grid");
         foreach(var size in new[]{(1280d,720d),(1366d,768d),(1536d,864d),(1920d,1080d),(900d,620d)})
         {
             width=size.Item1;height=size.Item2;Layout();
@@ -59,15 +101,17 @@ internal static class Program
             Check(Inside(Get<Button>("PayOrder"))&&Inside(Get<Button>("HoldOrder")),"Cart actions stay within viewport");
             Check(Inside(Get<TextBlock>("CartTotal")),"Total remains visible");
             Check(Get<Button>("Qty-Plus-NAS-001").ActualWidth>=44,"Quantity target at least 44 DIP");
-            Check(Get<Button>("PayOrder").Foreground is SolidColorBrush b&&b.Color==Colors.White,"Primary button has white foreground");
+            Check(Get<Button>("PayOrder").Foreground is SolidColorBrush b&&b.Color==((SolidColorBrush)Application.Current.FindResource("Ink")).Color,"Yellow primary button retains dark readable text");
             Screenshot($"02-cart-{width}x{height}");
         }
         width=1280;height=720;Layout();
-        Check(Inside(window.SellNav)&&Inside(window.CashNav),"Top navigation remains inside the working area");
+        Check(Inside(window.SellNav)&&Inside(window.HistoryNav),"Top navigation remains inside the working area");
         var first=Get<Button>("Product-NAS-001").TransformToAncestor(root).Transform(new Point());
         var second=Get<Button>("Product-NAS-002").TransformToAncestor(root).Transform(new Point());
         var third=Get<Button>("Product-NAS-003").TransformToAncestor(root).Transform(new Point());
-        Check(Math.Abs(first.Y-second.Y)<1&&third.Y>first.Y,"Four-menu category forms balanced two by two layout");
+        var fourth=Get<Button>("Product-NAS-004").TransformToAncestor(root).Transform(new Point());
+        Check(Math.Abs(first.Y-second.Y)<1&&Math.Abs(first.Y-third.Y)<1&&third.X>second.X&&Math.Abs(first.Y-fourth.Y)<1&&fourth.X>third.X,"Menu grid fits four columns at 1280x720");
+        Check(Get<Button>("Product-NAS-001").ActualWidth>=150&&Get<Button>("Product-NAS-001").ActualHeight>=56,"Compact menu cards retain large touch targets");
         Check(Get<ScrollViewer>("MenuViewport").ScrollableHeight<1,"Four menu cards fit the catalog at 1280x720");
         var name=Get<TextBox>("CustomerName");name.Text="Bu Rini";
         // Clicking while a name edit is pending must save the label before replacing the cart.
@@ -102,48 +146,17 @@ internal static class Program
         Check(Get<TextBlock>("SuccessAmount").Text=="Rp1.000","Success prominently shows change");Check(await store.CountAsync(OrderStatus.Completed)==1,"UI completes one durable sale");Screenshot("09-success");
         window.HistoryNav.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Until(()=>Find<Button>("Detail-"+saved.Id) is not null);Layout();Screenshot("10-history");
         await Click("Detail-"+saved.Id,()=>Find<TextBox>("OrderSearch") is null);Layout();Screenshot("11-order-detail");
-        window.CashNav.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Until(()=>MainWindow.Descendants<TextBlock>(root).Any(x=>x.Text=="Penjualan tercatat"));Layout();Screenshot("12-daily-summary");
-        Check(Get<TextBlock>("ExpectedCash").Text=="Rp49.000","cash page counts sale net of change");
-        foreach(var size in new[]{(1280d,720d),(900d,620d)})
-        {
-            width=size.Item1;height=size.Item2;Layout();
-            Check(Inside(Get<TextBlock>("ExpectedCash"))&&Inside(Get<Button>("CloseCash")),"drawer total and close action fit finance viewport");
-            foreach(var id in new[]{"CashIn","CashOut"})
-                Check(VisibleWithinParents(Get<Button>(id)),id+" stays visible without scrolling at "+width+"x"+height);
-            Get<ScrollViewer>("CashBalanceViewport").ScrollToEnd();Layout();
-            Check(VisibleWithinParents(Get<Button>("CashIn"))&&VisibleWithinParents(Get<Button>("CashOut")),"cash actions stay pinned when reviewing drawer entries");
-            Get<ScrollViewer>("CashBalanceViewport").ScrollToHome();Layout();
-            Screenshot($"15-cash-{width}x{height}");
-        }
-        width=1280;height=720;Layout();
-        await Click("CashOut",()=>Find<TextBox>("MovementAmount") is not null);
-        Get<TextBox>("MovementAmount").Text="2000";Get<TextBox>("MovementReason").Text="Beli es batu";
-        await Click("SaveCashMovement",()=>Find<TextBlock>("ExpectedCash") is not null);
-        Check(Get<TextBlock>("ExpectedCash").Text=="Rp47.000","expense updates drawer immediately");
         window.HistoryNav.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Until(()=>Find<Button>("Detail-"+saved.Id) is not null);
         await Click("Detail-"+saved.Id,()=>Find<Button>("OrderRefund") is not null);
         await Click("OrderRefund",()=>Find<TextBox>("RefundAmount") is not null);
         Get<TextBox>("RefundAmount").Text="5000";Get<TextBox>("RefundReason").Text="Satu nasi dikembalikan";
         await Click("RequestRefund",()=>MainWindow.Descendants<Button>(root).Any(x=>AutomationProperties.GetAutomationId(x).StartsWith("Resolve-")));
         var refund=(await store.RefundsAsync(saved.Id)).Single();
-        Check((await store.ActiveCashAsync())!.Expected==47000,"request alone leaves cash unchanged");
         await Click("Resolve-"+refund.Id,()=>Find<PasswordBox>("ManagerPin") is not null);Layout();Screenshot("16-refund-approval");
         Check(!Get<Button>("CompleteRefund").IsEnabled,"refund completion requires explicit returned-money confirmation");
         Get<TextBox>("RefundReference").Text="Diserahkan kepada Bu Rini";Get<PasswordBox>("ManagerPin").Password="728491";Get<CheckBox>("RefundReturned").IsChecked=true;
         await Click("CompleteRefund",()=>Find<TextBox>("RefundAmount") is not null);
-        Check((await store.ActiveCashAsync())!.Expected==42000&&(await store.SaleAsync(saved.Id))!.Payment.Amount==49000,"approved refund updates drawer and preserves sale");
         Screenshot("17-refund-history");
-        window.CashNav.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Until(()=>Find<Button>("CloseCash") is not null);
-        await Click("CloseCash",()=>Find<TextBox>("CountedCash") is not null);
-        Get<TextBox>("CountedCash").Text="41900";Get<TextBox>("ClosingNote").Text="Selisih hitungan seratus rupiah";
-        Check(Get<TextBlock>("CashDifference").Text.Contains("-100"),"closing form shows shortage before commit");
-        await Click("ReviewCloseCash",()=>Find<Button>("ConfirmCloseCash") is not null);
-        await Click("ReviseCloseCash",()=>Find<TextBox>("CountedCash") is not null);
-        Check(Get<TextBox>("CountedCash").Text=="41900","return from closing review preserves entered count");
-        await Click("ReviewCloseCash",()=>Find<Button>("ConfirmCloseCash") is not null);Screenshot("18-close-cash-review");
-        await Click("ConfirmCloseCash",()=>MainWindow.Descendants<Button>(root).Any(x=>AutomationProperties.GetAutomationId(x).StartsWith("CashDetail-")));
-        Check(await store.ActiveCashAsync() is null&&(await store.CashHistoryAsync()).Single().Session.Difference==-100,"closing UI persists actual counted cash and variance");
-        Screenshot("19-cash-history");
         // Reopen a real persisted draft in a new WPF window.
         var draft=OrderRules.Add(Order.New(),DummyCatalog.Products[0]) with { CustomerLabel="Pak Joko" };await store.SaveAsync(draft);
         window.Close();window=new MainWindow(store,true) { ShowInTaskbar=false };window.Show();AttachReviewRoot();
@@ -177,12 +190,16 @@ internal static class Program
         var proof=new ProviderPayment(1,"fixture-qris",22500,DateTimeOffset.UtcNow);
         await window.ReceivePaymentAlertsAsync([proof]);Layout();
         Check(window.Toast.Visibility==Visibility.Visible&&window.ToastTitle.Text.StartsWith("SIMULASI"),"durable proof displays labeled passive popup");
+        Check(window.Toast.HorizontalAlignment==HorizontalAlignment.Left&&window.Toast.VerticalAlignment==VerticalAlignment.Bottom,"QRIS toast is bottom-left");
         Check(window.ToastAmount.Text=="Rp22.500"&&sounds==1,"new proof shows amount and requests sound once");
         Check(Keyboard.FocusedElement==beforeFocus&&input.Text=="Bu Rini","payment arrival preserves typing and keyboard focus");
         Check(!window.Toast.IsHitTestVisible&&!window.Toast.Focusable&&!MainWindow.Descendants<Button>(window.Toast).Any(),"popup contains no buttons and never intercepts input");
         await window.ReceivePaymentAlertsAsync([proof]);Check(sounds==1,"duplicate proof never requests another sound");
         Check(await demoStore.CountAsync(OrderStatus.Completed)==0&&Get<TextBlock>("CartTotal").Text=="Rp5.000","proof neither completes nor changes active order");
-        Check(window.Toast.TransformToAncestor(root).Transform(new Point(0,window.Toast.ActualHeight)).Y<=window.MainContent.TransformToAncestor(root).Transform(new Point()).Y,"popup stays above order panel and cashier workspace");
+        await Task.Delay(220);Layout();
+        var popupBounds=window.Toast.TransformToAncestor(root).TransformBounds(new Rect(0,0,window.Toast.ActualWidth,window.Toast.ActualHeight));
+        var checkoutLeft=Get<Button>("PayOrder").TransformToAncestor(root).Transform(new Point()).X;
+        Check(popupBounds.Left>=0&&popupBounds.Right<checkoutLeft&&popupBounds.Bottom<=root.ActualHeight-36,"bottom-left popup remains clear of checkout and status footer");
         Screenshot("14-qris-simulation");
         await Until(()=>window.Toast.Visibility==Visibility.Collapsed);
         await window.ReceivePaymentAlertsAsync([proof with { Sequence=2,TransactionId="late",PaidAt=DateTimeOffset.UtcNow.AddMinutes(-5) }]);
@@ -197,11 +214,36 @@ internal static class Program
         Check(window.Toast.Visibility==Visibility.Visible,"audio failure does not suppress popup");
         await Until(()=>window.Toast.Visibility==Visibility.Collapsed);
         Check(window.Toast.Visibility==Visibility.Collapsed,"audio failure does not prevent popup expiry");
-        await Click("PayOrder",()=>Find<TextBox>("OpeningCash") is not null);Layout();Screenshot("20-open-cash");
-        Check(Get<TextBox>("OpeningCash").Text=="","first payment asks for actual opening cash, no silent default");
-        Get<TextBox>("OpeningCash").Text="100000";
-        await Click("ConfirmOpenCash",()=>Find<TextBox>("Tendered") is not null);
-        Check((await demoStore.ActiveCashAsync())!.Expected==100000&&Get<TextBlock>("CartTotal").Text=="Rp5.000","opening cash returns to intact payment order");
+        await Click("PayOrder",()=>Find<TextBox>("Tendered") is not null);
+        Check(Find<TextBox>("OpeningCash") is null&&Get<TextBlock>("CartTotal").Text=="Rp5.000","payment opens directly without cash setup");
+
+    }
+    private static void VerifyFullMenu()
+    {
+        // Exercise the actual 32-item workload without changing the test database.
+        const System.Reflection.BindingFlags flags=System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance;
+        var field=typeof(MainWindow).GetField("catalog",flags)!;
+        var category=typeof(MainWindow).GetField("category",flags)!;
+        var render=typeof(MainWindow).GetMethod("RenderSelling",flags)!;
+        var original=field.GetValue(window);var originalCategory=category.GetValue(window);
+        var names=new[]{"Bakso Balado","Ceker Bacem","Tahu Opor","Mie Goreng oseng","Oseng Mihun","Tumis Kangkung","Toge Tahu Oseng","Oseng Tempe","Trancam","Tempura Barbeque","Sosis Barbeque","Sayur Bayem","Sayur Sop","Sambel Goreng Kentang","Terong Balado","Telur Dadar","Telur balado","Pindang Balado","Rempelo Ati Ungkep","Telur Opor","Soto","Ayam Ungkep","Sayap Bacem","Paha Bacem","Ayam Opor","Tempe Mendoan","Tahu Goreng","Bakwan Goreng","Tahu Bacem","Tempe Bacem","Tahu Isi","Pisang Goreng"};
+        try
+        {
+            field.SetValue(window,names.Select((n,i)=>new Product("REVIEW-"+i,n,"Lauk",2000)).ToArray());
+            category.SetValue(window,"Lauk");render.Invoke(window,null);
+            foreach(var size in new[]{(1280d,720d),(1536d,864d)})
+            {
+                width=size.Item1;height=size.Item2;Layout();
+                var cards=Enumerable.Range(0,32).Select(i=>Get<Button>("Product-REVIEW-"+i)).ToArray();
+                var rows=cards.Select(c=>Math.Round(c.TransformToAncestor(root).Transform(new Point()).Y)).Distinct().Count();
+                Check(rows<=8,"32 menus fit in at most eight rows at "+width);
+                if(width>=1536)Check(rows==8,"Wide layout shows 32 menus in eight rows");
+                Check(cards.All(c=>c.ActualWidth>=150&&c.ActualHeight>=56),"Full menu retains usable touch targets");
+                Screenshot("21-full-menu-"+width+"x"+height);
+
+            }
+        }
+        finally {field.SetValue(window,original);category.SetValue(window,originalCategory);width=1280;height=720;render.Invoke(window,null);Layout();}
     }
     private static void AttachReviewRoot()
     {

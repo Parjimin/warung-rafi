@@ -22,6 +22,7 @@ export async function startHarness(options: { payments?: boolean; reports?: bool
   const state = { draft_version: 1, published_version: 1, draft: seed, published: seed };
   const finance = financeFixture(); const commands = new Map<string, unknown>();
   const control = { loginAllowed: true, loginKeys: [] as string[], recoveryState: "a".repeat(32), reportJobs: [] as (ReportJob & { lease_token?: string })[], reportActors: [] as string[], reportLostCreate: false, googleStatus: 200, googleLostWrite: false, googleCorrupt: false, googleWrites: 0, googleSheets: [] as any[], finance, financeAdminWrites: [] as {p_actor: string; p_command: Record<string, unknown>}[], financeResponseLost: false, financeWrites: [] as unknown[], storageFail: false, dbFail: false, conflict: false, uploaded: Buffer.alloc(0), devices: [] as unknown[], providerCalls: 0, providerFail: false, providerStatus: {} as Record<string, unknown>, providerWrites: [] as Record<string, unknown>[], paymentRows: [] as { sequence: number; transaction_id: string; amount: number; paid_at: string }[] };
+  let liveHash:string|null=null, liveVerified:string|null=null;
   const backend = createServer(async (req, res) => {
     const chunks: Buffer[] = []; for await (const chunk of req) chunks.push(Buffer.from(chunk));
     const bytes = Buffer.concat(chunks); const path = req.url ?? "";
@@ -74,6 +75,9 @@ export async function startHarness(options: { payments?: boolean; reports?: bool
       if (path.endsWith("reserve_login_attempt")) { control.loginKeys.push(input.p_key); reply(control.loginAllowed); return; }
       if (path.endsWith("device_setup")) { reply({ schema: 6, serverTime: new Date().toISOString() }); return; }
       if (path.endsWith("device_recovery_page")) { if(input.p_state && input.p_state !== control.recoveryState) { reply({code:"40001"},409); return; } reply({state:control.recoveryState,orders:[],finance:null,next:null,deviceId:input.p_device}); return; }
+      if (path.endsWith("claim_live_sheets")) { reply({claimed:true,source:reportSource,hash:liveHash,verifiedAt:liveVerified});return; }
+      if (path.endsWith("finish_live_sheets")) { if(!input.p_code){liveHash=input.p_hash;liveVerified=new Date().toISOString();}reply(null);return; }
+      if (path.endsWith("release_live_sheets")) { reply(null);return; }
       if (path.endsWith("create_report")) {
         let job = control.reportJobs.find(j => j.id === input.p_id);
         if (job && (JSON.stringify(job.filter) !== JSON.stringify(input.p_filter) || job.actor !== input.p_actor)) { reply({ code: "40001" }, 409); return; }

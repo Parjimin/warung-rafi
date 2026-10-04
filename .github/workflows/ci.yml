@@ -11,6 +11,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
@@ -22,8 +25,6 @@ jobs:
         run: dotnet run --project tests/WarungRafi.PaymentChecks -c Release
       - name: Verify cash sessions, refunds and immutable finance journal
         run: dotnet run --project tests/WarungRafi.FinanceChecks -c Release
-      - name: Verify encrypted backup and guarded restore
-        run: dotnet run --project tests/WarungRafi.BackupChecks -c Release
       - name: Build Windows touchscreen application
         run: dotnet build apps/desktop/WarungRafi.Desktop -c Release
       - name: Verify sync transport and offline photo cache
@@ -53,14 +54,21 @@ jobs:
         run: ./scripts/Test-WindowsPackage.ps1
       - name: Package unsigned Windows preview
         run: dotnet publish apps/desktop/WarungRafi.Desktop -c Release -r win-x64 --self-contained true -o artifacts/Windows-preview
+      - name: Bundle direct Sheets engine and verify standalone runtime
+        shell: powershell
+        run: ./scripts/Bundle-DirectSheets.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WarungRafi-Windows-portable
+          path: artifacts/Windows-preview
+          retention-days: 14
       - name: Include manager setup and finance guide
         run: |
           Copy-Item scripts/Set-ManagerPin.ps1 artifacts/Windows-preview/
-          Copy-Item docs/M5-CASH-REFUNDS.md artifacts/Windows-preview/
       - name: Build verified per-user installation package
         shell: powershell
         run: ./scripts/Build-WindowsPackage.ps1 -Release $env:GITHUB_SHA
-      - name: Launch installed cashier and recovery with bundled runtime
+      - name: Launch installed cashier and settings with bundled runtime
         shell: powershell
         timeout-minutes: 2
         run: ./scripts/Test-InstalledPackage.ps1
@@ -151,6 +159,8 @@ jobs:
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/004_reconciliation.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/005_reports.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/006_operations.sql
+          psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/007_live_sheets.sql
+          psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/live_sheets.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/operations.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/assertions.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/sync_monitor.sql
@@ -158,3 +168,19 @@ jobs:
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/finance.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/reconciliation.sql
           psql -h localhost -U postgres -d warung_test -v ON_ERROR_STOP=1 -f database/tests/reports.sql
+  design-prototype:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+        working-directory: apps/admin
+      - run: node design-prototype/verify.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: WarungRafi-design-review
+          path: artifacts/design-review
+          retention-days: 14

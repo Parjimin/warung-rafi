@@ -40,11 +40,12 @@ public partial class MainWindow : Window
         store=storage;this.isolatedPreview=isolatedPreview;this.simulatePayments=simulatePayments;this.settingsFile=settingsFile;this.settings=settings??new DesktopSettings();
         playPaymentSound=paymentSound??(()=> { if(!isolatedPreview||simulatePayments)System.Media.SystemSounds.Asterisk.Play(); });
         InitializeComponent();
+        RailContent(SellNav,"sell","Jualan");RailContent(HeldNav,"held","Ditunda");RailContent(HistoryNav,"history","Riwayat");RailContent(SettingsButton,"settings","Pengaturan");
         SettingsButton.IsEnabled=settingsFile is not null;
         if(simulatePayments)
         {
             Title="Warung Rafi — SIMULASI QRIS";
-            PreviewBadge.Text="SIMULASI · BUKAN PEMBAYARAN NYATA";
+            PreviewBadge.Text="SIMULASI · BUKAN PEMBAYARAN NYATA";PreviewNotice.Visibility=Visibility.Visible;
             DemoQris.Visibility=Visibility.Visible;
             ToastTitle.Text="SIMULASI · QRIS diterima";
         }
@@ -63,7 +64,7 @@ public partial class MainWindow : Window
             if(drafts.Length>0)SetCurrent(drafts[0]);
             ready=true;RenderSelling();await UpdateStatus();
         });
-        if(ready&&!isolatedPreview){_=ConnectAsync(closing.Token);_=BackupLoopAsync(closing.Token);}
+        if(ready&&!isolatedPreview){_=ConnectAsync(closing.Token);_=SyncSheetsAsync(closing.Token);}
     }
     private async Task Run(Func<Task> action)
     {
@@ -103,7 +104,7 @@ public partial class MainWindow : Window
         var count=await store.PendingCountAsync()+await store.PendingFinanceCountAsync();
         StatusText.Text=count==0?"Tersimpan di laptop · Semua perubahan sudah dikirim":$"Tersimpan di laptop · {count} perubahan menunggu dikirim";
         StatusText.ToolTip=StatusText.Text;
-        HeldNav.Content=$"Ditunda ({await store.CountAsync(OrderStatus.Held)})";
+        RailContent(HeldNav,"held",$"Ditunda ({await store.CountAsync(OrderStatus.Held)})");
     }
     private async Task Print(CompletedSale sale,bool copy)
     {
@@ -123,7 +124,6 @@ public partial class MainWindow : Window
     });
     private async void ShowHeld(object sender,RoutedEventArgs e)=>await Run(()=>RenderOrders(true));
     private async void ShowHistory(object sender,RoutedEventArgs e)=>await Run(()=>RenderOrders(false));
-    private async void ShowCash(object sender,RoutedEventArgs e)=>await Run(RenderCash);
 
     private async Task ConnectAsync(CancellationToken token)
     {
@@ -136,7 +136,6 @@ public partial class MainWindow : Window
                 try
                 {
                     await store.BindDeviceAsync(await sync.CheckSetupAsync(token));
-                    if(await store.SettingAsync("sync_recheck")=="1")await sync.VerifyRecoveryAsync(token);
                     break;
                 }
                 catch(Exception error) when(error is System.Net.Http.HttpRequestException or TaskCanceledException)
@@ -148,7 +147,7 @@ public partial class MainWindow : Window
             token.ThrowIfCancellationRequested();await Task.WhenAll(PollPaymentsAsync(sync,token),SyncDataAsync(sync,token));
         }
         catch(OperationCanceledException) when(token.IsCancellationRequested) { }
-        catch(Exception) {StatusText.Text="Sinkronisasi ditahan · Periksa koneksi/pemulihan pada Pengaturan";}
+        catch(Exception) {StatusText.Text="Sinkronisasi ditahan · Periksa koneksi pada Pengaturan";}
 
     }
     private async void OpenSettings(object sender,RoutedEventArgs e)=>await Run(()=>
@@ -156,24 +155,21 @@ public partial class MainWindow : Window
         if(settingsFile is not null)new MaintenanceWindow(store,settingsFile){Owner=this,WindowStartupLocation=WindowStartupLocation.CenterOwner}.ShowDialog();
         return Task.CompletedTask;
     });
-    private async Task BackupLoopAsync(CancellationToken token)
+    private async Task SyncSheetsAsync(CancellationToken token)
     {
-        if(settingsFile is null)return;
+        var direct=new DirectSheets();
+        // Desktop owns the worker lifetime; closing the app cancels and kills the process.
         while(!token.IsCancellationRequested)
         {
             try
             {
-                var currentSettings=settingsFile.Load();
-                if(!busy&&page!="payment"&&currentSettings.BackupFolder.Length>0&&(currentSettings.LastBackup is null||currentSettings.LastBackup<DateTimeOffset.UtcNow.AddDays(-1)))
-                {
-                    var id=await store.SettingAsync("database_id");
-                    var destination=Path.Combine(currentSettings.BackupFolder,"auto-"+id+"-"+DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")+"-"+Guid.NewGuid().ToString("N")+".wrbackup");
-                    await store.BackupAsync(destination,currentSettings.BackupPassword);
-                    if(!token.IsCancellationRequested){var latest=settingsFile.Load();if(latest.BackupFolder==currentSettings.BackupFolder&&latest.BackupPassword==currentSettings.BackupPassword)settingsFile.Save(latest with {LastBackup=DateTimeOffset.UtcNow});}
-                }
+                if(await store.PendingCountAsync()+await store.PendingFinanceCountAsync()==0)
+                    SheetsStatus.Text=await direct.RefreshAsync(settingsFile?.Load().DirectSheetsJson??"",token);
+                else SheetsStatus.Text="Sheets menunggu pengiriman transaksi";
             }
-            catch(Exception) {if(!busy)StatusText.Text="Data lokal tersimpan · Backup otomatis belum berhasil; periksa folder pada Pengaturan";}
-            try{await Task.Delay(TimeSpan.FromMinutes(5),token);}catch(OperationCanceledException){break;}
+            catch(OperationCanceledException) when(token.IsCancellationRequested){break;}
+            catch(Exception){SheetsStatus.Text="Sheets menunggu koneksi · data lokal tetap tersimpan";}
+            try{await Task.Delay(TimeSpan.FromMinutes(1),token);}catch(OperationCanceledException){break;}
         }
     }
     private async Task PollPaymentsAsync(RemoteSync sync,CancellationToken token)
@@ -248,7 +244,12 @@ public partial class MainWindow : Window
         {
             if(!PaymentAlertPolicy.IsFresh(proof,DateTimeOffset.UtcNow))continue;
             ToastAmount.Text=Money.Format(proof.Amount);ToastTime.Text=$"Pukul {proof.PaidAt.ToOffset(TimeSpan.FromHours(7)):HH.mm}";
-            Toast.Visibility=Visibility.Visible;Reveal(Toast);toastTimer.Start();
+            Toast.Visibility=Visibility.Visible;
+            var slide=(System.Windows.Media.TranslateTransform)Toast.RenderTransform;
+            slide.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty,null);slide.X=0;
+            if(SystemParameters.ClientAreaAnimation)
+                slide.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty,new System.Windows.Media.Animation.DoubleAnimation(-380,0,TimeSpan.FromMilliseconds(180)) { EasingFunction=new System.Windows.Media.Animation.CubicEase { EasingMode=System.Windows.Media.Animation.EasingMode.EaseOut },FillBehavior=System.Windows.Media.Animation.FillBehavior.Stop });
+            toastTimer.Start();
             try { playPaymentSound(); } catch { /* Audio failure must not interrupt the cashier or toast expiry. */ }
             break;
         }

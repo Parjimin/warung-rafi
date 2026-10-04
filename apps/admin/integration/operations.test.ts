@@ -44,3 +44,33 @@ test("expired previous token cannot authenticate",async t=>{
  assert.equal((await fetch(app.origin+"/api/device/setup",{headers:{authorization:"Bearer fixture-previous-token-at-least-32-characters"}})).status,401);
  assert.equal((await fetch(app.origin+"/api/device/setup",{headers:{authorization:"Bearer fixture-device-token-at-least-32-characters"}})).status,200);
 });
+
+test("simple cashier activation and live export require appropriate credentials",async t=>{
+ const app=await startHarness();t.after(app.stop);
+ const activate=(email="owner@fixture.test")=>fetch(app.origin+"/api/device/activate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password:"fixture"})});
+ assert.equal((await activate("other@fixture.test")).status,403);
+ const response=await activate();assert.equal(response.status,200);assert.equal(response.headers.get("cache-control"),"no-store");
+ const credentials=await response.json();assert.deepEqual(Object.keys(credentials).sort(),["deviceId","deviceToken"]);assert.equal(credentials.deviceId,"kasir-utama");
+ app.control.loginAllowed=false;assert.equal((await activate()).status,429);app.control.loginAllowed=true;
+ assert.equal((await fetch(app.origin+"/api/device/sheets",{method:"POST"})).status,401);
+ const result=await fetch(app.origin+"/api/device/sheets",{method:"POST",headers:{authorization:"Bearer "+credentials.deviceToken}});
+ assert.equal(result.status,200);assert.equal((await result.json()).state,"unavailable");
+});
+
+test("device automatically captures, exports and skips unchanged reports without creating manual jobs",async t=>{
+ const app=await startHarness({reports:true});t.after(app.stop);
+ const send=()=>fetch(app.origin+"/api/device/sheets",{method:"POST",headers:{authorization:"Bearer fixture-device-token-at-least-32-characters"}});
+ const first=await send();assert.equal(first.status,200);assert.equal((await first.json()).state,"verified");
+ assert.equal(app.control.googleSheets.length,2);assert.equal(app.control.reportJobs.length,0);
+ const writes=app.control.googleWrites;
+ const second=await send();assert.equal((await second.json()).state,"unchanged");assert.equal(app.control.googleWrites,writes);assert.equal(app.control.googleSheets.length,2);
+});
+
+test("direct Sheets secrets require fresh owner authentication and explicit opt-in",async t=>{
+ const app=await startHarness({reports:true});t.after(app.stop);
+ const activate=(email:string,directSheets:boolean)=>fetch(app.origin+"/api/device/activate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password:"fixture",directSheets})});
+ const denied=await activate("other@fixture.test",true);assert.equal(denied.status,403);assert.ok(!(await denied.text()).includes("privateKey"));
+ const regular=await activate("owner@fixture.test",false);assert.equal((await regular.json()).directSheets,undefined);
+ const owner=await activate("owner@fixture.test",true);assert.equal(owner.status,200);assert.equal(owner.headers.get("cache-control"),"no-store");
+ const body=await owner.json();assert.ok(body.directSheets.serviceKey);assert.ok(body.directSheets.google.privateKey);assert.equal(typeof body.directSheets.google.target,"string");
+});

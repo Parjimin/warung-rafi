@@ -36,9 +36,10 @@ internal static class Program
     private static async Task Verify()
     {
         Directory.CreateDirectory(directory);Directory.CreateDirectory(artifacts);
-        var file=new SettingsFile(Path.Combine(directory,"settings.protected"));var profile=new DesktopSettings(ManagerPinHash:ManagerPin.Hash("654321"),DeviceToken:"fixture-token-at-least-thirty-two-characters",BackupPassword:"fixture-password-no-real-secret");file.Save(profile);
+        var file=new SettingsFile(Path.Combine(directory,"settings.protected"));var profile=new DesktopSettings(ManagerPinHash:ManagerPin.Hash("654321"),DeviceToken:"fixture-token-at-least-thirty-two-characters",DirectSheetsJson:"{\"serviceKey\":\"fixture-direct-secret\"}");file.Save(profile);
         Check(new SettingsFile(file.FilePath).Load()==profile,"protected settings survive process-style reload");
         Check(!System.Text.Encoding.UTF8.GetString(File.ReadAllBytes(file.FilePath)).Contains(profile.DeviceToken),"credentials are not stored as plaintext");
+        Check(!System.Text.Encoding.UTF8.GetString(File.ReadAllBytes(file.FilePath)).Contains("fixture-direct-secret"),"direct Sheets credentials are encrypted with Windows user protection");
         Reject(()=>file.Save(profile with {ApiOrigin="http://fixture.invalid/"}),"HTTP configuration cannot be saved");
         Reject(()=>file.Save(profile with {ApiOrigin="https://fixture.invalid/path"}),"path and token forwarding ambiguity is rejected");
         Check(file.Load()==profile,"invalid configuration preserves previous settings");
@@ -48,10 +49,9 @@ internal static class Program
         var original=File.ReadAllBytes(file.FilePath);File.WriteAllBytes(file.FilePath,[1,2,3]);Reject(()=>file.Load(),"damaged protected settings fail closed");Check(File.ReadAllBytes(file.FilePath).Length==3,"failed settings read does not overwrite evidence");File.WriteAllBytes(file.FilePath,original);
         file.Save(new DesktopSettings());
         var path=Path.Combine(directory,"test.db");var store=new LocalStore(path);await store.InitializeAsync();await store.SaveAsync(OrderRules.Add(Order.New(),new Product("fixture","Menu uji","Nasi",5000)));
-        const string password="fixture-backup-password-2026";var archive=Path.Combine(directory,"snapshot.wrbackup");await store.BackupAsync(archive,password);
         await store.SaveAsync(OrderRules.Add(Order.New(),new Product("later","Menu berikut","Nasi",1000)));
         using var lease=DatabaseLease.Acquire(path);
-        window=new MaintenanceWindow(store,file,lease){ShowInTaskbar=false};window.Show();
+        window=new MaintenanceWindow(store,file){ShowInTaskbar=false};window.Show();
         root=(FrameworkElement)window.Content;window.Content=null;var canvas=new Canvas();canvas.Children.Add(root);window.Content=canvas;Layout(806,690);
         await Until(()=>Find<PasswordBox>("SetupPin") is not null);
         Get<PasswordBox>("SetupPin").Password="654321";Get<PasswordBox>("SetupPinConfirm").Password="654321";await Click("SaveSetupPin");
@@ -61,17 +61,8 @@ internal static class Program
         Check(Get<PasswordBox>("SettingsToken").Password.Length==0,"token input clears after saving");
         Layout(560,450);var scroll=MainWindow.Descendants<ScrollViewer>(root).First();Check(scroll.ScrollableHeight>0,"small settings window scrolls instead of clipping controls");Get<Button>("SaveConnection").BringIntoView();await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);Screenshot("01-connection-small");
         Layout(806,690);Get<TextBox>("SettingsOrigin").Text="";await Click("SaveConnection");
-        await Click("SettingsBackup");Get<TextBox>("BackupFolder").Text=Path.Combine(directory,"scheduled");Get<PasswordBox>("BackupPassword").Password=password;Get<PasswordBox>("BackupPasswordConfirm").Password=password;await Click("SaveBackupSettings");
-        Check(MainWindow.Descendants<ScrollViewer>(root).First().VerticalOffset<1,"switching tabs returns to the top of the form");
-        Check(file.Load().BackupPassword==password&&Path.IsPathFullyQualified(file.Load().BackupFolder),"automatic backup schedule saves protected password and folder");Screenshot("02-backup");
-        await Click("SettingsRestore");Get<TextBox>("RestoreFile").Text=archive;Get<PasswordBox>("RestorePassword").Password=password;await Click("InspectRestore");
-        Check(Find<TextBox>("RestoreConfirm") is not null&&await store.CountAsync()==2,"inspection presents review before changing the database");Screenshot("03-restore-review");
-        await Click("ConfirmRestore");Check(await store.CountAsync()==2,"restore without typed confirmation preserves newer transactions");
-        Get<TextBox>("RestoreConfirm").Text="PULIHKAN";await Click("ConfirmRestore");
-        Check(await store.CountAsync()==1&&await store.SettingAsync("recovery_required")=="1","confirmed restore replaces database and keeps cashier gated");
-        Check(Directory.GetFiles(Path.Combine(directory,"RecoverySafety"),"*.wrbackup").Length==1,"restore saves the current database before replacement");Screenshot("04-recovery-gate");
-        await Click("ResumeOffline");Check(await store.SettingAsync("recovery_required") is null&&await store.SettingAsync("sync_recheck")=="1","offline review resumes cashier but preserves future cloud check");
-        window.Close();window=new MaintenanceWindow(store,file,lease){ShowInTaskbar=false};window.Show();root=(FrameworkElement)window.Content;
+        Check(Find<Button>("SettingsBackup") is null&&Find<Button>("SettingsRestore") is null,"retired backup and restore controls are absent");
+        window.Close();window=new MaintenanceWindow(store,file){ShowInTaskbar=false};window.Show();root=(FrameworkElement)window.Content;
         await Until(()=>Find<PasswordBox>("UnlockSettingsPin") is not null);Check(Find<TextBox>("SettingsOrigin") is null,"reopening settings requires PIN again");
         Get<PasswordBox>("UnlockSettingsPin").Password="654321";await Click("UnlockSettings");Check(Get<ComboBox>("SettingsPrinter").Text=="Fixture printer","saved settings are restored after PIN unlock");
     }

@@ -6,7 +6,7 @@ public static class Receipt
     {
         var lines = new List<ReceiptLine>
         {
-            new("Wedangan dan Aneka Nasi Sayur", true), new("Depan SMK Negeri 2 Surakarta MANAHAN"),
+            new("Wedangan Dan Aneka Nasi Sayur Murah", true), new("Depan SMK Negeri 2 Surakarta MANAHAN"),
             new(sale.Order.Number), new(sale.Payment.PaidAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd/MM/yyyy HH:mm 'WIB'")),
             new(copy ? "SALINAN — LUNAS" : "LUNAS", true),
             new(sale.Payment.Method == PaymentMethod.Cash ? "Pembayaran: TUNAI" : "Pembayaran: QRIS"), new("")
@@ -24,6 +24,8 @@ public static class Receipt
             lines.Add(new($"Kembalian {Money.Format(sale.Payment.Change)}", true));
         }
         lines.Add(new("Terima kasih. Selamat menikmati!"));
+        lines.Add(new("WhatsApp +62 851-5650-4119"));
+        lines.Add(new("Instagram @asoyyy_group"));
         return lines;
     }
 }

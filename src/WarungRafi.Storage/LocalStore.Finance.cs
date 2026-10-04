@@ -26,77 +26,16 @@ public sealed partial class LocalStore
         using var command=Command(connection,tx,"SELECT payload FROM cash_sessions WHERE closed=0");
         return command.ExecuteScalar() is string value?JsonSerializer.Deserialize<CashSession>(value,Json):null;
     }
-    private static CashSession? ReadSession(SqliteConnection connection,SqliteTransaction? tx,string id)
+    // Legacy server protocol requires a session identifier for sales/refunds.
+    // This is automatic bookkeeping only; no opening balance or drawer workflow.
+    private static CashSession EnsureJournalSession(SqliteConnection c,SqliteTransaction tx)
     {
-        using var command=Command(connection,tx,"SELECT payload FROM cash_sessions WHERE id=$id",("$id",id));
-        return command.ExecuteScalar() is string value?JsonSerializer.Deserialize<CashSession>(value,Json):null;
+        var existing=ActiveSession(c,tx);if(existing is not null)return existing;
+        var session=new CashSession(Guid.NewGuid().ToString("N"),DateTimeOffset.UtcNow,0,"Kasir");
+        using var insert=Command(c,tx,"INSERT INTO cash_sessions VALUES($id,0,$payload)",("$id",session.Id),("$payload",JsonSerializer.Serialize(session,Json)));insert.ExecuteNonQuery();
+        AddFinance(c,tx,"open-"+session.Id,"session_opened",session.Id,null,0,0,"Kasir","Pencatatan otomatis",session);
+        return session;
     }
-    private static CashPosition Position(SqliteConnection connection,SqliteTransaction? tx,CashSession session)
-    {
-        using var command=Command(connection,tx,"SELECT kind,amount,cash_delta FROM finance_events WHERE session_id=$id",("$id",session.Id));
-        using var reader=command.ExecuteReader();long cash=0,qris=0,income=0,expense=0,cashRefunds=0,refunds=0,count=0;
-        while(reader.Read())
-        {
-            var kind=reader.GetString(0);var amount=reader.GetInt64(1);var delta=reader.GetInt64(2);
-            checked
-            {
-                if(kind=="sale"){if(delta>0)cash+=amount;else qris+=amount;count++;}
-                if(kind=="cash_in")income+=amount;
-                if(kind=="cash_out")expense+=amount;
-                if(kind=="refund_completed"){refunds+=amount;cashRefunds-=delta;}
-            }
-        }
-        return new(session,cash,qris,income,expense,cashRefunds,refunds,count);
-    }
-    public Task<CashPosition?> ActiveCashAsync()=>Locked(()=>
-    {using var c=Open();var session=ActiveSession(c,null);return session is null?null:Position(c,null,session);});
-    public Task<FinanceEvent[]> CashEntriesAsync(string sessionId)=>Locked(()=>
-    {
-        using var c=Open();using var cmd=Command(c,null,"SELECT payload FROM finance_events WHERE session_id=$id ORDER BY sequence DESC LIMIT 500",("$id",sessionId));
-        using var r=cmd.ExecuteReader();var entries=new List<FinanceEvent>();while(r.Read())entries.Add(JsonSerializer.Deserialize<FinanceEvent>(r.GetString(0),Json)!);return entries.ToArray();
-    });
-    public Task<CashPosition[]> CashHistoryAsync()=>Locked(()=>
-    {
-        using var c=Open();using var command=Command(c,null,"SELECT payload FROM cash_sessions ORDER BY rowid DESC LIMIT 100");
-        var sessions=new List<CashSession>();using(var r=command.ExecuteReader())while(r.Read())sessions.Add(JsonSerializer.Deserialize<CashSession>(r.GetString(0),Json)!);
-        return sessions.Select(s=>Position(c,null,s)).ToArray();
-    });
-    public Task<CashSession> OpenCashAsync(string id,long opening)=>Locked(()=>
-    {
-        FinanceRules.Id(id);FinanceRules.Amount(opening,true);
-        using var c=Open();using var tx=c.BeginTransaction();var old=ReadSession(c,tx,id);
-        if(old is not null){if(old.OpeningCash!=opening)throw new InvalidOperationException("Identitas buka kas sudah digunakan.");tx.Commit();return old;}
-        if(ActiveSession(c,tx) is not null)throw new InvalidOperationException("Masih ada sesi kas terbuka. Lanjutkan sesi tersebut.");
-        var session=new CashSession(id,DateTimeOffset.UtcNow,opening,"Kasir");
-        using var insert=Command(c,tx,"INSERT INTO cash_sessions VALUES($id,0,$payload)",("$id",id),("$payload",JsonSerializer.Serialize(session,Json)));insert.ExecuteNonQuery();
-        AddFinance(c,tx,"open-"+id,"session_opened",id,null,opening,opening,"Kasir","Modal awal",session);tx.Commit();return session;
-    });
-    public Task RecordCashMovementAsync(string id,string sessionId,bool incoming,long amount,string reason)=>Locked(()=>
-    {
-        FinanceRules.Id(id);FinanceRules.Amount(amount);reason=FinanceRules.Note(reason);
-        using var c=Open();using var tx=c.BeginTransaction();
-        var old=ReadFinance(c,tx,id);
-        if(old is not null)
-        {
-            if(old.SessionId!=sessionId||old.Kind!=(incoming?"cash_in":"cash_out")||old.Amount!=amount||old.Reason!=reason)throw new InvalidOperationException("Identitas kas sudah dipakai untuk tindakan berbeda.");
-            tx.Commit();return true;
-        }
-        var session=ActiveSession(c,tx);if(session?.Id!=sessionId)throw new InvalidOperationException("Sesi kas sudah berubah. Muat ulang.");
-        if(!incoming&&Position(c,tx,session).Expected<amount)throw new InvalidOperationException("Kas tercatat tidak mencukupi. Periksa pergerakan kas dahulu.");
-        AddFinance(c,tx,id,incoming?"cash_in":"cash_out",sessionId,null,amount,incoming?amount:-amount,"Kasir",reason,new { });tx.Commit();return true;
-    });
-    public Task<CashPosition> CloseCashAsync(string sessionId,long counted,string note)=>Locked(()=>
-    {
-        FinanceRules.Amount(counted,true);note=note.Trim();if(note.Length>200)throw new ArgumentException("Catatan maksimal 200 karakter.");
-        using var c=Open();using var tx=c.BeginTransaction();var session=ReadSession(c,tx,sessionId)??throw new InvalidOperationException("Sesi tidak ditemukan.");
-        var position=Position(c,tx,session);
-        if(session.ClosedAt is not null)
-        {if(session.CountedCash!=counted||session.ClosingNote!=note)throw new InvalidOperationException("Sesi sudah ditutup dengan nilai berbeda.");tx.Commit();return position;}
-        if(position.Expected!=counted)note=FinanceRules.Note(note);
-        var closed=session with {ClosedAt=DateTimeOffset.UtcNow,CountedCash=counted,ExpectedAtClose=position.Expected,ClosingNote=note};
-        using var command=Command(c,tx,"UPDATE cash_sessions SET closed=1,payload=$payload WHERE id=$id",("$payload",JsonSerializer.Serialize(closed,Json)),("$id",sessionId));command.ExecuteNonQuery();
-        AddFinance(c,tx,"close-"+sessionId,"session_closed",sessionId,null,counted,0,"Kasir",note,closed);tx.Commit();return position with {Session=closed};
-    });
     public Task<Refund[]> RefundsAsync(string orderId)=>Locked(()=>
     {
         using var c=Open();using var command=Command(c,null,"SELECT payload FROM refunds WHERE order_id=$id ORDER BY rowid",("$id",orderId));
@@ -124,9 +63,12 @@ public sealed partial class LocalStore
         var target=completed?RefundState.Completed:RefundState.Failed;
         if(old.State!=RefundState.Requested)
         {if(old.State!=target||(completed?old.Reference:old.FailureReason)!=reference)throw new InvalidOperationException("Pengembalian sudah diputuskan berbeda.");tx.Commit();return old;}
-        var session=completed?ActiveSession(c,tx):null;
-        if(completed&&session is null)throw new InvalidOperationException("Buka kas dahulu agar pengembalian tercatat dalam sesi yang benar.");
-        if(completed&&old.Channel==RefundChannel.Cash&&Position(c,tx,session!).Expected<old.Amount)throw new InvalidOperationException("Kas tercatat tidak mencukupi untuk pengembalian tunai.");
+        var session=completed?EnsureJournalSession(c,tx):null;
+        if(completed&&old.Channel==RefundChannel.Cash)
+        {
+            using var balance=Command(c,tx,"SELECT COALESCE(SUM(cash_delta),0) FROM finance_events WHERE session_id=$id",("$id",session!.Id));
+            if(Convert.ToInt64(balance.ExecuteScalar())<old.Amount)throw new InvalidOperationException("Pengembalian tunai melebihi penerimaan tunai yang tercatat. Gunakan transfer atau provider untuk pengembalian ini.");
+        }
         var resolved=old with {State=target,CompletedAt=completed?DateTimeOffset.UtcNow:null,SessionId=session?.Id,ApprovedBy="Pengelola",Reference=completed?reference:"",FailureReason=completed?"":reference};
         using var update=Command(c,tx,"UPDATE refunds SET state=$state,payload=$payload WHERE id=$id",("$state",(int)target),("$payload",JsonSerializer.Serialize(resolved,Json)),("$id",id));update.ExecuteNonQuery();
         AddFinance(c,tx,"resolve-"+id,completed?"refund_completed":"refund_failed",session?.Id,old.OrderId,old.Amount,completed&&old.Channel==RefundChannel.Cash?-old.Amount:0,"Pengelola",reference,resolved);tx.Commit();return resolved;

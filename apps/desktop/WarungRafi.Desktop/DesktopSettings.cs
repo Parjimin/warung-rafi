@@ -6,7 +6,7 @@ using WarungRafi.Storage;
 
 namespace WarungRafi.Desktop;
 
-internal sealed record DesktopSettings(string ApiOrigin="",string DeviceToken="",string PrinterName="",string ManagerPinHash="",string BackupFolder="",string BackupPassword="",DateTimeOffset? LastBackup=null,int PinFailures=0,DateTimeOffset? PinBlockedUntil=null);
+internal sealed record DesktopSettings(string ApiOrigin="",string DeviceToken="",string PrinterName="",string ManagerPinHash="",int PinFailures=0,DateTimeOffset? PinBlockedUntil=null,string DirectSheetsJson="");
 internal sealed class SettingsFile(string path)
 {
     private static readonly byte[] Entropy=Encoding.UTF8.GetBytes("WarungRafi.Settings.v1");
@@ -42,7 +42,6 @@ internal sealed class SettingsFile(string path)
         var origin=NormalizeOrigin(settings.ApiOrigin);
         if(origin.Length>0&&(settings.DeviceToken.Length is <32 or >512||settings.DeviceToken.Any(char.IsWhiteSpace)))throw new ArgumentException("Token laptop harus 32–512 karakter tanpa spasi.");
         if(settings.PrinterName.Length>256)throw new ArgumentException("Nama printer terlalu panjang.");
-        if(settings.BackupFolder.Length>0){if(!Path.IsPathFullyQualified(settings.BackupFolder))throw new ArgumentException("Pilih lokasi backup lengkap.");BackupArchive.ValidatePassword(settings.BackupPassword);}
     }
     public DesktopSettings Authorize(string pin)
     {

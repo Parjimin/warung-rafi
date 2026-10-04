@@ -10,7 +10,32 @@ namespace WarungRafi.Desktop;
 
 public partial class MainWindow
 {
-    private static Brush Color(string value)=>new SolidColorBrush((System.Windows.Media.Color)ColorConverter.ConvertFromString(value));
+    private static readonly Dictionary<string,Brush> brushes=new();
+    private static Brush Color(string value)
+    {
+        if(brushes.TryGetValue(value,out var cached))return cached;
+        var brush=new SolidColorBrush((System.Windows.Media.Color)ColorConverter.ConvertFromString(value));brush.Freeze();brushes[value]=brush;return brush;
+    }
+    private static Brush Token(string name)=>(Brush)Application.Current.FindResource(name);
+    private static Style Component(string name)=>(Style)Application.Current.FindResource(name);
+    private static void RailContent(Button button,string kind,string label)
+    {
+        var path=kind switch {
+            "sell"=>"M3,3 L10,3 L10,10 L3,10 Z M14,3 L21,3 L21,10 L14,10 Z M3,14 L10,14 L10,21 L3,21 Z M14,14 L21,14 L21,21 L14,21 Z",
+            "held"=>"M12,3 A9,9 0 1 0 21,12 M12,7 L12,12 L15,14 M17,3 L23,3 M20,0 L20,6",
+            "history"=>"M5,3 L19,3 L19,21 L16,19 L12,21 L8,19 L5,21 Z M8,8 L16,8 M8,12 L16,12",
+            _=>"M12,8 A4,4 0 1 0 12,16 A4,4 0 1 0 12,8 M12,2 L12,5 M12,19 L12,22 M2,12 L5,12 M19,12 L22,12 M5,5 L7,7 M17,17 L19,19 M5,19 L7,17 M17,7 L19,5" };
+        var body=new StackPanel { Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Center };
+        var symbol=new System.Windows.Shapes.Path { Data=Geometry.Parse(path),StrokeThickness=1.5,Width=18,Height=18,Stretch=Stretch.Uniform,Margin=new Thickness(0,0,8,0) };
+        symbol.SetBinding(System.Windows.Shapes.Shape.StrokeProperty,new System.Windows.Data.Binding("Foreground") {Source=button});body.Children.Add(symbol);
+        var text=Text(label,13);text.TextAlignment=TextAlignment.Center;body.Children.Add(text);button.Content=body;
+        AutomationProperties.SetName(button,label);
+    }
+    private void OnWorkspaceKeyDown(object sender,KeyEventArgs e)
+    {
+        if(e.Key==Key.F2&&page=="sell"&&MainContent.Content is DependencyObject view)
+        {Descendants<TextBox>(view).FirstOrDefault(x=>AutomationProperties.GetAutomationId(x)=="MenuSearch")?.Focus();e.Handled=true;}
+    }
     private static TextBlock Text(string value,double size=18,bool bold=false,string? color=null)
     {
         var text=new TextBlock { Text=value,FontSize=size,FontWeight=bold?FontWeights.SemiBold:FontWeights.Normal,TextWrapping=TextWrapping.Wrap,VerticalAlignment=VerticalAlignment.Center };
@@ -20,30 +45,45 @@ public partial class MainWindow
     { AutomationProperties.SetAutomationId(element,id);if(name is not null)AutomationProperties.SetName(element,name);return element; }
     private Button ActionButton(string label,Func<Task> action,bool primary=false,string? id=null)
     {
-        var button=new Button { Content=label };Select(button,primary);
+        var button=new Button { Content=label,Style=Component(primary?"PrimaryButton":"SecondaryButton") };Select(button,primary);
         if(id is not null)Identify(button,id,label);
         button.Click+=async(_,_)=>await Run(action);return button;
     }
     private static void Select(Button button,bool active)
     {
-        button.Background=Color(active?"#234F3F":"#F0F3EC");button.Foreground=Color(active?"#FFFFFF":"#234F3F");
+        button.Background=Token(active?"Forest":"SurfaceBrush");button.Foreground=Token("Ink");
     }
     private static void SelectNavigation(Button button,bool active)
     {
-        button.Background=active?Brushes.White:Brushes.Transparent;
-        button.Foreground=Color(active?"#234F3F":"#627066");
-        button.BorderBrush=active?Color("#DBE3D8"):Brushes.Transparent;
+        button.Background=active?Token("Forest"):Brushes.Transparent;
+        button.Foreground=active?Token("Ink"):Color("#D3CEC0");
+        button.BorderBrush=Brushes.Transparent;
     }
     private static void SelectTab(Button button,bool active)
     {
-        button.Background=Color(active?"#E7EFE7":"#FAFBF8");
-        button.Foreground=Color(active?"#234F3F":"#627066");
-        button.BorderBrush=Color(active?"#AFC5B1":"#E2E7DF");
+        var palette=MenuPalette(button.Tag as string ?? "Nasi");
+        button.Background=Color(active?palette.Accent:palette.Tint);
+        button.Foreground=Color(active?"#FFFFFF":"#282722");
+        button.BorderBrush=Color(active?palette.Accent:palette.Line);
+        button.FontWeight=FontWeights.SemiBold;
+    }
+    private static (string Accent,string Tint,string Line) MenuPalette(string category)
+        => ("#292A24","#E9E5DC","#E2DCCF");
+    private static Brush GlassBrush(bool selected=false)=>Token(selected?"SelectedBrush":"SurfaceBrush");
+    private static FrameworkElement MenuSymbol(string category,string stroke)
+    {
+        var geometry=category switch
+        {
+            "Minuman" => "M5,4 L19,4 L17,20 L7,20 Z M14,4 L16,0 M19,7 C26,7 24,14 18,14",
+            "Sundukan" => "M5,1 L5,23 M12,1 L12,23 M19,1 L19,23 M2,5 L8,5 M2,10 L8,10 M2,15 L8,15 M9,5 L15,5 M9,10 L15,10 M9,15 L15,15 M16,5 L22,5 M16,10 L22,10 M16,15 L22,15",
+            _ => "M2,11 L22,11 C21,23 3,23 2,11 Z M7,23 L17,23 M7,7 C4,4 10,3 7,0 M14,7 C11,4 17,3 14,0"
+        };
+        return new System.Windows.Shapes.Path { Data=Geometry.Parse(geometry),Stroke=Color(stroke),StrokeThickness=1.5,StrokeStartLineCap=PenLineCap.Round,StrokeEndLineCap=PenLineCap.Round,Stretch=Stretch.Uniform,Width=18,Height=18,Margin=new Thickness(0,0,7,0) };
     }
     private static Grid InputWithHint(TextBox input,string hint)
     {
         var grid=new Grid();grid.Children.Add(input);
-        var watermark=Text(hint,input.FontSize,false,"#849083");watermark.IsHitTestVisible=false;
+        var watermark=Text(hint,input.FontSize,false,"#98917F");watermark.IsHitTestVisible=false;
         watermark.Margin=new Thickness(13,0,10,0);watermark.TextWrapping=TextWrapping.NoWrap;
         grid.Children.Add(watermark);
         void Update()=>watermark.Visibility=string.IsNullOrEmpty(input.Text)?Visibility.Visible:Visibility.Collapsed;
@@ -55,7 +95,7 @@ public partial class MainWindow
         if(id is not null)Identify(scroll,id);return scroll;
     }
     private static Border Surface(UIElement child,int padding=18)=>new()
-    { Child=child,Background=Brushes.White,BorderBrush=Color("#DFE5DC"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(18),Padding=new Thickness(padding) };
+    { Child=child,Background=Token("SurfaceBrush"),BorderBrush=Token("Line"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(14),Padding=new Thickness(padding) };
     private static Grid Rows(params GridLength[] heights)
     {
         var grid=new Grid();foreach(var height in heights)grid.RowDefinitions.Add(new RowDefinition{Height=height});return grid;
@@ -76,16 +116,16 @@ public partial class MainWindow
     private void Present(string next,FrameworkElement view)
     {
         var changed=page!=next||MainContent.Content is null;page=next;MainContent.Content=view;
-        SelectNavigation(SellNav,next is "sell" or "payment" or "success");SelectNavigation(HeldNav,next=="held");SelectNavigation(HistoryNav,next=="history");SelectNavigation(CashNav,next=="cash");
+        SelectNavigation(SellNav,next is "sell" or "payment" or "success");SelectNavigation(HeldNav,next=="held");SelectNavigation(HistoryNav,next=="history");
         if(changed)Reveal(view);
     }
     private static FrameworkElement Empty(string title,string description)
     {
         var stack=new StackPanel { VerticalAlignment=VerticalAlignment.Center,HorizontalAlignment=HorizontalAlignment.Center,MaxWidth=300,Margin=new Thickness(16) };
-        var mark=Text("+",32,true,"#234F3F");mark.HorizontalAlignment=HorizontalAlignment.Center;
-        stack.Children.Add(new Border { Child=mark,Background=Color("#F0F3EC"),CornerRadius=new CornerRadius(22),Width=56,Height=56,HorizontalAlignment=HorizontalAlignment.Center,Margin=new Thickness(0,0,0,12) });
-        var heading=Text(title,21,true);heading.TextAlignment=TextAlignment.Center;stack.Children.Add(heading);
-        var subtitle=Text(description,16,false,"#65766E");subtitle.TextAlignment=TextAlignment.Center;subtitle.Margin=new Thickness(0,8,0,0);stack.Children.Add(subtitle);return stack;
+        var mark=Text("+",32,true,"#9D7C2C");mark.HorizontalAlignment=HorizontalAlignment.Center;
+        stack.Children.Add(new Border { Child=mark,Background=Color("#FBF5E5"),CornerRadius=new CornerRadius(22),Width=56,Height=56,HorizontalAlignment=HorizontalAlignment.Center,Margin=new Thickness(0,0,0,12) });
+        var heading=Text(title,18,true);heading.TextAlignment=TextAlignment.Center;stack.Children.Add(heading);
+        var subtitle=Text(description,13,false,"#817E72");subtitle.TextAlignment=TextAlignment.Center;subtitle.Margin=new Thickness(0,8,0,0);stack.Children.Add(subtitle);return stack;
     }
     // Repo-native illustrations: no image downloads in the critical click/render path.
     private static FrameworkElement Illustration(string category,string? productId=null)

@@ -6,4 +6,5 @@
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../../../src/WarungRafi.Storage/WarungRafi.Storage.csproj" /></ItemGroup>
   <ItemGroup><None Update="Pengaturan.cmd" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /><None Update="Coba-QRIS.cmd" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><Resource Include="Assets/logo.png"/><Resource Include="Assets/full-logo.png"/></ItemGroup>
 </Project>
