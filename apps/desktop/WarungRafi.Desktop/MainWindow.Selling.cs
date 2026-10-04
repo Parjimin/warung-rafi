@@ -203,7 +203,17 @@ public partial class MainWindow
             var pay=ActionButton("Bayar  →",()=>{tendered="";method=PaymentMethod.Cash;RenderPayment();return Task.CompletedTask;},true,"PayOrder");
             pay.IsEnabled=current.Lines.Length>0;pay.Padding=new Thickness(10);pay.MinHeight=52;Place(buttons,pay,0,2);bottom.Children.Add(buttons);
         }
-        Place(grid,new Border {Child=bottom,Background=Token("RailBrush"),Padding=new Thickness(18,10,18,10),CornerRadius=new CornerRadius(0,0,16,16)},2);
+        var settlement=new Border {Child=bottom,Background=Token("RailBrush"),Padding=new Thickness(18,10,18,10),CornerRadius=new CornerRadius(0,0,16,16)};
+        Place(grid,settlement,2);
+        grid.SizeChanged+=(_,_)=>
+        {
+            var compact=grid.ActualHeight<480;
+            header.Margin=compact?new Thickness(18,8,18,6):new Thickness(18,10,18,8);
+            bottom.Margin=new Thickness(0,compact?0:4,0,0);
+            total.Margin=new Thickness(0,0,0,compact?4:8);
+            ((TextBlock)total.Children[1]).FontSize=compact?26:30;
+            settlement.Padding=compact?new Thickness(18,6,18,6):new Thickness(18,10,18,10);
+        };
         var slip=Surface(grid,0);slip.Style=Component("OrderSlip");slip.BorderThickness=new Thickness(0);slip.CornerRadius=new CornerRadius(16);
         if(!editable)
         {

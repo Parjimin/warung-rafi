@@ -101,7 +101,7 @@ internal static class Program
             Check(Inside(Get<Button>("PayOrder"))&&Inside(Get<Button>("HoldOrder")),"Cart actions stay within viewport");
             Check(Inside(Get<TextBlock>("CartTotal")),"Total remains visible");
             Check(Get<Button>("Qty-Plus-NAS-001").ActualWidth>=44,"Quantity target at least 44 DIP");
-            Check(Get<Button>("PayOrder").Foreground is SolidColorBrush b&&b.Color==Colors.White,"Primary button has white foreground");
+            Check(Get<Button>("PayOrder").Foreground is SolidColorBrush b&&b.Color==((SolidColorBrush)Application.Current.FindResource("Ink")).Color,"Yellow primary button retains dark readable text");
             Screenshot($"02-cart-{width}x{height}");
         }
         width=1280;height=720;Layout();
