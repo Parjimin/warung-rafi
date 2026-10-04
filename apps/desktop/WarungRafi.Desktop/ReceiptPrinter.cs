@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using WarungRafi.Core;
 
 namespace WarungRafi.Desktop;
@@ -80,11 +81,12 @@ internal static class ReceiptPrinter
             p.Inlines.Add(new InlineUIContainer(ContactIcon(instagram)) { BaselineAlignment=BaselineAlignment.Center });
             p.Inlines.Add(new Run("  "+value));doc.Blocks.Add(p);
         }
-        Rule(true);
-        Text("WEDANGAN",19,true,true);
-        Text("DAN ANEKA NASI SAYUR",11,true,true);
-        Text("MURAH",19,true,true);
-        Rule(true);
+        var logo=ReceiptLogo();
+        doc.Blocks.Add(new BlockUIContainer(new Image { Source=logo,Width=Math.Min(160,width-padding.Left-padding.Right),Height=60,Stretch=Stretch.Uniform,HorizontalAlignment=HorizontalAlignment.Center }) { Margin=new Thickness(0,0,0,4) });
+        Text("WARUNG RAFI",17,true,true);
+        Text("Wedangan Dan Aneka",10,false,true);
+        Text("Nasi Sayur Murah",10,false,true);
+        Rule();
         Text("Depan SMK Negeri 2 Surakarta",10,false,true);
         Text("MANAHAN",10,false,true).Margin=new Thickness(0,1,0,8);
         Text("Pesanan",10);
@@ -110,9 +112,20 @@ internal static class ReceiptPrinter
         Text("Terima kasih!",11,true,true);
         Text("Selamat menikmati.",10,false,true).Margin=new Thickness(0,1,0,7);
         Contact(false,"+62 851-5650-4119");
-        Contact(true,"@muh_rafi875");
+        Contact(true,"@asoyyy_group");
         Rule(true);
         return doc;
+    }
+    private static BitmapSource ReceiptLogo()
+    {
+        // Preserve the supplied logo silhouette; thermal printers need black ink,
+        // not pale grayscale yellow. Keep original alpha for its transparent edge.
+        var source=new BitmapImage(new Uri("pack://application:,,,/WarungRafi;component/Assets/full-logo.png"));
+        var rgba=new FormatConvertedBitmap(source,PixelFormats.Bgra32,null,0);
+        var stride=rgba.PixelWidth*4;var pixels=new byte[stride*rgba.PixelHeight];rgba.CopyPixels(pixels,stride,0);
+        for(var i=0;i<pixels.Length;i+=4){pixels[i]=0;pixels[i+1]=0;pixels[i+2]=0;}
+        var monochrome=BitmapSource.Create(rgba.PixelWidth,rgba.PixelHeight,96,96,PixelFormats.Bgra32,null,pixels,stride);
+        monochrome.Freeze();return monochrome;
     }
     private static Image ContactIcon(bool instagram)
     {

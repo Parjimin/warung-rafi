@@ -45,7 +45,7 @@ public partial class MainWindow : Window
         if(simulatePayments)
         {
             Title="Warung Rafi — SIMULASI QRIS";
-            PreviewBadge.Text="SIMULASI · BUKAN PEMBAYARAN NYATA";
+            PreviewBadge.Text="SIMULASI · BUKAN PEMBAYARAN NYATA";PreviewNotice.Visibility=Visibility.Visible;
             DemoQris.Visibility=Visibility.Visible;
             ToastTitle.Text="SIMULASI · QRIS diterima";
         }
@@ -244,7 +244,12 @@ public partial class MainWindow : Window
         {
             if(!PaymentAlertPolicy.IsFresh(proof,DateTimeOffset.UtcNow))continue;
             ToastAmount.Text=Money.Format(proof.Amount);ToastTime.Text=$"Pukul {proof.PaidAt.ToOffset(TimeSpan.FromHours(7)):HH.mm}";
-            Toast.Visibility=Visibility.Visible;Reveal(Toast);toastTimer.Start();
+            Toast.Visibility=Visibility.Visible;
+            var slide=(System.Windows.Media.TranslateTransform)Toast.RenderTransform;
+            slide.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty,null);slide.X=0;
+            if(SystemParameters.ClientAreaAnimation)
+                slide.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty,new System.Windows.Media.Animation.DoubleAnimation(-380,0,TimeSpan.FromMilliseconds(180)) { EasingFunction=new System.Windows.Media.Animation.CubicEase { EasingMode=System.Windows.Media.Animation.EasingMode.EaseOut },FillBehavior=System.Windows.Media.Animation.FillBehavior.Stop });
+            toastTimer.Start();
             try { playPaymentSound(); } catch { /* Audio failure must not interrupt the cashier or toast expiry. */ }
             break;
         }

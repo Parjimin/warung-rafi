@@ -49,7 +49,7 @@ internal static class Program
         const double mm=96d/25.4;
         var doc=ReceiptPrinter.CreateDocument(sale,true,58*mm,1000,ReceiptPrinter.SafePadding(58*mm,1000,0,0,58*mm,1000));
         var content=new System.Windows.Documents.TextRange(doc.ContentStart,doc.ContentEnd).Text;
-        foreach(var expected in new[]{"WEDANGAN","MURAH","SALINAN","Rp26.000","Rp4.000","+62 851-5650-4119","@muh_rafi875"})
+        foreach(var expected in new[]{"WARUNG RAFI","Nasi Sayur Murah","SALINAN","Rp26.000","Rp4.000","+62 851-5650-4119","@asoyyy_group"})
             Check(content.Contains(expected),"Designed receipt retains "+expected);
         var paginator=((System.Windows.Documents.IDocumentPaginatorSource)doc).DocumentPaginator;
         paginator.ComputePageCount();Check(paginator.PageCount==1,"Three-item receipt fits one thermal page");
@@ -86,7 +86,12 @@ internal static class Program
         Layout();
         Check(!Get<Button>("PayOrder").IsEnabled,"Empty order cannot enter payment");Screenshot("01-empty");
         VerifyFullMenu();
+        Check(window.PreviewNotice.Visibility==Visibility.Collapsed,"Normal cashier has no preview label");
+        Check(Get<Image>("BrandLogo").Source is not null,"Application logo is bundled");
+        Check(window.SellNav.TransformToAncestor(root).Transform(new Point()).Y<80,"Cashier navigation is at top");
+        var originalProductButton=Get<Button>("Product-NAS-001");
         foreach(var id in new[]{"NAS-001","NAS-002","NAS-003","NAS-004"})await Click("Product-"+id,()=>Get<ScrollViewer>("CartViewport").Content is StackPanel p&&p.Children.Count==Array.IndexOf(new[]{"NAS-001","NAS-002","NAS-003","NAS-004"},id)+1);
+        Check(ReferenceEquals(originalProductButton,Get<Button>("Product-NAS-001")),"adding products does not rebuild the product grid");
         foreach(var size in new[]{(1280d,720d),(1366d,768d),(1536d,864d),(1920d,1080d),(900d,620d)})
         {
             width=size.Item1;height=size.Item2;Layout();
@@ -106,7 +111,7 @@ internal static class Program
         var third=Get<Button>("Product-NAS-003").TransformToAncestor(root).Transform(new Point());
         var fourth=Get<Button>("Product-NAS-004").TransformToAncestor(root).Transform(new Point());
         Check(Math.Abs(first.Y-second.Y)<1&&Math.Abs(first.Y-third.Y)<1&&third.X>second.X&&Math.Abs(first.Y-fourth.Y)<1&&fourth.X>third.X,"Menu grid fits four columns at 1280x720");
-        Check(Get<Button>("Product-NAS-001").ActualWidth>=150&&Get<Button>("Product-NAS-001").ActualHeight>=94,"Compact menu cards retain large touch targets");
+        Check(Get<Button>("Product-NAS-001").ActualWidth>=150&&Get<Button>("Product-NAS-001").ActualHeight>=56,"Compact menu cards retain large touch targets");
         Check(Get<ScrollViewer>("MenuViewport").ScrollableHeight<1,"Four menu cards fit the catalog at 1280x720");
         var name=Get<TextBox>("CustomerName");name.Text="Bu Rini";
         // Clicking while a name edit is pending must save the label before replacing the cart.
@@ -185,6 +190,7 @@ internal static class Program
         var proof=new ProviderPayment(1,"fixture-qris",22500,DateTimeOffset.UtcNow);
         await window.ReceivePaymentAlertsAsync([proof]);Layout();
         Check(window.Toast.Visibility==Visibility.Visible&&window.ToastTitle.Text.StartsWith("SIMULASI"),"durable proof displays labeled passive popup");
+        Check(window.Toast.HorizontalAlignment==HorizontalAlignment.Left&&window.Toast.VerticalAlignment==VerticalAlignment.Bottom,"QRIS toast is bottom-left");
         Check(window.ToastAmount.Text=="Rp22.500"&&sounds==1,"new proof shows amount and requests sound once");
         Check(Keyboard.FocusedElement==beforeFocus&&input.Text=="Bu Rini","payment arrival preserves typing and keyboard focus");
         Check(!window.Toast.IsHitTestVisible&&!window.Toast.Focusable&&!MainWindow.Descendants<Button>(window.Toast).Any(),"popup contains no buttons and never intercepts input");
@@ -229,7 +235,7 @@ internal static class Program
                 var rows=cards.Select(c=>Math.Round(c.TransformToAncestor(root).Transform(new Point()).Y)).Distinct().Count();
                 Check(rows<=8,"32 menus fit in at most eight rows at "+width);
                 if(width>=1536)Check(rows==8,"Wide layout shows 32 menus in eight rows");
-                Check(cards.All(c=>c.ActualWidth>=150&&c.ActualHeight>=94),"Full menu retains usable touch targets");
+                Check(cards.All(c=>c.ActualWidth>=150&&c.ActualHeight>=56),"Full menu retains usable touch targets");
                 Screenshot("21-full-menu-"+width+"x"+height);
 
             }

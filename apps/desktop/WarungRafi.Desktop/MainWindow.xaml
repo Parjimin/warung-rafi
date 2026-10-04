@@ -2,39 +2,37 @@
  Title="Warung Rafi — Kasir" Width="1320" Height="850" MinWidth="900" MinHeight="620" Background="{StaticResource AppBackground}" Foreground="{StaticResource Ink}"
  FontFamily="Segoe UI" Loaded="OnLoaded" Closing="OnClosing" PreviewKeyDown="OnWorkspaceKeyDown" UseLayoutRounding="True" SnapsToDevicePixels="True" WindowStartupLocation="CenterScreen">
  <Grid x:Name="RootLayout">
-  <Grid.ColumnDefinitions><ColumnDefinition Width="88"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-  <Border Background="{StaticResource RailBrush}">
-   <Grid Margin="8,20,8,16"><Grid.RowDefinitions><RowDefinition Height="62"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-    <TextBlock Text="wr." FontFamily="Georgia" FontWeight="Bold" FontSize="27" Foreground="White" HorizontalAlignment="Center"/>
-    <StackPanel x:Name="Navigation" Grid.Row="1">
-     <Button x:Name="SellNav" Content="Jualan" Click="ShowSelling" Style="{StaticResource NavigationButton}" Margin="0,0,0,10"/>
-     <Button x:Name="HeldNav" Content="Ditunda" Click="ShowHeld" Style="{StaticResource NavigationButton}" Margin="0,0,0,10"/>
-     <Button x:Name="HistoryNav" Content="Riwayat" Click="ShowHistory" Style="{StaticResource NavigationButton}"/>
+  <Grid.RowDefinitions><RowDefinition Height="76"/><RowDefinition Height="34"/><RowDefinition Height="*"/><RowDefinition Height="36"/></Grid.RowDefinitions>
+  <Border Background="{StaticResource RailBrush}" BorderBrush="{StaticResource Forest}" BorderThickness="0,0,0,3" Padding="22,0">
+   <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="190"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+     <Image Source="Assets/logo.png" Width="50" Height="50" Stretch="Uniform" Margin="0,0,12,0" AutomationProperties.AutomationId="BrandLogo" AutomationProperties.Name="Logo Asoyyy"/>
+     <StackPanel VerticalAlignment="Center"><TextBlock Text="Warung Rafi" Foreground="White" FontSize="19" FontWeight="SemiBold"/><TextBlock Text="ASOYYY GROUP" Foreground="#C4BFAF" FontSize="10" Margin="0,4,0,0"/></StackPanel>
     </StackPanel>
-    <StackPanel Grid.Row="2"><Button x:Name="SettingsButton" Content="Pengaturan" Click="OpenSettings" Style="{StaticResource NavigationButton}"/>
-     <TextBlock Text="KASIR" Foreground="#8FA69A" FontSize="10" HorizontalAlignment="Center" Margin="0,18,0,0"/>
+    <StackPanel x:Name="Navigation" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+     <Button x:Name="SellNav" Content="Jualan" Click="ShowSelling" Style="{StaticResource NavigationButton}" Margin="0,0,8,0"/>
+     <Button x:Name="HeldNav" Content="Ditunda" Click="ShowHeld" Style="{StaticResource NavigationButton}" Margin="0,0,8,0"/>
+     <Button x:Name="HistoryNav" Content="Riwayat" Click="ShowHistory" Style="{StaticResource NavigationButton}" Margin="0,0,8,0"/>
+     <Button x:Name="SettingsButton" Content="Pengaturan" Click="OpenSettings" Style="{StaticResource NavigationButton}"/>
     </StackPanel>
    </Grid>
   </Border>
-  <Grid Grid.Column="1"><Grid.RowDefinitions><RowDefinition Height="56"/><RowDefinition Height="*"/><RowDefinition Height="36"/></Grid.RowDefinitions>
-   <Border Background="{StaticResource ElevatedBrush}" BorderBrush="{StaticResource Line}" BorderThickness="0,0,0,1" Padding="20,0">
-    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-     <StackPanel Orientation="Horizontal" VerticalAlignment="Center"><TextBlock Text="Warung Rafi" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
-      <StackPanel x:Name="HeaderDate" Margin="16,0,0,0" VerticalAlignment="Center"><TextBlock Text="Wedangan Dan Aneka Nasi Sayur Murah" FontSize="11" Foreground="{StaticResource Muted}"/></StackPanel>
-     </StackPanel>
-     <TextBlock x:Name="DateLabel" Grid.Column="1" FontSize="12" Foreground="{StaticResource Muted}" VerticalAlignment="Center" Margin="8,0,16,0"/>
-     <Border Grid.Column="2" BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="6" Padding="8,5" VerticalAlignment="Center"><TextBlock x:Name="PreviewBadge" Text="VERSI UJI · MENU DUMMY" FontSize="10" Foreground="{StaticResource Muted}"/></Border>
-    </Grid>
-   </Border>
-   <ContentControl x:Name="MainContent" Grid.Row="1" Margin="20,20,20,12" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
-   <Grid Grid.Row="2" Margin="20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-    <StackPanel VerticalAlignment="Center"><TextBlock x:Name="StatusText" FontSize="11" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Text="Menyiapkan penyimpanan lokal…"/>
-     <TextBlock x:Name="SheetsStatus" FontSize="10" Foreground="{StaticResource Muted}" Text="Sheets menunggu koneksi" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-    </StackPanel><Button x:Name="DemoQris" Grid.Column="1" Content="Coba QRIS" Click="SimulateQris" Visibility="Collapsed" FontSize="12" MinHeight="30" Padding="10,2"/>
+  <Border Grid.Row="1" Background="#EAE6DD" Padding="22,0">
+   <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <StackPanel x:Name="HeaderDate" VerticalAlignment="Center"><TextBlock Text="Wedangan Dan Aneka Nasi Sayur Murah" FontSize="11" Foreground="{StaticResource Muted}"/></StackPanel>
+    <TextBlock x:Name="DateLabel" Grid.Column="1" FontSize="11" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/>
+    <Border x:Name="PreviewNotice" Grid.Column="2" Visibility="Collapsed" Margin="16,0,0,0" VerticalAlignment="Center"><TextBlock x:Name="PreviewBadge" FontSize="10" Foreground="{StaticResource WarningBrush}"/></Border>
    </Grid>
+  </Border>
+  <ContentControl x:Name="MainContent" Grid.Row="2" Margin="22,18,22,12" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+  <Grid Grid.Row="3" Margin="22,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+   <StackPanel VerticalAlignment="Center"><TextBlock x:Name="StatusText" FontSize="11" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Text="Menyiapkan penyimpanan lokal…"/>
+    <TextBlock x:Name="SheetsStatus" FontSize="10" Foreground="{StaticResource Muted}" Text="Sheets menunggu koneksi" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+   </StackPanel><Button x:Name="DemoQris" Grid.Column="1" Content="Coba QRIS" Click="SimulateQris" Visibility="Collapsed" FontSize="12" MinHeight="30" Padding="10,2"/>
   </Grid>
-  <Border x:Name="Toast" Grid.Column="1" Panel.ZIndex="10" Width="340" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,70,24,0" Background="{StaticResource RailBrush}" CornerRadius="10" Padding="20,14" Visibility="Collapsed" IsHitTestVisible="False" Focusable="False">
-   <StackPanel><TextBlock x:Name="ToastTitle" Text="Pembayaran QRIS diterima" FontSize="16" Foreground="White"/><TextBlock x:Name="ToastAmount" FontSize="28" FontWeight="SemiBold" Foreground="White" Margin="0,4,0,4"/><TextBlock x:Name="ToastTime" FontSize="12" Foreground="#BECEC7"/></StackPanel>
+  <Border x:Name="Toast" Grid.RowSpan="4" Panel.ZIndex="10" Width="350" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="22,0,0,48" Background="{StaticResource RailBrush}" BorderBrush="{StaticResource Forest}" BorderThickness="4,0,0,0" CornerRadius="12" Padding="20,16" Visibility="Collapsed" IsHitTestVisible="False" Focusable="False">
+   <Border.RenderTransform><TranslateTransform/></Border.RenderTransform>
+   <StackPanel><TextBlock x:Name="ToastTitle" Text="✓  Pembayaran QRIS diterima" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Forest}"/><TextBlock x:Name="ToastAmount" FontSize="28" FontWeight="SemiBold" Foreground="White" Margin="0,5,0,4"/><TextBlock x:Name="ToastTime" FontSize="12" Foreground="#BCB8AA"/></StackPanel>
   </Border>
  </Grid>
 </Window>

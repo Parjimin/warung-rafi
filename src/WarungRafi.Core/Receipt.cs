@@ -25,7 +25,7 @@ public static class Receipt
         }
         lines.Add(new("Terima kasih. Selamat menikmati!"));
         lines.Add(new("WhatsApp +62 851-5650-4119"));
-        lines.Add(new("Instagram @muh_rafi875"));
+        lines.Add(new("Instagram @asoyyy_group"));
         return lines;
     }
 }

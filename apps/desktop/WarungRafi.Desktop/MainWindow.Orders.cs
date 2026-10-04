@@ -12,10 +12,10 @@ public partial class MainWindow
         if(!ready)return;
         var orders=await store.ListAsync(held?[OrderStatus.Held,OrderStatus.Draft]:[OrderStatus.Completed,OrderStatus.Cancelled]);
         var grid=Rows(Auto,Star);var heading=Columns(Star,new GridLength(260));heading.Margin=new Thickness(0,0,0,16);
-        var title=new StackPanel();title.Children.Add(Text(held?"LANJUTKAN PESANAN":"CATATAN PENJUALAN",10,true,"#718078"));title.Children.Add(Text(held?"Pesanan ditunda":"Riwayat pesanan",27,true));
-        title.Children.Add(Text(held?"Buka kembali pesanan untuk menambah menu atau membayar.":"Rincian, cetak ulang, dan pengembalian. Rekap lengkap ada di Sheets.",15,false,"#65766E"));Place(heading,title);
+        var title=new StackPanel();title.Children.Add(Text(held?"LANJUTKAN PESANAN":"CATATAN PENJUALAN",10,true,"#817E72"));title.Children.Add(Text(held?"Pesanan ditunda":"Riwayat pesanan",27,true));
+        title.Children.Add(Text(held?"Buka kembali pesanan untuk menambah menu atau membayar.":"Rincian, cetak ulang, dan pengembalian. Rekap lengkap ada di Sheets.",15,false,"#817E72"));Place(heading,title);
         var filter=Identify(new TextBox { ToolTip="Cari nama pelanggan atau nomor pesanan" },"OrderSearch","Cari nama atau nomor pesanan");
-        var searchPanel=new StackPanel();searchPanel.Children.Add(Text("Cari nama / nomor pesanan",13,false,"#65766E"));searchPanel.Children.Add(filter);Place(heading,searchPanel,0,1);Place(grid,heading);
+        var searchPanel=new StackPanel();searchPanel.Children.Add(Text("Cari nama / nomor pesanan",13,false,"#817E72"));searchPanel.Children.Add(filter);Place(heading,searchPanel,0,1);Place(grid,heading);
         var rows=new StackPanel();var scroll=Scroll(rows,"OrdersViewport");Place(grid,scroll,1);
         void Filter()
         {
@@ -28,9 +28,9 @@ public partial class MainWindow
                 description.Children.Add(Text(string.IsNullOrWhiteSpace(order.CustomerLabel)?"Pelanggan tanpa nama":order.CustomerLabel,18,true));
                 var date=order.UpdatedAt.ToOffset(TimeSpan.FromHours(7)).ToString("dd MMM · HH.mm",CultureInfo.GetCultureInfo("id-ID"));
                 var status=order.Status switch{OrderStatus.Completed=>"Selesai",OrderStatus.Cancelled=>"Dibatalkan",OrderStatus.Held=>"Ditunda",_=>"Draf"};
-                var meta=Text($"{date} WIB · {order.Number[^8..]} · {status}",14,false,"#65766E");meta.Margin=new Thickness(0,6,0,6);description.Children.Add(meta);
-                description.Children.Add(Text(order.Summary,14,false,"#718078"));Place(row,description);
-                Place(row,Text(order.TotalLabel,21,true,"#205C49"),0,1);
+                var meta=Text($"{date} WIB · {order.Number[^8..]} · {status}",14,false,"#817E72");meta.Margin=new Thickness(0,6,0,6);description.Children.Add(meta);
+                description.Children.Add(Text(order.Summary,14,false,"#817E72"));Place(row,description);
+                Place(row,Text(order.TotalLabel,21,true,"#796127"),0,1);
                 var actionsPanel=new StackPanel { VerticalAlignment=VerticalAlignment.Center };
                 if(held)
                 {
@@ -51,18 +51,18 @@ public partial class MainWindow
                 Place(row,actionsPanel,0,2);var surface=Surface(row);surface.CornerRadius=new CornerRadius(8);surface.Margin=new Thickness(0,0,0,8);rows.Children.Add(surface);
             }
             if(matching.Length==0)rows.Children.Add(Empty("Belum ada pesanan",orders.Length==0?"Pesanan akan muncul di sini setelah disimpan.":"Coba nama atau nomor lainnya."));
-            if(orders.Length==1000)rows.Children.Add(Text("Menampilkan 1.000 pesanan terbaru. Pencarian berlaku untuk daftar ini.",14,false,"#65766E"));
+            if(orders.Length==1000)rows.Children.Add(Text("Menampilkan 1.000 pesanan terbaru. Pencarian berlaku untuk daftar ini.",14,false,"#817E72"));
         }
         filter.TextChanged+=(_,_)=>Filter();Filter();Present(held?"held":"history",grid);
     }
     private void RenderOrderDetail(Order order)
     {
         var panel=Rows(Auto,Star,Auto);
-        var header=Columns(Star,Auto);var title=new StackPanel();title.Children.Add(Text("Rincian pesanan",26,true));title.Children.Add(Text($"{order.Number} · {order.CustomerLabel}",16,false,"#65766E"));Place(header,title);
+        var header=Columns(Star,Auto);var title=new StackPanel();title.Children.Add(Text("Rincian pesanan",26,true));title.Children.Add(Text($"{order.Number} · {order.CustomerLabel}",16,false,"#817E72"));Place(header,title);
         Place(header,ActionButton("← Riwayat",()=>RenderOrders(false)),0,1);header.Margin=new Thickness(0,0,0,14);Place(panel,header);
         var lines=new StackPanel();foreach(var line in order.Lines)
         {
-            var row=Columns(Star,Auto);row.Margin=new Thickness(0,12,0,12);var name=new StackPanel();name.Children.Add(Text(line.Name,20,true));name.Children.Add(Text($"{line.Quantity} × {line.PriceLabel}",16,false,"#65766E"));Place(row,name);Place(row,Text(line.SubtotalLabel,22,true),0,1);lines.Children.Add(row);
+            var row=Columns(Star,Auto);row.Margin=new Thickness(0,12,0,12);var name=new StackPanel();name.Children.Add(Text(line.Name,20,true));name.Children.Add(Text($"{line.Quantity} × {line.PriceLabel}",16,false,"#817E72"));Place(row,name);Place(row,Text(line.SubtotalLabel,22,true),0,1);lines.Children.Add(row);
         }
         Place(panel,Scroll(lines),1);var footer=Columns(Star,Auto);Place(footer,Text($"Total  {order.TotalLabel}",30,true));
         if(order.Status==OrderStatus.Completed)
