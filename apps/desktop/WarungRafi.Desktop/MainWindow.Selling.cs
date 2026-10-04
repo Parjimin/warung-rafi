@@ -145,7 +145,7 @@ public partial class MainWindow
     private Border Cart(bool editable)
     {
         var grid=Rows(Auto,Star,Auto);
-        var header=new StackPanel { Margin=new Thickness(18,14,18,12) };
+        var header=new StackPanel { Margin=new Thickness(18,10,18,8) };
         var heading=Columns(Star,Auto);var title=new StackPanel();title.Children.Add(Text("PESANAN AKTIF / "+current.Number[^8..],10,true,"#AA842D"));title.Children.Add(Text(editable?"Pesanan baru":"Rincian pesanan",20,true,"#282722"));
         Place(heading,title);
         if(editable)
@@ -156,7 +156,7 @@ public partial class MainWindow
         header.Children.Add(heading);
         if(editable)
         {
-            var nameRow=Columns(Auto,Star);nameRow.Margin=new Thickness(0,10,0,0);
+            var nameRow=Columns(Auto,Star);nameRow.Margin=new Thickness(0,8,0,0);
 
             var name=Identify(new TextBox { Text=customerName,MaxLength=60,MinHeight=44,FontSize=13,Padding=new Thickness(10,6,10,6),ToolTip="Nama pelanggan (opsional), tersimpan otomatis" },"CustomerName","Nama pelanggan, opsional");
             name.TextChanged+=(_,_)=>{customerName=name.Text;nameDirty=customerName!=current.CustomerLabel;nameTimer.Stop();if(nameDirty)nameTimer.Start();};Place(nameRow,InputWithHint(name,"Nama pelanggan (opsional)"),0,1);header.Children.Add(nameRow);
@@ -192,7 +192,7 @@ public partial class MainWindow
         }
         var viewport=Scroll(current.Lines.Length==0?Empty("Mulai pesanan pertama","Pilih menu di sebelah kiri. Semua tersimpan di laptop."):lines,editable?"CartViewport":"ReviewViewport");
         viewport.Margin=new Thickness(18,0,18,0);if(editable)cartScroll=viewport;Place(grid,viewport,1);
-        var bottom=new StackPanel { Margin=new Thickness(0,8,0,0) };
+        var bottom=new StackPanel { Margin=new Thickness(0,4,0,0) };
         var total=Columns(Star,Auto);total.Margin=new Thickness(0,0,0,8);Place(total,Text("TOTAL BAYAR",10,true,"#C6BFA9"));Place(total,Identify(Text(current.TotalLabel,30,true,"#FCB711"),"CartTotal"),0,1);
         bottom.Children.Add(new Border { Child=total,BorderBrush=Brushes.Transparent,BorderThickness=new Thickness(0),Padding=new Thickness(0) });
         if(editable)
@@ -203,7 +203,7 @@ public partial class MainWindow
             var pay=ActionButton("Bayar  →",()=>{tendered="";method=PaymentMethod.Cash;RenderPayment();return Task.CompletedTask;},true,"PayOrder");
             pay.IsEnabled=current.Lines.Length>0;pay.Padding=new Thickness(10);pay.MinHeight=52;Place(buttons,pay,0,2);bottom.Children.Add(buttons);
         }
-        Place(grid,new Border {Child=bottom,Background=Token("RailBrush"),Padding=new Thickness(18,10,18,18),CornerRadius=new CornerRadius(0,0,16,16)},2);
+        Place(grid,new Border {Child=bottom,Background=Token("RailBrush"),Padding=new Thickness(18,10,18,10),CornerRadius=new CornerRadius(0,0,16,16)},2);
         var slip=Surface(grid,0);slip.Style=Component("OrderSlip");slip.BorderThickness=new Thickness(0);slip.CornerRadius=new CornerRadius(16);
         if(!editable)
         {

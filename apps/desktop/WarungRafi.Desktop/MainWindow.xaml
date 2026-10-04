@@ -24,7 +24,7 @@
     <Border x:Name="PreviewNotice" Grid.Column="2" Visibility="Collapsed" Margin="16,0,0,0" VerticalAlignment="Center"><TextBlock x:Name="PreviewBadge" FontSize="10" Foreground="{StaticResource WarningBrush}"/></Border>
    </Grid>
   </Border>
-  <ContentControl x:Name="MainContent" Grid.Row="2" Margin="22,18,22,12" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+  <ContentControl x:Name="MainContent" Grid.Row="2" Margin="22,16,22,12" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
   <Grid Grid.Row="3" Margin="22,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
    <StackPanel VerticalAlignment="Center"><TextBlock x:Name="StatusText" FontSize="11" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Text="Menyiapkan penyimpanan lokal…"/>
     <TextBlock x:Name="SheetsStatus" FontSize="10" Foreground="{StaticResource Muted}" Text="Sheets menunggu koneksi" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
