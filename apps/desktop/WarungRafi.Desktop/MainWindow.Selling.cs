@@ -166,7 +166,7 @@ public partial class MainWindow
         var lines=new StackPanel();
         foreach(var line in current.Lines)
         {
-            var row=Rows(Auto,Auto);row.MinHeight=66;row.Margin=new Thickness(0,2,0,2);
+            var row=Rows(Auto,Auto);row.MinHeight=66;row.Margin=new Thickness(0,1,0,1);
             var top=Columns(Star,Auto);var itemName=Text(line.Name,13,true);itemName.Margin=new Thickness(0,0,12,0);Place(top,itemName);
             Place(top,Text(line.SubtotalLabel,13,true,"#282722"),0,1);Place(row,top);
             var detail=Columns(Star,Auto);Place(detail,Text($"{line.PriceLabel} / pcs",12,false,"#817E72"));

@@ -21,7 +21,7 @@ internal sealed class MaintenanceWindow : Window
     {
         this.store=store;this.file=file;settings=file.Load();
         Title="Warung Rafi — Pengaturan";Width=850;Height=760;MinWidth=580;MinHeight=500;
-        Background=new SolidColorBrush(Color.FromRgb(241,243,239));Foreground=new SolidColorBrush(Color.FromRgb(32,50,44));FontFamily=new FontFamily("Segoe UI");FontSize=17;WindowStartupLocation=WindowStartupLocation.CenterScreen;
+        Background=(Brush)Application.Current.FindResource("AppBackground");Foreground=(Brush)Application.Current.FindResource("Ink");FontFamily=new FontFamily("Segoe UI");FontSize=17;WindowStartupLocation=WindowStartupLocation.CenterScreen;
         var root=new Grid {Background=Background};foreach(var size in new[]{GridLength.Auto,GridLength.Auto,new GridLength(1,GridUnitType.Star),GridLength.Auto})root.RowDefinitions.Add(new RowDefinition{Height=size});
         var title=new TextBlock {Text="Pengaturan laptop",FontSize=28,FontWeight=FontWeights.SemiBold,Margin=new Thickness(22,20,22,4)};root.Children.Add(title);
         root.Children.Add(navigation);Grid.SetRow(navigation,1);
