@@ -196,7 +196,10 @@ internal static class Program
         Check(!window.Toast.IsHitTestVisible&&!window.Toast.Focusable&&!MainWindow.Descendants<Button>(window.Toast).Any(),"popup contains no buttons and never intercepts input");
         await window.ReceivePaymentAlertsAsync([proof]);Check(sounds==1,"duplicate proof never requests another sound");
         Check(await demoStore.CountAsync(OrderStatus.Completed)==0&&Get<TextBlock>("CartTotal").Text=="Rp5.000","proof neither completes nor changes active order");
-        Check(window.Toast.TransformToAncestor(root).Transform(new Point(0,window.Toast.ActualHeight)).Y<=window.MainContent.TransformToAncestor(root).Transform(new Point()).Y,"popup stays above order panel and cashier workspace");
+        await Task.Delay(220);Layout();
+        var popupBounds=window.Toast.TransformToAncestor(root).TransformBounds(new Rect(0,0,window.Toast.ActualWidth,window.Toast.ActualHeight));
+        var checkoutLeft=Get<Button>("PayOrder").TransformToAncestor(root).Transform(new Point()).X;
+        Check(popupBounds.Left>=0&&popupBounds.Right<checkoutLeft&&popupBounds.Bottom<=root.ActualHeight-36,"bottom-left popup remains clear of checkout and status footer");
         Screenshot("14-qris-simulation");
         await Until(()=>window.Toast.Visibility==Visibility.Collapsed);
         await window.ReceivePaymentAlertsAsync([proof with { Sequence=2,TransactionId="late",PaidAt=DateTimeOffset.UtcNow.AddMinutes(-5) }]);
