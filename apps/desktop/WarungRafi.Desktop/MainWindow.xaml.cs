@@ -40,6 +40,7 @@ public partial class MainWindow : Window
         store=storage;this.isolatedPreview=isolatedPreview;this.simulatePayments=simulatePayments;this.settingsFile=settingsFile;this.settings=settings??new DesktopSettings();
         playPaymentSound=paymentSound??(()=> { if(!isolatedPreview||simulatePayments)System.Media.SystemSounds.Asterisk.Play(); });
         InitializeComponent();
+        RailContent(SellNav,"sell","Jualan");RailContent(HeldNav,"held","Ditunda");RailContent(HistoryNav,"history","Riwayat");RailContent(SettingsButton,"settings","Pengaturan");
         SettingsButton.IsEnabled=settingsFile is not null;
         if(simulatePayments)
         {
@@ -103,7 +104,7 @@ public partial class MainWindow : Window
         var count=await store.PendingCountAsync()+await store.PendingFinanceCountAsync();
         StatusText.Text=count==0?"Tersimpan di laptop · Semua perubahan sudah dikirim":$"Tersimpan di laptop · {count} perubahan menunggu dikirim";
         StatusText.ToolTip=StatusText.Text;
-        HeldNav.Content=$"Ditunda ({await store.CountAsync(OrderStatus.Held)})";
+        RailContent(HeldNav,"held",$"Ditunda ({await store.CountAsync(OrderStatus.Held)})");
     }
     private async Task Print(CompletedSale sale,bool copy)
     {

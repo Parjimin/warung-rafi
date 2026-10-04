@@ -12,15 +12,15 @@ public partial class MainWindow
     {
         tenderedInput=null;changeLabel=null;completeButton=null;
         var grid=Columns(Star,new GridLength(18),new GridLength(1.4,GridUnitType.Star));
-        grid.ColumnDefinitions[0].MinWidth=310;grid.ColumnDefinitions[2].MinWidth=470;
+        grid.ColumnDefinitions[0].MinWidth=250;grid.ColumnDefinitions[2].MinWidth=430;
         Place(grid,Cart(false));
         var panel=Rows(Auto,Star,Auto);
-        var header=new StackPanel();var heading=Columns(Star,Auto);
+        var header=new StackPanel();header.Children.Add(Text("SELESAIKAN TRANSAKSI",10,true,"#718078"));var heading=Columns(Star,Auto);
         Place(heading,Text("Pembayaran",26,true));
-        var back=ActionButton("← Ubah pesanan",()=>{RenderSelling();return Task.CompletedTask;},id:"EditOrder");back.FontSize=15;back.Background=System.Windows.Media.Brushes.White;back.BorderBrush=Color("#DBE3D7");Place(heading,back,0,1);header.Children.Add(heading);
+        var back=ActionButton("← Ubah pesanan",()=>{RenderSelling();return Task.CompletedTask;},id:"EditOrder");back.FontSize=13;back.Background=System.Windows.Media.Brushes.White;back.BorderBrush=Color("#DBE3D7");Place(heading,back,0,1);header.Children.Add(heading);
         var methods=Columns(Star,new GridLength(10),Star);methods.Margin=new Thickness(0,12,0,14);
-        var cashTab=ActionButton("Tunai",()=>{method=PaymentMethod.Cash;RenderPayment();return Task.CompletedTask;},id:"MethodCash");SelectTab(cashTab,method==PaymentMethod.Cash);Place(methods,cashTab);
-        var qrisTab=ActionButton("QRIS",()=>{method=PaymentMethod.QrisManual;RenderPayment();return Task.CompletedTask;},id:"MethodQris");SelectTab(qrisTab,method==PaymentMethod.QrisManual);Place(methods,qrisTab,0,2);header.Children.Add(methods);Place(panel,header);
+        var cashTab=ActionButton("Tunai",()=>{method=PaymentMethod.Cash;RenderPayment();return Task.CompletedTask;},id:"MethodCash");cashTab.Style=Component("PaymentOption");SelectTab(cashTab,method==PaymentMethod.Cash);Place(methods,cashTab);
+        var qrisTab=ActionButton("QRIS",()=>{method=PaymentMethod.QrisManual;RenderPayment();return Task.CompletedTask;},id:"MethodQris");qrisTab.Style=Component("PaymentOption");SelectTab(qrisTab,method==PaymentMethod.QrisManual);Place(methods,qrisTab,0,2);header.Children.Add(methods);Place(panel,header);
         if(method==PaymentMethod.Cash)
         {
             var body=Columns(Star,new GridLength(14),Star);

@@ -104,8 +104,9 @@ internal static class Program
         var first=Get<Button>("Product-NAS-001").TransformToAncestor(root).Transform(new Point());
         var second=Get<Button>("Product-NAS-002").TransformToAncestor(root).Transform(new Point());
         var third=Get<Button>("Product-NAS-003").TransformToAncestor(root).Transform(new Point());
-        Check(Math.Abs(first.Y-second.Y)<1&&Math.Abs(first.Y-third.Y)<1&&third.X>second.X,"Menu grid fits at least three columns at 1280x720");
-        Check(Get<Button>("Product-NAS-001").ActualWidth>=170&&Get<Button>("Product-NAS-001").ActualHeight>=100,"Compact menu cards retain large touch targets");
+        var fourth=Get<Button>("Product-NAS-004").TransformToAncestor(root).Transform(new Point());
+        Check(Math.Abs(first.Y-second.Y)<1&&Math.Abs(first.Y-third.Y)<1&&third.X>second.X&&Math.Abs(first.Y-fourth.Y)<1&&fourth.X>third.X,"Menu grid fits four columns at 1280x720");
+        Check(Get<Button>("Product-NAS-001").ActualWidth>=150&&Get<Button>("Product-NAS-001").ActualHeight>=94,"Compact menu cards retain large touch targets");
         Check(Get<ScrollViewer>("MenuViewport").ScrollableHeight<1,"Four menu cards fit the catalog at 1280x720");
         var name=Get<TextBox>("CustomerName");name.Text="Bu Rini";
         // Clicking while a name edit is pending must save the label before replacing the cart.
@@ -226,9 +227,9 @@ internal static class Program
                 width=size.Item1;height=size.Item2;Layout();
                 var cards=Enumerable.Range(0,32).Select(i=>Get<Button>("Product-REVIEW-"+i)).ToArray();
                 var rows=cards.Select(c=>Math.Round(c.TransformToAncestor(root).Transform(new Point()).Y)).Distinct().Count();
-                Check(rows<=11,"32 menus fit in at most 11 rows at "+width);
+                Check(rows<=8,"32 menus fit in at most eight rows at "+width);
                 if(width>=1536)Check(rows==8,"Wide layout shows 32 menus in eight rows");
-                Check(cards.All(c=>c.ActualWidth>=170&&c.ActualHeight>=100),"Full menu retains usable touch targets");
+                Check(cards.All(c=>c.ActualWidth>=150&&c.ActualHeight>=94),"Full menu retains usable touch targets");
                 Screenshot("21-full-menu-"+width+"x"+height);
 
             }

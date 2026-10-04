@@ -10,7 +10,32 @@ namespace WarungRafi.Desktop;
 
 public partial class MainWindow
 {
-    private static Brush Color(string value)=>new SolidColorBrush((System.Windows.Media.Color)ColorConverter.ConvertFromString(value));
+    private static readonly Dictionary<string,Brush> brushes=new();
+    private static Brush Color(string value)
+    {
+        if(brushes.TryGetValue(value,out var cached))return cached;
+        var brush=new SolidColorBrush((System.Windows.Media.Color)ColorConverter.ConvertFromString(value));brush.Freeze();brushes[value]=brush;return brush;
+    }
+    private static Brush Token(string name)=>(Brush)Application.Current.FindResource(name);
+    private static Style Component(string name)=>(Style)Application.Current.FindResource(name);
+    private static void RailContent(Button button,string kind,string label)
+    {
+        var path=kind switch {
+            "sell"=>"M3,3 L10,3 L10,10 L3,10 Z M14,3 L21,3 L21,10 L14,10 Z M3,14 L10,14 L10,21 L3,21 Z M14,14 L21,14 L21,21 L14,21 Z",
+            "held"=>"M12,3 A9,9 0 1 0 21,12 M12,7 L12,12 L15,14 M17,3 L23,3 M20,0 L20,6",
+            "history"=>"M5,3 L19,3 L19,21 L16,19 L12,21 L8,19 L5,21 Z M8,8 L16,8 M8,12 L16,12",
+            _=>"M12,8 A4,4 0 1 0 12,16 A4,4 0 1 0 12,8 M12,2 L12,5 M12,19 L12,22 M2,12 L5,12 M19,12 L22,12 M5,5 L7,7 M17,17 L19,19 M5,19 L7,17 M17,7 L19,5" };
+        var body=new StackPanel { HorizontalAlignment=HorizontalAlignment.Center };
+        var symbol=new System.Windows.Shapes.Path { Data=Geometry.Parse(path),StrokeThickness=1.5,Width=22,Height=22,Stretch=Stretch.Uniform,Margin=new Thickness(0,0,0,6) };
+        symbol.SetBinding(System.Windows.Shapes.Shape.StrokeProperty,new System.Windows.Data.Binding("Foreground") {Source=button});body.Children.Add(symbol);
+        var text=Text(label,11);text.TextAlignment=TextAlignment.Center;body.Children.Add(text);button.Content=body;
+        AutomationProperties.SetName(button,label);
+    }
+    private void OnWorkspaceKeyDown(object sender,KeyEventArgs e)
+    {
+        if(e.Key==Key.F2&&page=="sell"&&MainContent.Content is DependencyObject view)
+        {Descendants<TextBox>(view).FirstOrDefault(x=>AutomationProperties.GetAutomationId(x)=="MenuSearch")?.Focus();e.Handled=true;}
+    }
     private static TextBlock Text(string value,double size=18,bool bold=false,string? color=null)
     {
         var text=new TextBlock { Text=value,FontSize=size,FontWeight=bold?FontWeights.SemiBold:FontWeights.Normal,TextWrapping=TextWrapping.Wrap,VerticalAlignment=VerticalAlignment.Center };
@@ -20,19 +45,19 @@ public partial class MainWindow
     { AutomationProperties.SetAutomationId(element,id);if(name is not null)AutomationProperties.SetName(element,name);return element; }
     private Button ActionButton(string label,Func<Task> action,bool primary=false,string? id=null)
     {
-        var button=new Button { Content=label };Select(button,primary);
+        var button=new Button { Content=label,Style=Component(primary?"PrimaryButton":"SecondaryButton") };Select(button,primary);
         if(id is not null)Identify(button,id,label);
         button.Click+=async(_,_)=>await Run(action);return button;
     }
     private static void Select(Button button,bool active)
     {
-        button.Background=Color(active?"#203F36":"#EAF0EC");button.Foreground=Color(active?"#FFFFFF":"#234F3F");
+        button.Background=Token(active?"Forest":"SurfaceBrush");button.Foreground=active?Brushes.White:Token("Ink");
     }
     private static void SelectNavigation(Button button,bool active)
     {
-        button.Background=active?GlassBrush():Brushes.Transparent;
-        button.Foreground=Color(active?"#203F36":"#D0DED8");
-        button.BorderBrush=active?Color("#DFFFFFFF"):Brushes.Transparent;
+        button.Background=active?Token("SelectedBrush"):Brushes.Transparent;
+        button.Foreground=active?Token("Forest"):Color("#B8CBC2");
+        button.BorderBrush=Brushes.Transparent;
     }
     private static void SelectTab(Button button,bool active)
     {
@@ -43,11 +68,8 @@ public partial class MainWindow
         button.FontWeight=FontWeights.SemiBold;
     }
     private static (string Accent,string Tint,string Line) MenuPalette(string category)
-        => ("#294B40","#D9FFFFFF","#AFFFFFFF");
-    private static Brush GlassBrush(bool selected=false)=>new LinearGradientBrush(
-        (System.Windows.Media.Color)ColorConverter.ConvertFromString(selected?"#F5FFFFFF":"#EFFFFFFF"),
-        (System.Windows.Media.Color)ColorConverter.ConvertFromString(selected?"#E3E7F0E9":"#BFEFF4F1"),
-        new Point(0,0),new Point(1,1));
+        => ("#214F40","#F1F3EF","#DCE3DC");
+    private static Brush GlassBrush(bool selected=false)=>Token(selected?"SelectedBrush":"SurfaceBrush");
     private static FrameworkElement MenuSymbol(string category,string stroke)
     {
         var geometry=category switch
@@ -73,8 +95,7 @@ public partial class MainWindow
         if(id is not null)Identify(scroll,id);return scroll;
     }
     private static Border Surface(UIElement child,int padding=18)=>new()
-    { Child=child,Background=GlassBrush(),BorderBrush=Color("#EFFFFFFF"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(22),Padding=new Thickness(padding),
-      Effect=new System.Windows.Media.Effects.DropShadowEffect { Color=System.Windows.Media.Color.FromRgb(37,62,51),BlurRadius=18,ShadowDepth=4,Opacity=0.09 } };
+    { Child=child,Background=Token("SurfaceBrush"),BorderBrush=Token("Line"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(14),Padding=new Thickness(padding) };
     private static Grid Rows(params GridLength[] heights)
     {
         var grid=new Grid();foreach(var height in heights)grid.RowDefinitions.Add(new RowDefinition{Height=height});return grid;

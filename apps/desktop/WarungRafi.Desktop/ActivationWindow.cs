@@ -13,6 +13,7 @@ internal sealed class ActivationWindow : Window
     private readonly CancellationTokenSource closing=new();
     internal ActivationWindow(SettingsFile file,bool directSheets=false)
     {
+        Background=(System.Windows.Media.Brush)Application.Current.FindResource("AppBackground");
         Title="Hubungkan Warung Rafi";Width=450;Height=570;MinWidth=380;MinHeight=480;WindowStartupLocation=WindowStartupLocation.CenterScreen;
         var panel=new StackPanel {Margin=new Thickness(28)};
         panel.Children.Add(new TextBlock{Text="Masuk sekali, selanjutnya otomatis",FontSize=21,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,0,0,14)});
@@ -23,7 +24,7 @@ internal sealed class ActivationWindow : Window
         var pin=new PasswordBox{Margin=new Thickness(0,4,0,10)};var confirm=new PasswordBox{Margin=new Thickness(0,4,0,10)};
         if(needsPin){panel.Children.Add(new TextBlock{Text="Buat PIN pengelola (6 angka)"});panel.Children.Add(pin);panel.Children.Add(new TextBlock{Text="Ulangi PIN"});panel.Children.Add(confirm);}
         var status=new TextBlock{TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,8,0,8)};panel.Children.Add(status);
-        var connect=new Button{Content="Masuk & hubungkan",Margin=new Thickness(0,4,0,8),MinHeight=38};panel.Children.Add(connect);
+        var connect=new Button{Content="Masuk & hubungkan",Style=(Style)Application.Current.FindResource("PrimaryButton"),Margin=new Thickness(0,4,0,8),MinHeight=38};panel.Children.Add(connect);
         var offline=new Button{Content="Lewati, buka offline",MinHeight=32};panel.Children.Add(offline);
         offline.Click+=(_,_)=>{ContinueOffline=true;Close();};Closed+=(_,_)=>closing.Cancel();
         connect.Click+=async(_,_)=>

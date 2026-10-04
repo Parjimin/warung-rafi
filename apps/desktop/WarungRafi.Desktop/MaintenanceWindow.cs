@@ -21,9 +21,9 @@ internal sealed class MaintenanceWindow : Window
     {
         this.store=store;this.file=file;settings=file.Load();
         Title="Warung Rafi — Pengaturan";Width=850;Height=760;MinWidth=580;MinHeight=500;
-        Background=new SolidColorBrush(Color.FromRgb(242,244,239));Foreground=new SolidColorBrush(Color.FromRgb(36,61,51));FontFamily=new FontFamily("Segoe UI");FontSize=17;WindowStartupLocation=WindowStartupLocation.CenterScreen;
+        Background=new SolidColorBrush(Color.FromRgb(241,243,239));Foreground=new SolidColorBrush(Color.FromRgb(32,50,44));FontFamily=new FontFamily("Segoe UI");FontSize=17;WindowStartupLocation=WindowStartupLocation.CenterScreen;
         var root=new Grid {Background=Background};foreach(var size in new[]{GridLength.Auto,GridLength.Auto,new GridLength(1,GridUnitType.Star),GridLength.Auto})root.RowDefinitions.Add(new RowDefinition{Height=size});
-        var title=new TextBlock {Text="Pengaturan",FontSize=28,FontWeight=FontWeights.SemiBold,Margin=new Thickness(22,20,22,4)};root.Children.Add(title);
+        var title=new TextBlock {Text="Pengaturan laptop",FontSize=28,FontWeight=FontWeights.SemiBold,Margin=new Thickness(22,20,22,4)};root.Children.Add(title);
         root.Children.Add(navigation);Grid.SetRow(navigation,1);
         var scroll=viewport=new ScrollViewer {Content=content,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled};root.Children.Add(scroll);Grid.SetRow(scroll,2);
         root.Children.Add(status);Grid.SetRow(status,3);Content=root;Closing+=OnClosing;Loaded+=(_,_)=>RenderUnlock();
@@ -67,7 +67,7 @@ internal sealed class MaintenanceWindow : Window
     }
     private void RenderConnection()
     {
-        if(!unlocked)return;ClearContent();Text("Koneksi laptop",true);Text("Kosongkan alamat untuk memakai kasir offline. Kunci Supabase, Midtrans dan Google hanya dipasang pada server, bukan di laptop.");
+        if(!unlocked)return;ClearContent();Text("Koneksi laptop",true);Text("Kosongkan alamat untuk memakai kasir offline. Koneksi penjualan dan Sheets berjalan di latar belakang saat aplikasi terbuka.");
         var origin=Input("Alamat HTTPS admin","SettingsOrigin",settings.ApiOrigin);var token=Secret("Token laptop baru · kosong berarti tetap","SettingsToken");
         Text("Printer Windows");var printer=Id(new ComboBox {IsEditable=true,Text=settings.PrinterName,MinHeight=42},"SettingsPrinter");content.Children.Add(printer);
         try{using var server=new LocalPrintServer();printer.ItemsSource=server.GetPrintQueues().Select(q=>q.FullName).ToArray();}catch{Text("Daftar printer belum dapat dibaca. Nama printer dapat diisi setelah driver dipasang.");}
